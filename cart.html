@@ -164,6 +164,13 @@
 
 <div id="cart-container"></div>
 
+<label for="name">姓名（必填）：</label>
+<input type="text" id="name" required placeholder="請輸入姓名" style="width:100%;padding:0.75rem;margin-bottom:1rem;border-radius:8px;border:1px solid #ccc;font-size:1rem;box-sizing:border-box;" />
+
+<label for="phone">電話（必填）：</label>
+<input type="tel" id="phone" required placeholder="請輸入聯絡電話" style="width:100%;padding:0.75rem;margin-bottom:1rem;border-radius:8px;border:1px solid #ccc;font-size:1rem;box-sizing:border-box;" />
+
+
 <label for="notes">備註（選填）：</label>
 <textarea id="notes" rows="3" placeholder="請輸入訂單備註..."></textarea>
 
@@ -363,6 +370,19 @@
 
   submitOrderBtn.addEventListener('click', () => {
     const cart = loadCart();
+    const name = document.getElementById('name').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const taiwanPhoneRegex = /^09\d{8}$|^0\d{1,2}-?\d{6,8}$/;
+
+    if (!name) {
+      alert('請輸入姓名');
+      return;
+    }
+    if (!phone || !taiwanPhoneRegex.test(phone)) {
+      alert('請輸入正確的電話號碼（手機或市話）');
+      return;
+    }
+
     if (Object.keys(cart).length === 0) {
       emptyCartModal.show();
       return;
@@ -371,6 +391,8 @@
     const paymentMethod = paymentSelect.value;
 
     const orderData = {
+      name,
+      phone,
       cart,
       notes,
       paymentMethod,

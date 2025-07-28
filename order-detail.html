@@ -95,7 +95,7 @@
 
     try {
       const orderData = JSON.parse(orderDataStr);
-      const { cart, notes, paymentMethod, orderNumber, pickupTime } = orderData;
+      const { cart, notes, paymentMethod, orderNumber, pickupTime, name, phone } = orderData;
       if (!cart || Object.keys(cart).length === 0) {
         display.textContent = '訂單資料錯誤或不存在';
         return;
@@ -105,6 +105,8 @@
       text += `訂單編號：${orderNumber}\n`;
       text += `取餐時間：${pickupTime}\n`;
       text += `付款方式：${paymentMethod === 'cash' ? '現金' : paymentMethod}\n`;
+      text += `姓名：${name}\n`;
+      text += `電話：${phone}\n`;
       text += `備註：${notes || '無'}\n\n`;
       text += `訂單明細：\n`;
 
