@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>訂單明細</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 1rem; background:#f7f7f7; }
+    h2 { text-align: center; }
+    pre {
+      background: white;
+      padding: 1rem;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      white-space: pre-wrap;
+      font-family: monospace;
+    }
+    #back-btn {
+      cursor: pointer;
+      user-select: none;
+      font-size: 24px;
+      margin-bottom: 1rem;
+      color: #007bff;
+    }
+    #back-btn:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+<div id="back-btn">← 返回菜單</div>
+<h2>訂單明細</h2>
+<pre id="order-display">讀取中...</pre>
+
+<!-- 訂購成功 Modal -->
+<div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content text-center">
+      <div class="modal-header">
+        <h5 class="modal-title w-100" id="successModalLabel">訂購成功</h5>
+      </div>
+      <div class="modal-body">
+        感謝您的訂購！我們正在準備您的餐點。
+      </div>
+      <div class="modal-footer justify-content-center">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">確定</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  document.getElementById('back-btn').addEventListener('click', () => {
+    window.location.href = 'index.html';
+  });
+
+  const menuItems = [
+    { id: 1, name: '蝦仁炒飯', price: 100 },
+    { id: 2, name: '肉絲炒飯', price: 85 },
+    { id: 3, name: '香腸炒飯', price: 100 },
+    { id: 4, name: '蛋炒飯', price: 75 },
+    { id: 5, name: '蝦仁炒麵', price: 100 },
+    { id: 6, name: '蝦仁米苔目', price: 100 },
+    { id: 7, name: '鹹豬肉蓋飯', price: 120 },
+    { id: 8, name: '鹹豬肉', price: 200 },
+    { id: 9, name: '海帶芽蛋花湯', price: 20 },
+    { id: 10, name: '荷包蛋', price: 15 },
+  ];
+
+  function getNameById(id) {
+    const item = menuItems.find(i => i.id === parseInt(id));
+    return item ? item.name : '未知餐點';
+  }
+
+  function getPriceById(id) {
+    const item = menuItems.find(i => i.id === parseInt(id));
+    return item ? item.price : 0;
+  }
+
+  function goBackToMenu() {
+    window.location.href = 'index.html';
+  }
+
+  function showOrder() {
+    const orderDataStr = localStorage.getItem('orderData');
+    const display = document.getElementById('order-display');
+
+    if (!orderDataStr) {
+      display.textContent = '訂單資料錯誤或不存在';
+      return;
+    }
+
+    try {
+      const orderData = JSON.parse(orderDataStr);
+      const { cart, notes, paymentMethod, orderNumber, pickupTime } = orderData;
+      if (!cart || Object.keys(cart).length === 0) {
+        display.textContent = '訂單資料錯誤或不存在';
+        return;
+      }
+
+      let text = '';
+      text += `訂單編號：${orderNumber}\n`;
+      text += `取餐時間：${pickupTime}\n`;
+      text += `付款方式：${paymentMethod === 'cash' ? '現金' : paymentMethod}\n`;
+      text += `備註：${notes || '無'}\n\n`;
+      text += `訂單明細：\n`;
+
+      let total = 0;
+
+      Object.keys(cart).forEach(key => {
+        // key 可能是 "1-normal" 或 "1-large" 或單純 "8"（沒有加大）
+        let [idStr, size] = key.split('-');
+        let id = parseInt(idStr);
+        const qty = cart[key];
+        let name = getNameById(id);
+        let price = getPriceById(id);
+
+        if (size === 'large') {
+          name += '（加大）';
+          price += 20;
+        }
+
+        const subtotal = price * qty;
+        total += subtotal;
+        text += `  - ${name} x ${qty}（單價 $${price}，小計 $${subtotal}）\n`;
+      });
+
+      text += `\n總金額：$${total}`;
+      display.textContent = text;
+
+      // 清空購物車（你這邊存的是 orderData.cart，應該是清 cart）
+      localStorage.removeItem('cart');
+
+      // 顯示成功 Modal
+      const modal = new bootstrap.Modal(document.getElementById('successModal'));
+      modal.show();
+
+    } catch (e) {
+      display.textContent = '訂單資料錯誤或不存在';
+      console.error(e);
+    }
+  }
+
+
+  showOrder();
+</script>
+
+</body>
+</html>
