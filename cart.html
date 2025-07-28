@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>購物車 - 邱媽媽美食</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f7f7f7;
+    margin: 0;
+    padding: 1rem;
+    display: flex;
+    justify-content: center;
+  }
+
+  #container {
+    width: 100%;
+    max-width: 600px; /* 或你想要的最大寬度 */
+    background: white;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  }
+  header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  #back-btn {
+    font-size: 24px;
+    cursor: pointer;
+    user-select: none;
+    margin-right: 1rem;
+  }
+  #back-btn:hover {
+    color: #007bff;
+  }
+  h2 {
+    flex-grow: 1;
+    text-align: center;
+    margin: 0;
+  }
+  #clear-cart {
+    font-size: 20px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.3rem 0.8rem;
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.3s ease;
+  }
+  #clear-cart:hover {
+    background: #b02a37;
+  }
+  #clear-cart:active {
+    transform: scale(0.9);
+  }
+  #clear-cart.bump {
+    animation: bump 0.3s ease-out;
+  }
+  @keyframes bump {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  }
+  th, td {
+    padding: 0.75rem;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+  }
+  th {
+    background: #f0f0f0;
+  }
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+  .qty-controls button {
+    width: 30px; height: 30px; font-size: 18px;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.3s ease;
+  }
+  .qty-controls button:hover {
+    background-color: #eee;
+  }
+  .qty-controls button:active {
+    background-color: #ccc;
+  }
+  .remove-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.3s ease;
+  }
+  .remove-btn:hover {
+    background: #b02a37;
+  }
+  .remove-btn:active {
+    background: #7a1e23;
+  }
+  #notes, #payment-method {
+    width: 100%;
+    margin-top: 1rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+    box-sizing: border-box;
+  }
+  #payment-method {
+    margin-top: 0.5rem;
+  }
+  #submit-order {
+    margin-top: 1.5rem;
+    width: 100%;
+    background: #28a745;
+    color: white;
+    font-size: 18px;
+    padding: 1rem;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.3s ease, transform 0.15s ease;
+  }
+  #submit-order:hover {
+    background: #1e7e34;
+  }
+  #submit-order:active {
+    transform: scale(0.95);
+  }
+  /* 空購物車訊息 */
+  #empty-msg {
+    text-align: center;
+    margin-top: 3rem;
+    font-size: 1.25rem;
+    color: #777;
+  }
+</style>
+</head>
+<body>
+<div id="container">
+<header>
+  <div id="back-btn" title="返回上一頁">←</div>
+  <h2>購物車</h2>
+  <button id="clear-cart" title="清空購物車">清空購物車 🗑️</button>
+</header>
+
+<div id="cart-container"></div>
+
+<label for="notes">備註（選填）：</label>
+<textarea id="notes" rows="3" placeholder="請輸入訂單備註..."></textarea>
+
+<label for="payment-method">付款方式：</label>
+<select id="payment-method">
+  <option value="cash" selected>現金</option>
+  <!-- 以後可新增更多付款方式 -->
+</select>
+
+<button id="submit-order">送出訂單</button>
+
+<div id="empty-msg" style="display:none;">購物車是空的，請先加入餐點。</div>
+
+<!-- Bootstrap Modal (空購物車錯誤提示) -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<div class="modal fade" id="emptyCartModal" tabindex="-1" aria-labelledby="emptyCartModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content text-center">
+      <div class="modal-header">
+        <h5 class="modal-title w-100" id="emptyCartModalLabel">錯誤</h5>
+      </div>
+      <div class="modal-body">
+        購物車是空的，請先加入餐點！
+      </div>
+      <div class="modal-footer justify-content-center">
+        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">確定</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  const cartContainer = document.getElementById('cart-container');
+  const clearCartBtn = document.getElementById('clear-cart');
+  const backBtn = document.getElementById('back-btn');
+  const submitOrderBtn = document.getElementById('submit-order');
+  const notesInput = document.getElementById('notes');
+  const paymentSelect = document.getElementById('payment-method');
+  const emptyMsg = document.getElementById('empty-msg');
+  const emptyCartModal = new bootstrap.Modal(document.getElementById('emptyCartModal'));
+
+  const menuItems = [
+    { id: 1, name: '蝦仁炒飯', price: 100 },
+    { id: 2, name: '肉絲炒飯', price: 85 },
+    { id: 3, name: '香腸炒飯', price: 100 },
+    { id: 4, name: '蛋炒飯', price: 75 },
+    { id: 5, name: '蝦仁炒麵', price: 100 },
+    { id: 6, name: '蝦仁米苔目', price: 100 },
+    { id: 7, name: '鹹豬肉蓋飯', price: 120 },
+    { id: 8, name: '鹹豬肉', price: 200 },
+    { id: 9, name: '海帶芽蛋花湯', price: 20 },
+    { id: 10, name: '荷包蛋', price: 15 },
+  ];
+
+  function loadCart() {
+    return JSON.parse(localStorage.getItem('cart') || '{}');
+  }
+
+  function saveCart(cart) {
+    localStorage.setItem('cart', JSON.stringify(cart));
+  }
+
+  function getNameById(id) {
+    const item = menuItems.find(i => i.id === parseInt(id));
+    return item ? item.name : '未知餐點';
+  }
+
+  function getPriceById(id) {
+    const item = menuItems.find(i => i.id === parseInt(id));
+    return item ? item.price : 0;
+  }
+
+  function renderCart() {
+    const cart = loadCart();
+    const keys = Object.keys(cart);
+    if (keys.length === 0) {
+      cartContainer.innerHTML = '';
+      emptyMsg.style.display = 'block';
+      return;
+    }
+    emptyMsg.style.display = 'none';
+
+    let html = `<table>
+      <thead>
+        <tr>
+          <th>餐點名稱</th>
+          <th>單價</th>
+          <th>數量</th>
+          <th>小計</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+    let total = 0;
+
+    keys.forEach(key => {
+      const qty = cart[key];
+      const [idStr, size] = key.split('-');
+      const id = parseInt(idStr);
+      const isLarge = size === 'large';
+
+      const item = menuItems.find(i => i.id === id);
+      if (!item) return;
+
+      const name = item.name + (isLarge ? '（加大）' : '');
+      const price = item.price + (isLarge ? 20 : 0);
+      const subtotal = price * qty;
+      total += subtotal;
+
+      html += `
+        <tr data-key="${key}">
+          <td>${name}</td>
+          <td>$${price}</td>
+          <td class="qty-controls">
+            <button onclick="changeQty('${key}', -1)">－</button>
+            <span id="qty-${key}">${qty}</span>
+            <button onclick="changeQty('${key}', 1)">＋</button>
+          </td>
+          <td>$${subtotal}</td>
+          <td><button class="remove-btn" onclick="removeItem('${key}')">刪除</button></td>
+        </tr>`;
+    });
+
+    html += `</tbody></table>
+      <h3 style="text-align:right;margin-top:1rem;">總金額：$${total}</h3>`;
+
+    cartContainer.innerHTML = html;
+  }
+
+  function updateTotal() {
+    const cart = loadCart();
+    let total = 0;
+    for (const key in cart) {
+      const qty = cart[key];
+      const [idStr, size] = key.split('-');
+      const id = parseInt(idStr);
+      const isLarge = size === 'large';
+      const price = getPriceById(id) + (isLarge ? 20 : 0);
+      total += price * qty;
+    }
+    const totalH3 = document.querySelector('h3');
+    if (totalH3) {
+      totalH3.textContent = `總金額：$${total}`;
+    }
+  }
+
+  function changeQty(key, delta) {
+    const cart = loadCart();
+    const current = cart[key] || 1;
+    const newQty = Math.max(1, current + delta);
+    cart[key] = newQty;
+    saveCart(cart);
+
+    document.getElementById(`qty-${key}`).innerText = newQty;
+
+    // 更新小計
+    const [idStr, size] = key.split('-');
+    const id = parseInt(idStr);
+    const isLarge = size === 'large';
+    const price = getPriceById(id) + (isLarge ? 20 : 0);
+    const row = document.querySelector(`tr[data-key="${key}"]`);
+    if (row) {
+      const subtotalCell = row.querySelector("td:nth-child(4)");
+      subtotalCell.textContent = `$${price * newQty}`;
+    }
+
+    updateTotal();
+  }
+
+  function removeItem(key) {
+    const cart = loadCart();
+    delete cart[key];
+    saveCart(cart);
+    renderCart();
+  }
+
+  function clearCart() {
+    localStorage.removeItem('cart');
+    renderCart();
+  }
+
+  function animateButton(btn) {
+    btn.classList.add('bump');
+    setTimeout(() => btn.classList.remove('bump'), 300);
+  }
+
+  clearCartBtn.addEventListener('click', () => {
+    animateButton(clearCartBtn);
+    clearCart();
+  });
+
+  backBtn.addEventListener('click', () => {
+    window.location.href = 'index.html';
+  });
+
+  submitOrderBtn.addEventListener('click', () => {
+    const cart = loadCart();
+    if (Object.keys(cart).length === 0) {
+      emptyCartModal.show();
+      return;
+    }
+    const notes = notesInput.value.trim();
+    const paymentMethod = paymentSelect.value;
+
+    const orderData = {
+      cart,
+      notes,
+      paymentMethod,
+      orderNumber: generateOrderNumber(),
+      pickupTime: getPickupTime()
+    };
+
+    localStorage.setItem('orderData', JSON.stringify(orderData));
+    window.location.href = 'order-detail.html';
+  });
+
+  function generateOrderNumber() {
+    return Math.floor(100000 + Math.random() * 900000);
+  }
+
+  function getPickupTime() {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 20);
+    return now.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  renderCart();
+</script>
+</div>
+</body>
+</html>
