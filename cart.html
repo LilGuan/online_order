@@ -152,6 +152,12 @@
     font-size: 1.25rem;
     color: #777;
   }
+  .qty-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 </style>
 </head>
 <body>
@@ -201,6 +207,21 @@
     </div>
   </div>
 </div>
+<div class="modal fade" id="formErrorModal" tabindex="-1" aria-labelledby="formErrorModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content text-center">
+      <div class="modal-header">
+        <h5 class="modal-title w-100" id="formErrorModalLabel">輸入錯誤</h5>
+      </div>
+      <div class="modal-body" id="formErrorMsg">
+        <!-- 錯誤訊息會透過 JS 動態填入 -->
+      </div>
+      <div class="modal-footer justify-content-center">
+        <button type="button" class="btn btn-warning" data-bs-dismiss="modal">確定</button>
+      </div>
+    </div>
+  </div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
@@ -212,6 +233,9 @@
   const paymentSelect = document.getElementById('payment-method');
   const emptyMsg = document.getElementById('empty-msg');
   const emptyCartModal = new bootstrap.Modal(document.getElementById('emptyCartModal'));
+  const formErrorModal = new bootstrap.Modal(document.getElementById('formErrorModal'));
+  const formErrorMsg = document.getElementById('formErrorMsg');
+
 
   const menuItems = [
     { id: 1, name: '蝦仁炒飯', price: 100 },
@@ -287,10 +311,14 @@
           <td>${name}</td>
           <td>$${price}</td>
           <td class="qty-controls">
-            <button onclick="changeQty('${key}', -1)">－</button>
-            <span id="qty-${key}">${qty}</span>
-            <button onclick="changeQty('${key}', 1)">＋</button>
+            <div class="qty-column">
+              <button onclick="changeQty('${key}', 1)">+</button>
+              <span id="qty-${key}">${qty}</span>
+              <button onclick="changeQty('${key}', -1)">－</button>
+            </div>
           </td>
+
+
           <td>$${subtotal}</td>
           <td><button class="remove-btn" onclick="removeItem('${key}')">刪除</button></td>
         </tr>`;
@@ -375,11 +403,14 @@
     const taiwanPhoneRegex = /^09\d{8}$|^0\d{1,2}-?\d{6,8}$/;
 
     if (!name) {
-      alert('請輸入姓名');
+      formErrorMsg.textContent = '請輸入姓名';
+      formErrorModal.show();
       return;
     }
+
     if (!phone || !taiwanPhoneRegex.test(phone)) {
-      alert('請輸入正確的電話號碼（手機或市話）');
+      formErrorMsg.textContent = '請輸入正確的電話號碼（手機或市話）';
+      formErrorModal.show();
       return;
     }
 
