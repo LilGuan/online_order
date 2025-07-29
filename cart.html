@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>購物車 - 邱媽媽美食</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
   body {
     font-family: Arial, sans-serif;
@@ -225,6 +226,26 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
+
+
+  const LIFF_ID = "2007831775-ojeB1qbw"; // 例如 "2007831775-ojeB1qbw"
+
+    liff.init({ liffId: LIFF_ID }).then(() => {
+      if (!liff.isLoggedIn()) {
+        liff.login();
+      } else {
+        liff.getProfile().then(profile => {
+          console.log("使用者名稱：", profile.displayName);
+          console.log("使用者ID：", profile.userId);
+          console.log("頭像：", profile.pictureUrl);
+          // 你也可以把它寫入 input 或儲存
+          // document.getElementById('name').value = profile.displayName;
+        });
+      }
+    }).catch(err => {
+      console.error("LIFF 初始化失敗：", err);
+    });
+
   const cartContainer = document.getElementById('cart-container');
   const clearCartBtn = document.getElementById('clear-cart');
   const backBtn = document.getElementById('back-btn');
@@ -432,6 +453,18 @@
     };
 
     localStorage.setItem('orderData', JSON.stringify(orderData));
+    // 傳 LINE 訊息通知使用者
+    liff.sendMessages([
+      {
+        type: 'text',
+        text: `訂單已送出 ✅\n訂單編號：${orderData.orderNumber}\n取餐時間：約 ${orderData.pickupTime}\n感謝您的訂購！`
+      }
+    ]).then(() => {
+      console.log('訊息傳送成功');
+    }).catch(err => {
+      console.error('訊息傳送失敗:', err);
+    });
+
     window.location.href = 'order-detail.html';
   });
 
