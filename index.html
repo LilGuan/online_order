@@ -139,7 +139,18 @@
   🛒
   <div id="cart-count" style="display:none;">0</div>
 </div>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+  async function main() {
+    await liff.init({ liffId: '2007831775-ojeB1qbw' });
+    if (!liff.isLoggedIn()) liff.login();
 
+    const profile = await liff.getProfile();
+    console.log('使用者ID:', profile.userId);
+    // 你可以用 profile.userId 跟後端互動
+  }
+  main();
+</script>
 <script>
   const menuItems = [
   { id: 1, name: '蝦仁炒飯', price: 100, image: 'images/shrimp_rice.png' },
