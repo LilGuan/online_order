@@ -442,46 +442,54 @@
     const notes = notesInput.value.trim();
     const paymentMethod = paymentSelect.value;
 
+    const orderNumber = generateOrderNumber();
+    const pickupTime = getPickupTime();
+
+    // 組訂單明細文字
+    let orderDetailsText = `訂單已送出 ✅\n訂單編號：${orderNumber}\n姓名：${name}\n電話：${phone}\n取餐時間：約 ${pickupTime}\n付款方式：${paymentMethod}\n\n餐點明細：\n`;
+    
+    let totalPrice = 0;
+    Object.entries(cart).forEach(([key, qty]) => {
+      const [idStr, size] = key.split('-');
+      const id = parseInt(idStr);
+      const isLarge = size === 'large';
+      const item = menuItems.find(i => i.id === id);
+      if (!item) return;
+      const name = item.name + (isLarge ? '（加大）' : '');
+      const price = item.price + (isLarge ? 20 : 0);
+      const subtotal = price * qty;
+      totalPrice += subtotal;
+      orderDetailsText += `${name} x${qty}  單價：$${price}  小計：$${subtotal}\n`;
+    });
+    orderDetailsText += `\n總金額：$${totalPrice}\n備註：${notes || '無'}`;
+
     const orderData = {
       name,
       phone,
       cart,
       notes,
       paymentMethod,
-      orderNumber: generateOrderNumber(),
-      pickupTime: getPickupTime()
+      orderNumber,
+      pickupTime
     };
 
     localStorage.setItem('orderData', JSON.stringify(orderData));
 
-    // 👉 傳訂單資料到後端，讓後端用 Push API 通知官方帳號
-    fetch('https://your-server.com/send-order', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(orderData)
-    })
-    .then(res => res.json())
-    .then(result => {
-      console.log('後端回應：', result);
-
-      // 再傳訊息給使用者（自己）
-      return liff.sendMessages([
-        {
-          type: 'text',
-          text: `訂單已送出 ✅\n訂單編號：${orderData.orderNumber}\n取餐時間：約 ${orderData.pickupTime}\n感謝您的訂購！`
-        }
-      ]);
-    })
-    .then(() => {
+    // 同時送出明細訊息
+    liff.sendMessages([
+      {
+        type: 'text',
+        text: orderDetailsText
+      }
+    ]).then(() => {
       console.log('訊息傳送成功');
-      window.location.href = 'order-detail.html';
-    })
-    .catch(err => {
-      console.error('錯誤:', err);
+      window.location.href = 'order-detail.html';  // 傳完再跳轉
+    }).catch(err => {
+      console.error('訊息傳送失敗:', err);
+      alert('LINE 訊息傳送失敗，請確認是否允許 LIFF 傳訊息權限。');
     });
-
-    window.location.href = 'order-detail.html';
   });
+
 
   function generateOrderNumber() {
     return Math.floor(100000 + Math.random() * 900000);
