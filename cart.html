@@ -453,16 +453,31 @@
     };
 
     localStorage.setItem('orderData', JSON.stringify(orderData));
-    // 傳 LINE 訊息通知使用者
-    liff.sendMessages([
-      {
-        type: 'text',
-        text: `訂單已送出 ✅\n訂單編號：${orderData.orderNumber}\n取餐時間：約 ${orderData.pickupTime}\n感謝您的訂購！`
-      }
-    ]).then(() => {
+
+    // 👉 傳訂單資料到後端，讓後端用 Push API 通知官方帳號
+    fetch('https://your-server.com/send-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderData)
+    })
+    .then(res => res.json())
+    .then(result => {
+      console.log('後端回應：', result);
+
+      // 再傳訊息給使用者（自己）
+      return liff.sendMessages([
+        {
+          type: 'text',
+          text: `訂單已送出 ✅\n訂單編號：${orderData.orderNumber}\n取餐時間：約 ${orderData.pickupTime}\n感謝您的訂購！`
+        }
+      ]);
+    })
+    .then(() => {
       console.log('訊息傳送成功');
-    }).catch(err => {
-      console.error('訊息傳送失敗:', err);
+      window.location.href = 'order-detail.html';
+    })
+    .catch(err => {
+      console.error('錯誤:', err);
     });
 
     window.location.href = 'order-detail.html';
