@@ -227,24 +227,7 @@
 
 <script>
 
-
-  const LIFF_ID = "2007831775-ojeB1qbw"; // 例如 "2007831775-ojeB1qbw"
-
-    liff.init({ liffId: LIFF_ID }).then(() => {
-      if (!liff.isLoggedIn()) {
-        liff.login();
-      } else {
-        liff.getProfile().then(profile => {
-          console.log("使用者名稱：", profile.displayName);
-          console.log("使用者ID：", profile.userId);
-          console.log("頭像：", profile.pictureUrl);
-          // 你也可以把它寫入 input 或儲存
-          // document.getElementById('name').value = profile.displayName;
-        });
-      }
-    }).catch(err => {
-      console.error("LIFF 初始化失敗：", err);
-    });
+  const LIFF_ID = "2007831775-ojeB1qbw";
 
   const cartContainer = document.getElementById('cart-container');
   const clearCartBtn = document.getElementById('clear-cart');
@@ -256,7 +239,6 @@
   const emptyCartModal = new bootstrap.Modal(document.getElementById('emptyCartModal'));
   const formErrorModal = new bootstrap.Modal(document.getElementById('formErrorModal'));
   const formErrorMsg = document.getElementById('formErrorMsg');
-
 
   const menuItems = [
     { id: 1, name: '蝦仁炒飯', price: 100 },
@@ -339,7 +321,6 @@
             </div>
           </td>
 
-
           <td>$${subtotal}</td>
           <td><button class="remove-btn" onclick="removeItem('${key}')">刪除</button></td>
         </tr>`;
@@ -417,52 +398,142 @@
     window.location.href = 'index.html';
   });
 
+  // Flex Message 產生函式
+  function createOrderFlexMessage(orderData, menuItems) {
+    const cart = orderData.cart;
+    const contents = [];
+
+    for (const key in cart) {
+      const qty = cart[key];
+      const [idStr, size] = key.split('-');
+      const id = parseInt(idStr);
+      const isLarge = size === 'large';
+
+      const item = menuItems.find(i => i.id === id);
+      if (!item) continue;
+
+      const name = item.name + (isLarge ? '（加大）' : '');
+      const price = item.price + (isLarge ? 20 : 0);
+      const subtotal = price * qty;
+
+      contents.push({
+        type: "box",
+        layout: "horizontal",
+        contents: [
+          { type: "text", text: name, size: "sm", color: "#555555", flex: 4, wrap: true },
+          { type: "text", text: `x${qty}`, size: "sm", color: "#111111", flex: 1, align: "center" },
+          { type: "text", text: `$${subtotal}`, size: "sm", color: "#111111", flex: 2, align: "end" }
+        ]
+      });
+    }
+
+    let total = 0;
+    for (const key in cart) {
+      const qty = cart[key];
+      const [idStr, size] = key.split('-');
+      const id = parseInt(idStr);
+      const isLarge = size === 'large';
+      const price = menuItems.find(i => i.id === id).price + (isLarge ? 20 : 0);
+      total += price * qty;
+    }
+
+    return {
+      type: "flex",
+      altText: "您的訂單明細",
+      contents: {
+        type: "bubble",
+        header: {
+          type: "box",
+          layout: "vertical",
+          contents: [
+            { type: "text", text: "訂單明細", weight: "bold", size: "lg" },
+            { type: "text", text: `訂單編號：${orderData.orderNumber}`, size: "sm", color: "#999999", margin: "md" },
+            { type: "text", text: `取餐時間：約 ${orderData.pickupTime}`, size: "sm", color: "#999999", margin: "md" }
+          ]
+        },
+        body: {
+          type: "box",
+          layout: "vertical",
+          contents: [
+            ...contents,
+            { type: "separator", margin: "md" },
+            {
+              type: "box",
+              layout: "horizontal",
+              contents: [
+                { type: "text", text: "總金額", weight: "bold", flex: 4 },
+                { type: "text", text: `$${total}`, weight: "bold", flex: 3, align: "end" }
+              ],
+              margin: "md"
+            },
+            {
+              type: "text",
+              text: `付款方式：${orderData.paymentMethod === 'cash' ? '現金' : orderData.paymentMethod}`,
+              size: "sm",
+              color: "#555555",
+              margin: "md"
+            },
+            orderData.notes ? {
+              type: "text",
+              text: `備註：${orderData.notes}`,
+              size: "sm",
+              color: "#555555",
+              margin: "md",
+              wrap: true
+            } : null
+          ].filter(Boolean)
+        }
+      }
+    };
+  }
+
   submitOrderBtn.addEventListener('click', () => {
     const cart = loadCart();
-    const name = document.getElementById('name').value.trim();
-    const phone = document.getElementById('phone').value.trim();
+    const nameInput = document.getElementById('name');
+    const phoneInput = document.getElementById('phone');
+    let name = nameInput.value.trim();
+    const phone = phoneInput.value.trim();
     const taiwanPhoneRegex = /^09\d{8}$|^0\d{1,2}-?\d{6,8}$/;
-
-    if (!name) {
-      formErrorMsg.textContent = '請輸入姓名';
-      formErrorModal.show();
-      return;
-    }
-
-    if (!phone || !taiwanPhoneRegex.test(phone)) {
-      formErrorMsg.textContent = '請輸入正確的電話號碼（手機或市話）';
-      formErrorModal.show();
-      return;
-    }
 
     if (Object.keys(cart).length === 0) {
       emptyCartModal.show();
       return;
     }
+
+    if (!name) {
+      formErrorMsg.innerText = '請輸入姓名';
+      formErrorModal.show();
+      return;
+    }
+
+    if (!phone) {
+      formErrorMsg.innerText = '請輸入電話';
+      formErrorModal.show();
+      return;
+    }
+
+    if (!taiwanPhoneRegex.test(phone)) {
+      formErrorMsg.innerText = '電話格式錯誤，請輸入正確的台灣電話號碼（例：0912345678 或 02-12345678）';
+      formErrorModal.show();
+      return;
+    }
+
+    // 若姓名長度超過5字，加上「先生」或「小姐」的判斷
+    if (name.length <= 5) {
+      name = name + ' 先生/小姐';
+    }
+
+    // 自動產生訂單編號 (格式: T + 時間戳)
+    const orderNumber = 'T' + Date.now();
+
+    // 取餐時間示意（可改成使用者輸入）
+    const pickupTime = '約 30 分鐘後';
+
+    // 備註與付款方式
     const notes = notesInput.value.trim();
     const paymentMethod = paymentSelect.value;
 
-    const orderNumber = generateOrderNumber();
-    const pickupTime = getPickupTime();
-
-    // 組訂單明細文字
-    let orderDetailsText = `訂單已送出 ✅\n訂單編號：${orderNumber}\n姓名：${name}\n電話：${phone}\n取餐時間：約 ${pickupTime}\n付款方式：${paymentMethod}\n\n餐點明細：\n`;
-    
-    let totalPrice = 0;
-    Object.entries(cart).forEach(([key, qty]) => {
-      const [idStr, size] = key.split('-');
-      const id = parseInt(idStr);
-      const isLarge = size === 'large';
-      const item = menuItems.find(i => i.id === id);
-      if (!item) return;
-      const name = item.name + (isLarge ? '（加大）' : '');
-      const price = item.price + (isLarge ? 20 : 0);
-      const subtotal = price * qty;
-      totalPrice += subtotal;
-      orderDetailsText += `${name} x${qty}  單價：$${price}  小計：$${subtotal}\n`;
-    });
-    orderDetailsText += `\n總金額：$${totalPrice}\n備註：${notes || '無'}`;
-
+    // 組合訂單資料
     const orderData = {
       name,
       phone,
@@ -475,33 +546,30 @@
 
     localStorage.setItem('orderData', JSON.stringify(orderData));
 
-    // 同時送出明細訊息
-    liff.sendMessages([
-      {
-        type: 'text',
-        text: orderDetailsText
+    const flexMessage = createOrderFlexMessage(orderData, menuItems);
+
+    liff.init({ liffId: LIFF_ID }).then(() => {
+      if (!liff.isLoggedIn()) {
+        liff.login();
+        return;
       }
-    ]).then(() => {
-      console.log('訊息傳送成功');
-      window.location.href = 'order-detail.html';  // 傳完再跳轉
+      return liff.sendMessages([flexMessage]);
+    }).then(() => {
+      alert('訂單已送出，感謝您的訂購！');
+      window.location.href = 'order-detail.html';
     }).catch(err => {
-      console.error('訊息傳送失敗:', err);
       alert('LINE 訊息傳送失敗，請確認是否允許 LIFF 傳訊息權限。');
+      console.error(err);
     });
   });
 
-
-  function generateOrderNumber() {
-    return Math.floor(100000 + Math.random() * 900000);
-  }
-
-  function getPickupTime() {
-    const now = new Date();
-    now.setMinutes(now.getMinutes() + 20);
-    return now.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
-  }
-
+  // 頁面載入時渲染購物車
   renderCart();
+
+  // 讓 changeQty, removeItem 可用於 onclick 屬性
+  window.changeQty = changeQty;
+  window.removeItem = removeItem;
+
 </script>
 </div>
 </body>

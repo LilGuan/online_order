@@ -223,16 +223,16 @@
     updateCartCount();
     animateCartIcon();
 
-    try {
-      await liff.sendMessages([
-        {
-          type: 'text',
-          text: `${userProfile.displayName} 您好，已將「${menuItems.find(m => m.id === id).name}${isLarge ? '（加大）' : ''} x${qty}」加入購物車 ✅`
-        }
-      ]);
-    } catch (err) {
-      console.error('發送訊息失敗', err);
-    }
+    // try {
+    //   await liff.sendMessages([
+    //     {
+    //       type: 'text',
+    //       text: `${userProfile.displayName} 您好，已將「${menuItems.find(m => m.id === id).name}${isLarge ? '（加大）' : ''} x${qty}」加入購物車 ✅`
+    //     }
+    //   ]);
+    // } catch (err) {
+    //   console.error('發送訊息失敗', err);
+    // }
   }
 
   document.getElementById('cart-icon').addEventListener('click', () => {
