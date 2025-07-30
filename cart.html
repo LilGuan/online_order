@@ -448,9 +448,7 @@
           contents: [
             { type: "text", text: "訂單明細", weight: "bold", size: "lg" },
             { type: "text", text: `訂單編號：${orderData.orderNumber}`, size: "sm", color: "#999999", margin: "md" },
-            { type: "text", text: `取餐時間：${orderData.pickupTime}`, size: "sm", color: "#999999", margin: "md" },
-            { type: "text", text: `姓名：${orderData.name}`, size: "sm", color: "#999999", margin: "md" },
-            { type: "text", text: `電話：${orderData.phone}`, size: "sm", color: "#999999", margin: "md" }
+            { type: "text", text: `取餐時間：約 ${orderData.pickupTime}`, size: "sm", color: "#999999", margin: "md" }
           ]
         },
         body: {
@@ -525,17 +523,8 @@
       name = name + ' 先生/小姐';
     }
 
-    function generateOrderNumber() {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let result = '';
-      for (let i = 0; i < 6; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return result;
-    }
     // 自動產生訂單編號 (格式: T + 時間戳)
-    const orderNumber = generateOrderNumber();
-
+    const orderNumber = 'T' + Date.now();
 
     // 取餐時間示意（可改成使用者輸入）
     const pickupTime = (() => {
