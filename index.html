@@ -118,6 +118,15 @@
 </div>
 
 <script>
+  const LIFF_ID = "2007831775-ojeB1qbw";
+  liff.init({ liffId: LIFF_ID }).then(() => {
+    if (!liff.isInClient()) {
+      liff.login({
+        redirectUri: location.href
+      });
+    }
+  });
+
   const menuItems = [
     { id: 1, name: '蝦仁炒飯', price: 100, image: 'images/shrimp_rice.png' },
     { id: 2, name: '肉絲炒飯', price: 85, image: 'images/beef_rice.png' },
@@ -157,13 +166,17 @@
         ${hasLargeOption ? `
           <label>
             <input type="checkbox" id="large-${item.id}" />
-            加大（+$20）
+            加大（+$20)
           </label>
         ` : ''}
         <div class="controls">
-          <button onclick="changeMenuQty(${item.id}, -1)">－</button>
+           <button onclick="changeMenuQty(${item.id}, -1)">
+            <img src="images/minus.png" alt="減" style="width:20px;height:20px;vertical-align:middle;" />
+          </button>
           <span id="menu-qty-${item.id}">1</span>
-          <button onclick="changeMenuQty(${item.id}, 1)">＋</button>
+          <button onclick="changeMenuQty(${item.id}, 1)">
+            <img src="images/plus.png" alt="加" style="width:20px;height:20px;vertical-align:middle;" />
+          </button>
         </div>
         <button class="add-to-cart" onclick="addToCart(${item.id})">加入購物車</button>
       `;
