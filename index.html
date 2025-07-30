@@ -135,13 +135,13 @@
 
   let userProfile = null;
 
-  // async function main() {
-  //   await liff.init({ liffId: '2007831775-ojeB1qbw' });
-  //   if (!liff.isLoggedIn()) liff.login();
+  async function main() {
+    await liff.init({ liffId: '2007831775-ojeB1qbw' });
+    if (!liff.isLoggedIn()) liff.login();
 
-  //   userProfile = await liff.getProfile();
-  //   console.log('使用者:', userProfile.displayName, userProfile.userId);
-  // }
+    userProfile = await liff.getProfile();
+    console.log('使用者:', userProfile.displayName, userProfile.userId);
+  }
 
   function renderMenu() {
     menuDiv.innerHTML = '';
