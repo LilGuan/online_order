@@ -118,14 +118,6 @@
 </div>
 
 <script>
-  const LIFF_ID = "2007831775-ojeB1qbw";
-  liff.init({ liffId: LIFF_ID }).then(() => {
-    if (!liff.isInClient()) {
-      liff.login({
-        redirectUri: location.href
-      });
-    }
-  });
 
   const menuItems = [
     { id: 1, name: '蝦仁炒飯', price: 100, image: 'images/shrimp_rice.png' },
