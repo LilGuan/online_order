@@ -227,6 +227,17 @@
 
 <script>
 
+  liff.init({ liffId: LIFF_ID }).then(() => {
+    if (!liff.isLoggedIn()) {
+      liff.login();
+    } else {
+      liff.getProfile().then(profile => {
+        document.getElementById('name').value = profile.displayName || '';
+      });
+    }
+  }).catch(err => {
+    console.error('LIFF 初始化失敗：', err);
+  });
   const LIFF_ID = "2007831775-ojeB1qbw";
 
   const cartContainer = document.getElementById('cart-container');
@@ -397,7 +408,7 @@
   backBtn.addEventListener('click', () => {
     window.location.href = 'index.html';
   });
-
+  
   // Flex Message 產生函式
   function createOrderFlexMessage(orderData, menuItems) {
     const cart = orderData.cart;
@@ -448,7 +459,7 @@
           contents: [
             { type: "text", text: "訂單明細", weight: "bold", size: "lg" },
             { type: "text", text: `訂單編號：${orderData.orderNumber}`, size: "sm", color: "#999999", margin: "md" },
-            { type: "text", text: `取餐時間：約 ${orderData.pickupTime}`, size: "sm", color: "#999999", margin: "md" }
+            { type: "text", text: `取餐時間： ${orderData.pickupTime}`, size: "sm", color: "#999999", margin: "md" }
           ]
         },
         body: {
@@ -527,7 +538,13 @@
     const orderNumber = 'T' + Date.now();
 
     // 取餐時間示意（可改成使用者輸入）
-    const pickupTime = '約 30 分鐘後';
+    const pickupTime = (() => {
+      const now = new Date();
+      now.setMinutes(now.getMinutes() + 15);
+      const hh = now.getHours().toString().padStart(2, '0');
+      const mm = now.getMinutes().toString().padStart(2, '0');
+      return `約 ${hh}:${mm} 取餐`;
+    })();
 
     // 備註與付款方式
     const notes = notesInput.value.trim();
@@ -555,7 +572,7 @@
       }
       return liff.sendMessages([flexMessage]);
     }).then(() => {
-      alert('訂單已送出，感謝您的訂購！');
+      // alert('訂單已送出，感謝您的訂購！');
       window.location.href = 'order-detail.html';
     }).catch(err => {
       alert('LINE 訊息傳送失敗，請確認是否允許 LIFF 傳訊息權限。');
