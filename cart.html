@@ -527,7 +527,13 @@
     const orderNumber = 'T' + Date.now();
 
     // 取餐時間示意（可改成使用者輸入）
-    const pickupTime = '約 30 分鐘後';
+    const pickupTime = (() => {
+      const now = new Date();
+      now.setMinutes(now.getMinutes() + 15);
+      const hh = now.getHours().toString().padStart(2, '0');
+      const mm = now.getMinutes().toString().padStart(2, '0');
+      return `約 ${hh}:${mm} 取餐`;
+    })();
 
     // 備註與付款方式
     const notes = notesInput.value.trim();
