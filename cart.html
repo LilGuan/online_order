@@ -575,8 +575,15 @@
       // alert('訂單已送出，感謝您的訂購！');
       window.location.href = 'order-detail.html';
     }).catch(err => {
-      alert('LINE 訊息傳送失敗，請確認是否允許 LIFF 傳訊息權限。');
+      alert('LINE 訊息傳送失敗，請確認是否由手機Line App 進入下單。');
       console.error(err);
+
+      if (confirm('是否要開啟 LINE App 進入官方帳號下單？')) {
+        // 換成你的官方帳號網址或 LIFF 網頁網址
+        window.location.href = 'https://line.me/R/ti/p/@799wtujm';
+        // 或者直接跳 LIFF 頁面網址也可以
+        // window.location.href = 'https://liff.line.me/2007831775-ojeB1qbw';
+      }
     });
   });
 
