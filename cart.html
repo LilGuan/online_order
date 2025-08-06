@@ -14,10 +14,9 @@
     display: flex;
     justify-content: center;
   }
-
   #container {
     width: 100%;
-    max-width: 600px; /* 或你想要的最大寬度 */
+    max-width: 600px;
     background: white;
     padding: 1rem 1.5rem;
     border-radius: 12px;
@@ -34,131 +33,54 @@
     user-select: none;
     margin-right: 1rem;
   }
-  #back-btn:hover {
-    color: #007bff;
-  }
-  h2 {
-    flex-grow: 1;
-    text-align: center;
-    margin: 0;
-  }
+  #back-btn:hover { color: #007bff; }
+  h2 { flex-grow: 1; text-align: center; margin: 0; }
   #clear-cart {
     font-size: 20px;
-    background: #dc3545;
-    color: white;
-    border: none;
-    padding: 0.3rem 0.8rem;
-    border-radius: 6px;
-    cursor: pointer;
-    user-select: none;
+    background: #dc3545; color: white; border: none;
+    padding: 0.3rem 0.8rem; border-radius: 6px; cursor: pointer; user-select: none;
     transition: transform 0.3s ease;
   }
-  #clear-cart:hover {
-    background: #b02a37;
-  }
-  #clear-cart:active {
-    transform: scale(0.9);
-  }
-  #clear-cart.bump {
-    animation: bump 0.3s ease-out;
-  }
-  @keyframes bump {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.3); }
-    100% { transform: scale(1); }
-  }
+  #clear-cart:hover { background: #b02a37; }
+  #clear-cart:active { transform: scale(0.9); }
+  #clear-cart.bump { animation: bump 0.3s ease-out; }
+  @keyframes bump { 0%{transform:scale(1);} 50%{transform:scale(1.3);} 100%{transform:scale(1);} }
 
   table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-    border-radius: 12px;
-    overflow: hidden;
+    width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden;
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
   }
-  th, td {
-    padding: 0.75rem;
-    text-align: center;
-    border-bottom: 1px solid #ddd;
-  }
-  th {
-    background: #f0f0f0;
-  }
-  tbody tr:last-child td {
-    border-bottom: none;
-  }
+  th, td { padding: 0.75rem; text-align: center; border-bottom: 1px solid #ddd; }
+  th { background: #f0f0f0; }
+  tbody tr:last-child td { border-bottom: none; }
+
   .qty-controls button {
-    width: 30px; height: 30px; font-size: 18px;
-    cursor: pointer;
-    user-select: none;
+    width: 30px; height: 30px; font-size: 18px; cursor: pointer; user-select: none;
     transition: background-color 0.3s ease;
   }
-  .qty-controls button:hover {
-    background-color: #eee;
-  }
-  .qty-controls button:active {
-    background-color: #ccc;
-  }
+  .qty-controls button:hover { background-color: #eee; }
+  .qty-controls button:active { background-color: #ccc; }
   .remove-btn {
-    background: #dc3545;
-    color: white;
-    border: none;
-    padding: 4px 8px;
-    border-radius: 6px;
-    cursor: pointer;
-    user-select: none;
+    background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 6px; cursor: pointer; user-select: none;
     transition: background-color 0.3s ease;
   }
-  .remove-btn:hover {
-    background: #b02a37;
-  }
-  .remove-btn:active {
-    background: #7a1e23;
-  }
+  .remove-btn:hover { background: #b02a37; }
+  .remove-btn:active { background: #7a1e23; }
+
   #notes, #payment-method {
-    width: 100%;
-    margin-top: 1rem;
-    padding: 0.75rem;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    font-size: 1rem;
-    box-sizing: border-box;
+    width: 100%; margin-top: 1rem; padding: 0.75rem; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; box-sizing: border-box;
   }
-  #payment-method {
-    margin-top: 0.5rem;
-  }
+  #payment-method { margin-top: 0.5rem; }
+
   #submit-order {
-    margin-top: 1.5rem;
-    width: 100%;
-    background: #28a745;
-    color: white;
-    font-size: 18px;
-    padding: 1rem;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    user-select: none;
+    margin-top: 1.5rem; width: 100%; background: #28a745; color: white; font-size: 18px; padding: 1rem; border: none; border-radius: 10px; cursor: pointer; user-select: none;
     transition: background-color 0.3s ease, transform 0.15s ease;
   }
-  #submit-order:hover {
-    background: #1e7e34;
-  }
-  #submit-order:active {
-    transform: scale(0.95);
-  }
-  /* 空購物車訊息 */
-  #empty-msg {
-    text-align: center;
-    margin-top: 3rem;
-    font-size: 1.25rem;
-    color: #777;
-  }
-  .qty-column {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
+  #submit-order:hover { background: #1e7e34; }
+  #submit-order:active { transform: scale(0.95); }
 
+  #empty-msg { text-align: center; margin-top: 3rem; font-size: 1.25rem; color: #777; }
+  .qty-column { display: flex; flex-direction: column; align-items: center; }
 </style>
 </head>
 <body>
@@ -177,68 +99,63 @@
 <label for="phone">電話（必填）：</label>
 <input type="tel" id="phone" required placeholder="請輸入聯絡電話" style="width:100%;padding:0.75rem;margin-bottom:1rem;border-radius:8px;border:1px solid #ccc;font-size:1rem;box-sizing:border-box;" />
 
-
 <label for="notes">備註（選填）：</label>
 <textarea id="notes" rows="3" placeholder="請輸入訂單備註..."></textarea>
 
 <label for="payment-method">付款方式：</label>
 <select id="payment-method">
   <option value="cash" selected>現金</option>
-  <!-- 以後可新增更多付款方式 -->
 </select>
 
 <button id="submit-order">送出訂單</button>
 
 <div id="empty-msg" style="display:none;">購物車是空的，請先加入餐點。</div>
 
-<!-- Bootstrap Modal (空購物車錯誤提示) -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
 <div class="modal fade" id="emptyCartModal" tabindex="-1" aria-labelledby="emptyCartModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content text-center">
-      <div class="modal-header">
-        <h5 class="modal-title w-100" id="emptyCartModalLabel">錯誤</h5>
-      </div>
-      <div class="modal-body">
-        購物車是空的，請先加入餐點！
-      </div>
-      <div class="modal-footer justify-content-center">
-        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">確定</button>
-      </div>
+      <div class="modal-header"><h5 class="modal-title w-100" id="emptyCartModalLabel">錯誤</h5></div>
+      <div class="modal-body">購物車是空的，請先加入餐點！</div>
+      <div class="modal-footer justify-content-center"><button type="button" class="btn btn-danger" data-bs-dismiss="modal">確定</button></div>
     </div>
   </div>
 </div>
 <div class="modal fade" id="formErrorModal" tabindex="-1" aria-labelledby="formErrorModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content text-center">
-      <div class="modal-header">
-        <h5 class="modal-title w-100" id="formErrorModalLabel">輸入錯誤</h5>
-      </div>
-      <div class="modal-body" id="formErrorMsg">
-        <!-- 錯誤訊息會透過 JS 動態填入 -->
-      </div>
-      <div class="modal-footer justify-content-center">
-        <button type="button" class="btn btn-warning" data-bs-dismiss="modal">確定</button>
-      </div>
+      <div class="modal-header"><h5 class="modal-title w-100" id="formErrorModalLabel">輸入錯誤</h5></div>
+      <div class="modal-body" id="formErrorMsg"></div>
+      <div class="modal-footer justify-content-center"><button type="button" class="btn btn-warning" data-bs-dismiss="modal">確定</button></div>
     </div>
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-
   const LIFF_ID = "2007831775-ojeB1qbw";
 
+  // ====== Flex 相關常數（照你的需求已設定）======
+  const ORDER_DETAIL_URL = "https://liff.line.me/2007831775-ojeB1qbw/order-detail.html";
+  const STORE_PHONE      = "tel:033812828";
+  const BRAND_NAME       = "邱媽媽美食";
+  // TODO: 將下行換成你「公開 HTTPS」的 logo 連結（目前為暫時可用的 placeholder）
+  const BRAND_LOGO_URL   = "https://raw.githubusercontent.com/LilGuan/online_order/main/images/logo.jpg";
+  const STORE_ADDRESS    = "桃園市大園區皇家六街12號";
+  const MAPS_URL         = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(STORE_ADDRESS);
+  // Hero 圖（可換成你自家的實拍）
+  const HERO_IMAGE_URL   = "https://images.unsplash.com/photo-1604908554007-0880a8a94571?q=80&w=1600&auto=format&fit=crop";
+
   const cartContainer = document.getElementById('cart-container');
-  const clearCartBtn = document.getElementById('clear-cart');
-  const backBtn = document.getElementById('back-btn');
-  const submitOrderBtn = document.getElementById('submit-order');
-  const notesInput = document.getElementById('notes');
+  const clearCartBtn  = document.getElementById('clear-cart');
+  const backBtn       = document.getElementById('back-btn');
+  const submitOrderBtn= document.getElementById('submit-order');
+  const notesInput    = document.getElementById('notes');
   const paymentSelect = document.getElementById('payment-method');
-  const emptyMsg = document.getElementById('empty-msg');
-  const emptyCartModal = new bootstrap.Modal(document.getElementById('emptyCartModal'));
-  const formErrorModal = new bootstrap.Modal(document.getElementById('formErrorModal'));
-  const formErrorMsg = document.getElementById('formErrorMsg');
+  const emptyMsg      = document.getElementById('empty-msg');
+  const emptyCartModal= new bootstrap.Modal(document.getElementById('emptyCartModal'));
+  const formErrorModal= new bootstrap.Modal(document.getElementById('formErrorModal'));
+  const formErrorMsg  = document.getElementById('formErrorMsg');
 
   const menuItems = [
     { id: 1, name: '蝦仁炒飯', price: 100 },
@@ -253,23 +170,9 @@
     { id: 10, name: '荷包蛋', price: 15 },
   ];
 
-  function loadCart() {
-    return JSON.parse(localStorage.getItem('cart') || '{}');
-  }
-
-  function saveCart(cart) {
-    localStorage.setItem('cart', JSON.stringify(cart));
-  }
-
-  function getNameById(id) {
-    const item = menuItems.find(i => i.id === parseInt(id));
-    return item ? item.name : '未知餐點';
-  }
-
-  function getPriceById(id) {
-    const item = menuItems.find(i => i.id === parseInt(id));
-    return item ? item.price : 0;
-  }
+  function loadCart() { return JSON.parse(localStorage.getItem('cart') || '{}'); }
+  function saveCart(cart) { localStorage.setItem('cart', JSON.stringify(cart)); }
+  function getPriceById(id){ const i=menuItems.find(x=>x.id===parseInt(id)); return i?i.price:0; }
 
   function renderCart() {
     const cart = loadCart();
@@ -282,48 +185,35 @@
     emptyMsg.style.display = 'none';
 
     let html = `<table>
-      <thead>
-        <tr>
-          <th>餐點名稱</th>
-          <th>單價</th>
-          <th>數量</th>
-          <th>小計</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody>`;
+      <thead><tr><th>餐點名稱</th><th>單價</th><th>數量</th><th>小計</th><th>操作</th></tr></thead><tbody>`;
 
     let total = 0;
-
     keys.forEach(key => {
       const qty = cart[key];
       const [idStr, size] = key.split('-');
       const id = parseInt(idStr);
       const isLarge = size === 'large';
-
-      const item = menuItems.find(i => i.id === id);
+      const item = menuItems.find(i=>i.id===id);
       if (!item) return;
-
       const name = item.name + (isLarge ? '（加大）' : '');
       const price = item.price + (isLarge ? 20 : 0);
       const subtotal = price * qty;
       total += subtotal;
 
       html += `
-        <tr data-key="${key}">
-          <td>${name}</td>
-          <td>$${price}</td>
-          <td class="qty-controls">
-            <div class="qty-column">
-              <button onclick="changeQty('${key}', 1)">+</button>
-              <span id="qty-${key}">${qty}</span>
-              <button onclick="changeQty('${key}', -1)">－</button>
-            </div>
-          </td>
-
-          <td>$${subtotal}</td>
-          <td><button class="remove-btn" onclick="removeItem('${key}')">刪除</button></td>
-        </tr>`;
+      <tr data-key="${key}">
+        <td>${name}</td>
+        <td>$${price}</td>
+        <td class="qty-controls">
+          <div class="qty-column">
+            <button onclick="changeQty('${key}', 1)">+</button>
+            <span id="qty-${key}">${qty}</span>
+            <button onclick="changeQty('${key}', -1)">－</button>
+          </div>
+        </td>
+        <td>$${subtotal}</td>
+        <td><button class="remove-btn" onclick="removeItem('${key}')">刪除</button></td>
+      </tr>`;
     });
 
     html += `</tbody></table>
@@ -344,9 +234,7 @@
       total += price * qty;
     }
     const totalH3 = document.querySelector('h3');
-    if (totalH3) {
-      totalH3.textContent = `總金額：$${total}`;
-    }
+    if (totalH3) totalH3.textContent = `總金額：$${total}`;
   }
 
   function changeQty(key, delta) {
@@ -358,279 +246,206 @@
 
     document.getElementById(`qty-${key}`).innerText = newQty;
 
-    // 更新小計
     const [idStr, size] = key.split('-');
     const id = parseInt(idStr);
     const isLarge = size === 'large';
     const price = getPriceById(id) + (isLarge ? 20 : 0);
     const row = document.querySelector(`tr[data-key="${key}"]`);
-    if (row) {
-      const subtotalCell = row.querySelector("td:nth-child(4)");
-      subtotalCell.textContent = `$${price * newQty}`;
-    }
+    if (row) row.querySelector("td:nth-child(4)").textContent = `$${price * newQty}`;
 
     updateTotal();
   }
 
-  function removeItem(key) {
-    const cart = loadCart();
-    delete cart[key];
-    saveCart(cart);
-    renderCart();
-  }
+  function removeItem(key) { const cart = loadCart(); delete cart[key]; saveCart(cart); renderCart(); }
+  function clearCart() { localStorage.removeItem('cart'); renderCart(); }
+  function animateButton(btn){ btn.classList.add('bump'); setTimeout(()=>btn.classList.remove('bump'),300); }
 
-  function clearCart() {
-    localStorage.removeItem('cart');
-    renderCart();
-  }
+  document.getElementById('clear-cart').addEventListener('click', ()=>{ animateButton(clearCartBtn); clearCart(); });
+  document.getElementById('back-btn').addEventListener('click', ()=>{ window.location.href='index.html'; });
 
-  function animateButton(btn) {
-    btn.classList.add('bump');
-    setTimeout(() => btn.classList.remove('bump'), 300);
-  }
-
-  clearCartBtn.addEventListener('click', () => {
-    animateButton(clearCartBtn);
-    clearCart();
-  });
-
-  backBtn.addEventListener('click', () => {
-    window.location.href = 'index.html';
-  });
-
-  // Flex Message 產生函式
+  // ==== Flex Message 產生 ====
   function createOrderFlexMessage(orderData, menuItems) {
-  const cart = orderData.cart;
-  const items = [];
-  let total = 0;
-  let count = 0;
+    const cart = orderData.cart;
+    const items = [];
+    let total = 0;
+    let count = 0;
 
-  for (const key in cart) {
-    const qty = cart[key];
-    const [idStr, size] = key.split('-');
-    const id = parseInt(idStr);
-    const isLarge = size === 'large';
-    const item = menuItems.find(i => i.id === id);
-    if (!item) continue;
+    for (const key in cart) {
+      const qty = cart[key];
+      const [idStr, size] = key.split('-');
+      const id = parseInt(idStr);
+      const isLarge = size === 'large';
+      const item = menuItems.find(i => i.id === id);
+      if (!item) continue;
 
-    const name = item.name + (isLarge ? '（加大）' : '');
-    const price = item.price + (isLarge ? 20 : 0);
-    const subtotal = price * qty;
-    total += subtotal;
+      const name = item.name + (isLarge ? '（加大）' : '');
+      const price = item.price + (isLarge ? 20 : 0);
+      const subtotal = price * qty;
+      total += subtotal;
 
-    count++;
-    if (count <= 6) {
-      items.push({
-        type: "box",
-        layout: "horizontal",
-        contents: [
-          { type: "text", text: name, size: "sm", color: "#333333", flex: 5, wrap: true },
-          { type: "text", text: `x${qty}`, size: "sm", color: "#666666", flex: 2, align: "center" },
-          { type: "text", text: `$${subtotal}`, size: "sm", color: "#111111", flex: 3, align: "end" }
-        ]
-      });
-    }
-  }
-
-  const more = Object.keys(cart).length - 6;
-  if (more > 0) {
-    items.push({
-      type: "text",
-      text: `…還有 ${more} 項`,
-      size: "xs",
-      color: "#999999",
-      margin: "sm"
-    });
-  }
-
-  const paymentText = orderData.paymentMethod === "cash" ? "現金" : orderData.paymentMethod;
-
-  const notesBox = orderData.notes
-    ? {
-        type: "box",
-        layout: "vertical",
-        backgroundColor: "#FFF8E1",
-        cornerRadius: "8px",
-        paddingAll: "10px",
-        contents: [
-          { type: "text", text: "備註", weight: "bold", size: "sm", color: "#946200" },
-          { type: "text", text: orderData.notes, size: "sm", color: "#946200", wrap: true, margin: "xs" }
-        ],
-        margin: "md"
-      }
-    : null;
-
-  return {
-    type: "flex",
-    altText: `新訂單 ${orderData.orderNumber} 已成立`,
-    contents: {
-      type: "bubble",
-
-      // Hero 封面
-      hero: {
-        type: "image",
-        url: HERO_IMAGE_URL,
-        size: "full",
-        aspectRatio: "20:9",
-        aspectMode: "cover"
-      },
-
-      // Header：品牌列 + 訂單編號/顧客
-      header: {
-        type: "box",
-        layout: "vertical",
-        paddingAll: "12px",
-        backgroundColor: "#F6F8FF",
-        contents: [
-          {
-            type: "box",
-            layout: "horizontal",
-            spacing: "12px",
-            contents: [
-              {
-                type: "image",
-                url: BRAND_LOGO_URL,
-                size: "48px",
-                aspectMode: "cover",
-                aspectRatio: "1:1",
-                cornerRadius: "24px"
-              },
-              {
-                type: "box",
-                layout: "vertical",
-                contents: [
-                  { type: "text", text: BRAND_NAME, weight: "bold", size: "md", color: "#1F1F1F" },
-                  { type: "text", text: `#${orderData.orderNumber}`, size: "xs", color: "#8C8C8C" }
-                ]
-              }
-            ]
-          },
-          {
-            type: "box",
-            layout: "vertical",
-            margin: "md",
-            contents: [
-              { type: "text", text: `姓名：${orderData.name}`, size: "sm", color: "#595959" },
-              { type: "text", text: `電話：${orderData.phone}`, size: "sm", color: "#595959", margin: "sm" }
-            ]
-          }
-        ]
-      },
-
-      // Body：徽章列 / 地址 / 品項 / 總金額 / 備註
-      body: {
-        type: "box",
-        layout: "vertical",
-        spacing: "md",
-        contents: [
-          // 徽章列（取餐時間 + 付款方式）
-          {
-            type: "box",
-            layout: "horizontal",
-            spacing: "sm",
-            contents: [
-              {
-                type: "box",
-                layout: "baseline",
-                backgroundColor: "#E6FFFB",
-                cornerRadius: "12px",
-                paddingAll: "8px",
-                contents: [
-                  { type: "text", text: "⏰", size: "sm" },
-                  { type: "text", text: orderData.pickupTime, size: "sm", color: "#08979C", margin: "sm", wrap: true }
-                ],
-                flex: 7
-              },
-              {
-                type: "box",
-                layout: "baseline",
-                backgroundColor: "#FFF1F0",
-                cornerRadius: "12px",
-                paddingAll: "8px",
-                contents: [
-                  { type: "text", text: "💳", size: "sm" },
-                  { type: "text", text: paymentText, size: "sm", color: "#D4380D", margin: "sm" }
-                ],
-                flex: 5
-              }
-            ]
-          },
-
-          // 地址區塊
-          {
-            type: "box",
-            layout: "horizontal",
-            backgroundColor: "#FAFAFA",
-            cornerRadius: "10px",
-            paddingAll: "10px",
-            contents: [
-              { type: "text", text: "📍", size: "md", flex: 1 },
-              { type: "text", text: STORE_ADDRESS, size: "sm", color: "#434343", wrap: true, flex: 11 }
-            ]
-          },
-
-          { type: "separator", margin: "md" },
-
-          // 品項清單
-          { type: "text", text: "品項", weight: "bold", size: "sm", color: "#262626" },
-          ...items,
-
-          // 總金額
-          {
-            type: "box",
-            layout: "horizontal",
-            backgroundColor: "#F0F5FF",
-            cornerRadius: "10px",
-            paddingAll: "12px",
-            margin: "md",
-            contents: [
-              { type: "text", text: "總金額", weight: "bold", flex: 5, color: "#1D39C4" },
-              { type: "text", text: `$${total}`, weight: "bold", flex: 7, align: "end", color: "#1D39C4" }
-            ]
-          },
-
-          ...(notesBox ? [notesBox] : [])
-        ]
-      },
-
-      // Footer：查看訂單 / 聯絡店家 / 地圖導航
-      footer: {
-        type: "box",
-        layout: "horizontal",
-        spacing: "md",
-        contents: [
-          {
-            type: "button",
-            style: "primary",
-            height: "sm",
-            action: { type: "uri", label: "查看訂單", uri: ORDER_DETAIL_URL },
-            color: "#2F54EB"
-          },
-          {
-            type: "button",
-            style: "secondary",
-            height: "sm",
-            action: { type: "uri", label: "聯絡店家", uri: STORE_PHONE },
-            color: "#D9D9D9"
-          },
-          {
-            type: "button",
-            style: "link",
-            height: "sm",
-            action: { type: "uri", label: "地圖導航", uri: MAPS_URL }
-          }
-        ]
-      },
-      styles: {
-        body: { separator: false },
-        footer: { separator: true }
+      count++;
+      if (count <= 6) {
+        items.push({
+          type: "box",
+          layout: "horizontal",
+          contents: [
+            { type: "text", text: name, size: "sm", color: "#333333", flex: 5, wrap: true },
+            { type: "text", text: `x${qty}`, size: "sm", color: "#666666", flex: 2, align: "center" },
+            { type: "text", text: `$${subtotal}`, size: "sm", color: "#111111", flex: 3, align: "end" }
+          ]
+        });
       }
     }
-  };
-}
 
+    const more = Object.keys(cart).length - 6;
+    if (more > 0) {
+      items.push({ type: "text", text: `…還有 ${more} 項`, size: "xs", color: "#999999", margin: "sm" });
+    }
 
-  submitOrderBtn.addEventListener('click', () => {
+    const paymentText = orderData.paymentMethod === "cash" ? "現金" : orderData.paymentMethod;
+
+    const notesBox = orderData.notes
+      ? {
+          type: "box",
+          layout: "vertical",
+          backgroundColor: "#FFF8E1",
+          cornerRadius: "8px",
+          paddingAll: "10px",
+          contents: [
+            { type: "text", text: "備註", weight: "bold", size: "sm", color: "#946200" },
+            { type: "text", text: orderData.notes, size: "sm", color: "#946200", wrap: true, margin: "xs" }
+          ],
+          margin: "md"
+        }
+      : null;
+
+    return {
+      type: "flex",
+      altText: `新訂單 ${orderData.orderNumber} 已成立`,
+      contents: {
+        type: "bubble",
+        hero: {
+          type: "image",
+          url: HERO_IMAGE_URL,
+          size: "full",
+          aspectRatio: "20:9",
+          aspectMode: "cover"
+        },
+        header: {
+          type: "box",
+          layout: "vertical",
+          paddingAll: "12px",
+          backgroundColor: "#F6F8FF",
+          contents: [
+            {
+              type: "box",
+              layout: "horizontal",
+              spacing: "12px",
+              contents: [
+                { type: "image", url: BRAND_LOGO_URL, size: "48px", aspectMode: "cover", aspectRatio: "1:1", cornerRadius: "24px" },
+                {
+                  type: "box",
+                  layout: "vertical",
+                  contents: [
+                    { type: "text", text: BRAND_NAME, weight: "bold", size: "md", color: "#1F1F1F" },
+                    { type: "text", text: `#${orderData.orderNumber}`, size: "xs", color: "#8C8C8C" }
+                  ]
+                }
+              ]
+            },
+            {
+              type: "box",
+              layout: "vertical",
+              margin: "md",
+              contents: [
+                { type: "text", text: `姓名：${orderData.name}`, size: "sm", color: "#595959" },
+                { type: "text", text: `電話：${orderData.phone}`, size: "sm", color: "#595959", margin: "sm" }
+              ]
+            }
+          ]
+        },
+        body: {
+          type: "box",
+          layout: "vertical",
+          spacing: "md",
+          contents: [
+            {
+              type: "box",
+              layout: "horizontal",
+              spacing: "sm",
+              contents: [
+                {
+                  type: "box",
+                  layout: "baseline",
+                  backgroundColor: "#E6FFFB",
+                  cornerRadius: "12px",
+                  paddingAll: "8px",
+                  contents: [
+                    { type: "text", text: "⏰", size: "sm" },
+                    { type: "text", text: orderData.pickupTime, size: "sm", color: "#08979C", margin: "sm", wrap: true }
+                  ],
+                  flex: 7
+                },
+                {
+                  type: "box",
+                  layout: "baseline",
+                  backgroundColor: "#FFF1F0",
+                  cornerRadius: "12px",
+                  paddingAll: "8px",
+                  contents: [
+                    { type: "text", text: "💳", size: "sm" },
+                    { type: "text", text: paymentText, size: "sm", color: "#D4380D", margin: "sm" }
+                  ],
+                  flex: 5
+                }
+              ]
+            },
+            {
+              type: "box",
+              layout: "horizontal",
+              backgroundColor: "#FAFAFA",
+              cornerRadius: "10px",
+              paddingAll: "10px",
+              contents: [
+                { type: "text", text: "📍", size: "md", flex: 1 },
+                { type: "text", text: STORE_ADDRESS, size: "sm", color: "#434343", wrap: true, flex: 11 }
+              ]
+            },
+            { type: "separator", margin: "md" },
+            { type: "text", text: "品項", weight: "bold", size: "sm", color: "#262626" },
+            ...items,
+            {
+              type: "box",
+              layout: "horizontal",
+              backgroundColor: "#F0F5FF",
+              cornerRadius: "10px",
+              paddingAll: "12px",
+              margin: "md",
+              contents: [
+                { type: "text", text: "總金額", weight: "bold", flex: 5, color: "#1D39C4" },
+                { type: "text", text: `$${total}`, weight: "bold", flex: 7, align: "end", color: "#1D39C4" }
+              ]
+            },
+            ...(notesBox ? [notesBox] : [])
+          ]
+        },
+        footer: {
+          type: "box",
+          layout: "horizontal",
+          spacing: "md",
+          contents: [
+            { type: "button", style: "primary",   height: "sm", action: { type: "uri", label: "查看訂單", uri: ORDER_DETAIL_URL }, color: "#2F54EB" },
+            { type: "button", style: "secondary", height: "sm", action: { type: "uri", label: "聯絡店家", uri: STORE_PHONE },   color: "#D9D9D9" },
+            { type: "button", style: "link",      height: "sm", action: { type: "uri", label: "地圖導航", uri: MAPS_URL } }
+          ]
+        },
+        styles: { body: { separator: false }, footer: { separator: true } }
+      }
+    };
+  }
+
+  // ====== 送出訂單 ======
+  document.getElementById('submit-order').addEventListener('click', () => {
     const cart = loadCart();
     const nameInput = document.getElementById('name');
     const phoneInput = document.getElementById('phone');
@@ -638,102 +453,50 @@
     const phone = phoneInput.value.trim();
     const taiwanPhoneRegex = /^09\d{8}$|^0\d{1,2}-?\d{6,8}$/;
 
-    if (Object.keys(cart).length === 0) {
-      emptyCartModal.show();
-      return;
-    }
+    if (Object.keys(cart).length === 0) { emptyCartModal.show(); return; }
+    if (!name)  { formErrorMsg.innerText = '請輸入姓名';  formErrorModal.show(); return; }
+    if (!phone) { formErrorMsg.innerText = '請輸入電話';  formErrorModal.show(); return; }
+    if (!taiwanPhoneRegex.test(phone)) { formErrorMsg.innerText = '電話格式錯誤，請輸入正確的台灣電話號碼（例：0912345678 或 02-12345678）'; formErrorModal.show(); return; }
+    if (name.length <= 5) name = name + ' 先生/小姐';
 
-    if (!name) {
-      formErrorMsg.innerText = '請輸入姓名';
-      formErrorModal.show();
-      return;
+    function generateOrderNumber(){
+      const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let result=''; for (let i=0;i<6;i++) result+=chars.charAt(Math.floor(Math.random()*chars.length));
+      return result;
     }
-
-    if (!phone) {
-      formErrorMsg.innerText = '請輸入電話';
-      formErrorModal.show();
-      return;
-    }
-
-    if (!taiwanPhoneRegex.test(phone)) {
-      formErrorMsg.innerText = '電話格式錯誤，請輸入正確的台灣電話號碼（例：0912345678 或 02-12345678）';
-      formErrorModal.show();
-      return;
-    }
-
-    // 若姓名長度超過5字，加上「先生」或「小姐」的判斷
-    if (name.length <= 5) {
-      name = name + ' 先生/小姐';
-    }
-
-      function generateOrderNumber() {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        let result = '';
-        for (let i = 0; i < 6; i++) {
-          result += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return result;
-      }
-    // 自動產生訂單編號 (格式: T + 時間戳)
     const orderNumber = generateOrderNumber();
 
-    // 取餐時間示意（可改成使用者輸入）
     const pickupTime = (() => {
-      const now = new Date();
-      now.setMinutes(now.getMinutes() + 15);
-      const hh = now.getHours().toString().padStart(2, '0');
-      const mm = now.getMinutes().toString().padStart(2, '0');
+      const now = new Date(); now.setMinutes(now.getMinutes() + 15);
+      const hh = now.getHours().toString().padStart(2,'0'); const mm = now.getMinutes().toString().padStart(2,'0');
       return `約 ${hh}:${mm} 取餐`;
     })();
 
-    // 備註與付款方式
     const notes = notesInput.value.trim();
     const paymentMethod = paymentSelect.value;
 
-    // 組合訂單資料
-    const orderData = {
-      name,
-      phone,
-      cart,
-      notes,
-      paymentMethod,
-      orderNumber,
-      pickupTime
-    };
-
+    const orderData = { name, phone, cart, notes, paymentMethod, orderNumber, pickupTime };
     localStorage.setItem('orderData', JSON.stringify(orderData));
 
     const flexMessage = createOrderFlexMessage(orderData, menuItems);
 
     liff.init({ liffId: LIFF_ID }).then(() => {
-      if (!liff.isLoggedIn()) {
-        liff.login();
-        return;
-      }
+      if (!liff.isLoggedIn()) { liff.login(); return; }
       return liff.sendMessages([flexMessage]);
     }).then(() => {
-      // alert('訂單已送出，感謝您的訂購！');
       window.location.href = 'order-detail.html';
     }).catch(err => {
-      alert('LINE 訊息傳送失敗，請確認是否由手機Line App 進入下單。');
+      alert('LINE 訊息傳送失敗，請確認是否由手機 Line App 進入下單。');
       console.error(err);
-
       if (confirm('是否要開啟 LINE App 進入官方帳號下單？')) {
-        // 換成你的官方帳號網址或 LIFF 網頁網址
         window.location.href = 'https://line.me/R/ti/p/@799wtujm';
-        // 或者直接跳 LIFF 頁面網址也可以
-        // window.location.href = 'https://liff.line.me/2007831775-ojeB1qbw';
       }
     });
   });
 
-  // 頁面載入時渲染購物車
   renderCart();
-
-  // 讓 changeQty, removeItem 可用於 onclick 屬性
   window.changeQty = changeQty;
   window.removeItem = removeItem;
-
 </script>
 </div>
 </body>
