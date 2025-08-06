@@ -445,13 +445,7 @@
 
   const more = Object.keys(cart).length - 6;
   if (more > 0) {
-    items.push({
-      type: "text",
-      text: `…還有 ${more} 項`,
-      size: "xs",
-      color: "#999999",
-      margin: "sm"
-    });
+    items.push({ type: "text", text: `…還有 ${more} 項`, size: "xs", color: "#999999", margin: "sm" });
   }
 
   const paymentText = orderData.paymentMethod === "cash" ? "現金" : orderData.paymentMethod;
@@ -477,7 +471,7 @@
     contents: {
       type: "bubble",
 
-      // Hero 封面
+      // Hero
       hero: {
         type: "image",
         url: HERO_IMAGE_URL,
@@ -486,7 +480,7 @@
         aspectMode: "cover"
       },
 
-      // Header：品牌列 + 訂單編號/顧客
+      // Header
       header: {
         type: "box",
         layout: "vertical",
@@ -501,10 +495,10 @@
               {
                 type: "image",
                 url: BRAND_LOGO_URL,
-                size: "48px",
+                size: "sm",              // ← 使用合法 size
                 aspectMode: "cover",
-                aspectRatio: "1:1",
-                cornerRadius: "24px"
+                aspectRatio: "1:1"
+                // 不使用 cornerRadius（image 不支援）
               },
               {
                 type: "box",
@@ -528,13 +522,13 @@
         ]
       },
 
-      // Body：徽章列 / 地址 / 品項 / 總金額 / 備註
+      // Body
       body: {
         type: "box",
         layout: "vertical",
         spacing: "md",
         contents: [
-          // 徽章列（取餐時間 + 付款方式）
+          // 徽章列
           {
             type: "box",
             layout: "horizontal",
@@ -567,7 +561,7 @@
             ]
           },
 
-          // 地址區塊
+          // 地址
           {
             type: "box",
             layout: "horizontal",
@@ -582,7 +576,7 @@
 
           { type: "separator", margin: "md" },
 
-          // 品項清單
+          // 品項
           { type: "text", text: "品項", weight: "bold", size: "sm", color: "#262626" },
           ...items,
 
@@ -604,7 +598,7 @@
         ]
       },
 
-      // Footer：查看訂單 / 聯絡店家 / 地圖導航
+      // Footer：button 樣式修正（只用 primary / link）
       footer: {
         type: "box",
         layout: "horizontal",
@@ -615,14 +609,14 @@
             style: "primary",
             height: "sm",
             action: { type: "uri", label: "查看訂單", uri: ORDER_DETAIL_URL },
-            color: "#2F54EB"
+            color: "#2F54EB"    // 只在 primary 上使用 color
           },
           {
             type: "button",
-            style: "secondary",
+            style: "link",
             height: "sm",
-            action: { type: "uri", label: "聯絡店家", uri: STORE_PHONE },
-            color: "#D9D9D9"
+            action: { type: "uri", label: "聯絡店家", uri: STORE_PHONE }
+            // link 不要帶 color
           },
           {
             type: "button",
@@ -632,13 +626,11 @@
           }
         ]
       },
-      styles: {
-        body: { separator: false },
-        footer: { separator: true }
-      }
+      styles: { body: { separator: false }, footer: { separator: true } }
     }
   };
 }
+
 
   submitOrderBtn.addEventListener('click', () => {
     const cart = loadCart();
