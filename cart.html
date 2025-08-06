@@ -478,6 +478,7 @@
         layout: "vertical",
         paddingAll: "12px",
         backgroundColor: "#F6F8FF",
+        spacing: "sm",
         contents: [
           {
             type: "box",
@@ -541,7 +542,7 @@
       body: {
         type: "box",
         layout: "vertical",
-        spacing: "sm", // 縮小整體間距
+        spacing: "none", // 縮小整體間距
         contents: [
           {
             type: "box",
@@ -549,6 +550,7 @@
             backgroundColor: "#FAFAFA",
             cornerRadius: "10px",
             paddingAll: "10px",
+             margin: "none", // 不留白
             contents: [
               { type: "text", text: "📍", size: "md", flex: 1 },
               { type: "text", text: STORE_ADDRESS, size: "sm", color: "#434343", wrap: true, flex: 11 }
