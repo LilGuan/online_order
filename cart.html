@@ -415,7 +415,7 @@
   const items = [];
   let total = 0;
 
-  // ✅ 列出全部品項
+  // 全部品項列出
   for (const key in cart) {
     const qty = cart[key];
     const [idStr, size] = key.split('-');
@@ -441,6 +441,7 @@
   }
 
   const paymentText = orderData.paymentMethod === "cash" ? "現金" : orderData.paymentMethod;
+  const pickupSingleLine = `⏰ ${orderData.pickupTime}`; // 不換行
 
   const notesBox = orderData.notes
     ? {
@@ -457,17 +458,12 @@
       }
     : null;
 
-  // 讓時間保持單行：把圖示與文字合併到同一個 text，並 wrap:false
-  // 你的 pickupTime 是「約 HH:MM 取餐」；這裡再加上 ⏰
-  const pickupSingleLine = `⏰ ${orderData.pickupTime}`;
-
   return {
     type: "flex",
     altText: `新訂單 ${orderData.orderNumber} 已成立`,
     contents: {
       type: "bubble",
 
-      // Hero
       hero: {
         type: "image",
         url: HERO_IMAGE_URL,
@@ -476,7 +472,7 @@
         aspectMode: "cover"
       },
 
-      // Header
+      // 把徽章塞到 header，貼緊電話下方，減少留白
       header: {
         type: "box",
         layout: "vertical",
@@ -488,13 +484,7 @@
             layout: "horizontal",
             spacing: "12px",
             contents: [
-              {
-                type: "image",
-                url: BRAND_LOGO_URL,
-                size: "sm",
-                aspectMode: "cover",
-                aspectRatio: "1:1"
-              },
+              { type: "image", url: BRAND_LOGO_URL, size: "sm", aspectMode: "cover", aspectRatio: "1:1" },
               {
                 type: "box",
                 layout: "vertical",
@@ -508,26 +498,18 @@
           {
             type: "box",
             layout: "vertical",
-            margin: "md",
+            margin: "sm",          // 壓到最小
             contents: [
               { type: "text", text: `姓名：${orderData.name}`, size: "sm", color: "#595959" },
-              { type: "text", text: `電話：${orderData.phone}`, size: "sm", color: "#595959", margin: "sm" }
+              { type: "text", text: `電話：${orderData.phone}`, size: "sm", color: "#595959", margin: "xs" }
             ]
-          }
-        ]
-      },
-
-      // Body
-      body: {
-        type: "box",
-        layout: "vertical",
-        spacing: "md",
-        contents: [
-          // ✅ 取餐時間與付款方式同一行且不換行
+          },
+          // 徽章列（緊貼電話下方）
           {
             type: "box",
             layout: "horizontal",
             spacing: "sm",
+            margin: "sm",
             contents: [
               {
                 type: "box",
@@ -552,9 +534,15 @@
                 flex: 5
               }
             ]
-          },
+          }
+        ]
+      },
 
-          // 地址
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "sm", // 縮小整體間距
+        contents: [
           {
             type: "box",
             layout: "horizontal",
@@ -569,11 +557,9 @@
 
           { type: "separator", margin: "md" },
 
-          // 品項（全部）
           { type: "text", text: "品項", weight: "bold", size: "sm", color: "#262626" },
           ...items,
 
-          // 總金額
           {
             type: "box",
             layout: "horizontal",
@@ -591,32 +577,47 @@
         ]
       },
 
-      // ✅ Footer 三個按鈕（primary、等寬、一定顯示文字）
+      // 自訂底部三鍵，保證四個字完整顯示（用 box + action，文字 size: xs、wrap:false）
       footer: {
         type: "box",
         layout: "horizontal",
-        spacing: "md",
+        spacing: "sm",
         contents: [
           {
-            type: "button",
-            style: "primary",
-            height: "sm",
+            type: "box",
+            layout: "vertical",
             flex: 4,
-            action: { type: "uri", label: "查看訂單", uri: ORDER_DETAIL_URL }
+            backgroundColor: "#2F54EB",
+            cornerRadius: "8px",
+            paddingAll: "10px",
+            action: { type: "uri", uri: ORDER_DETAIL_URL },
+            contents: [
+              { type: "text", text: "查看訂單", size: "xs", weight: "bold", align: "center", color: "#FFFFFF", wrap: false }
+            ]
           },
           {
-            type: "button",
-            style: "primary",
-            height: "sm",
+            type: "box",
+            layout: "vertical",
             flex: 4,
-            action: { type: "uri", label: "聯絡店家", uri: STORE_PHONE }
+            backgroundColor: "#595959",
+            cornerRadius: "8px",
+            paddingAll: "10px",
+            action: { type: "uri", uri: STORE_PHONE },
+            contents: [
+              { type: "text", text: "聯絡店家", size: "xs", weight: "bold", align: "center", color: "#FFFFFF", wrap: false }
+            ]
           },
           {
-            type: "button",
-            style: "primary",
-            height: "sm",
+            type: "box",
+            layout: "vertical",
             flex: 4,
-            action: { type: "uri", label: "地圖導航", uri: MAPS_URL }
+            backgroundColor: "#1890FF",
+            cornerRadius: "8px",
+            paddingAll: "10px",
+            action: { type: "uri", uri: MAPS_URL },
+            contents: [
+              { type: "text", text: "地圖導航", size: "xs", weight: "bold", align: "center", color: "#FFFFFF", wrap: false }
+            ]
           }
         ]
       },
@@ -624,6 +625,7 @@
     }
   };
 }
+
 
 
 
