@@ -573,7 +573,8 @@
           { type: "text", text: name, size: "sm", color: "#333333", flex: 5, wrap: true },
           { type: "text", text: `x${qty}`, size: "sm", color: "#666666", flex: 2, align: "center" },
           { type: "text", text: `$${subtotal}`, size: "sm", color: "#111111", flex: 3, align: "end" }
-        ]
+        ],
+        margin: "sm" // 每個品項間只留一點點縫隙
       });
     }
 
@@ -596,7 +597,7 @@
       altText: `新訂單 ${orderData.orderNumber} 已成立`,
       contents: {
         type: "bubble",
-        hero: { type: "image", url: HERO_IMAGE_URL, size: "full", aspectRatio: "20:9", aspectMode: "cover" },
+        hero: { type: "image", url: HERO_IMAGE_URL, size: "full", aspectRatio: "20:6", aspectMode: "cover" },
         header: {
           type: "box", layout: "vertical", paddingAll: "12px", backgroundColor: "#F6F8FF", spacing: "sm",
           contents: [
@@ -618,7 +619,8 @@
           ]
         },
         body: {
-          type: "box", layout: "vertical", spacing: "none",
+          type: "box", layout: "vertical", spacing: "sm", // 這裡設為 sm，讓各區塊不要分太開
+          paddingTop: "12px", // 只留一點點上邊距
           contents: [
             { type: "box", layout: "horizontal", backgroundColor: "#FAFAFA", cornerRadius: "10px", paddingAll: "10px", margin: "none", contents: [{ type: "text", text: "📍", size: "sm", flex: 1 }, { type: "text", text: STORE_ADDRESS, size: "sm", color: "#434343", wrap: true, flex: 11 }] },
             { type: "separator", margin: "md" },
