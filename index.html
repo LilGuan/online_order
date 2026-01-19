@@ -14,9 +14,9 @@
       font-family: 'Noto Sans TC', sans-serif;
       margin: 0;
       padding: 0;
-      background-color: #f4f7f6; /* 更柔和的背景色 */
+      background-color: #f4f7f6;
       color: #333;
-      padding-bottom: 80px; /* 避免內容被底部遮擋 */
+      padding-bottom: 80px;
     }
 
     /* 標題區塊 */
@@ -26,15 +26,53 @@
       position: sticky;
       top: 0;
       z-index: 100;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
       text-align: center;
     }
     h2 { margin: 0; color: #ff6b6b; font-size: 1.5rem; }
 
+    /* 分類導覽列 (新增) */
+    .category-tabs {
+      display: flex;
+      overflow-x: auto; /* 允許橫向捲動 */
+      white-space: nowrap;
+      background: #fff;
+      padding: 10px 15px;
+      position: sticky;
+      top: 60px; /* 根據 header 高度調整 */
+      z-index: 99;
+      gap: 10px;
+      border-bottom: 1px solid #eee;
+      /* 隱藏捲軸 */
+      scrollbar-width: none; 
+      -ms-overflow-style: none;
+    }
+    .category-tabs::-webkit-scrollbar { display: none; }
+
+    .tab-btn {
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 1px solid #ddd;
+      background: #f8f9fa;
+      color: #555;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0; /* 防止按鈕被壓縮 */
+    }
+
+    .tab-btn.active {
+      background: #ff6b6b;
+      color: white;
+      border-color: #ff6b6b;
+      box-shadow: 0 2px 6px rgba(255, 107, 107, 0.3);
+    }
+
     /* 餐點列表容器 */
     .menu {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); /* 自適應欄寬，手機版約兩欄 */
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
       gap: 12px;
       padding: 12px;
       max-width: 800px;
@@ -45,18 +83,17 @@
     .item {
       background: white;
       border-radius: 16px;
-      overflow: hidden; /* 讓圖片圓角生效 */
+      overflow: hidden;
       box-shadow: 0 4px 12px rgba(0,0,0,0.05);
       display: flex;
       flex-direction: column;
       transition: transform 0.2s;
     }
-    .item:hover { transform: translateY(-2px); }
-
+    
     /* 餐點圖片區 */
     .item-image-wrapper {
       width: 100%;
-      padding-top: 75%; /* 4:3 比例 */
+      padding-top: 75%;
       position: relative;
       background-color: #eee;
     }
@@ -92,9 +129,12 @@
       margin-bottom: 8px;
     }
 
-    /* 選項區域 (加大) */
-    .options {
+    /* 選項區域 */
+    .options-container {
       margin-bottom: 10px;
+    }
+    .options {
+      margin-top: 5px;
       display: flex;
       align-items: center;
       font-size: 0.9rem;
@@ -113,7 +153,7 @@
       margin-right: 6px;
       width: 18px;
       height: 18px;
-      accent-color: #ff6b6b; /* Checkbox 顏色 */
+      accent-color: #ff6b6b;
     }
 
     /* 數量控制區 */
@@ -121,116 +161,54 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-top: auto; /* 推到底部 */
+      margin-top: auto;
       background: #f1f3f5;
       border-radius: 20px;
       padding: 2px;
     }
     .controls button {
-      width: 32px;
-      height: 32px;
-      border: none;
-      background: white;
-      border-radius: 50%;
-      font-size: 1.2rem;
-      color: #ff6b6b;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      width: 32px; height: 32px; border: none; background: white; border-radius: 50%;
+      font-size: 1.2rem; color: #ff6b6b; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    .controls span {
-      font-weight: 600;
-      min-width: 24px;
-      text-align: center;
-    }
+    .controls span { font-weight: 600; min-width: 24px; text-align: center; }
 
     /* 加入購物車按鈕 */
     button.add-to-cart {
-      margin-top: 10px;
-      width: 100%;
-      background: #ff6b6b;
-      color: white;
-      border: none;
-      padding: 10px;
-      border-radius: 10px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
+      margin-top: 10px; width: 100%; background: #ff6b6b; color: white; border: none;
+      padding: 10px; border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer;
       transition: background-color 0.2s;
     }
     button.add-to-cart:active { background-color: #fa5252; }
 
-    /* 購物車懸浮按鈕 (FAB) */
+    /* 購物車懸浮按鈕 */
     #cart-fab {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: #2d3436;
-      color: white;
-      width: 60px;
-      height: 60px;
-      border-radius: 30px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-      cursor: pointer;
-      z-index: 1000;
-      transition: transform 0.2s;
+      position: fixed; bottom: 20px; right: 20px; background: #2d3436; color: white;
+      width: 60px; height: 60px; border-radius: 30px; display: flex; align-items: center;
+      justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer;
+      z-index: 1000; transition: transform 0.2s;
     }
     #cart-fab:active { transform: scale(0.95); }
     #cart-fab i { font-style: normal; font-size: 24px; }
-
     #cart-badge {
-      position: absolute;
-      top: -5px;
-      right: -5px;
-      background: #ff6b6b;
-      color: white;
-      font-size: 12px;
-      height: 24px;
-      min-width: 24px;
-      padding: 0 6px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      border: 2px solid #f4f7f6;
-      opacity: 0;
-      transform: scale(0);
-      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: absolute; top: -5px; right: -5px; background: #ff6b6b; color: white;
+      font-size: 12px; height: 24px; min-width: 24px; padding: 0 6px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center; font-weight: bold;
+      border: 2px solid #f4f7f6; opacity: 0; transform: scale(0); transition: all 0.3s;
     }
     #cart-badge.show { opacity: 1; transform: scale(1); }
 
-    /* Toast 提示訊息 */
+    /* Toast 提示 */
     #toast {
-      position: fixed;
-      bottom: 90px;
-      left: 50%;
-      transform: translateX(-50%) translateY(20px);
-      background: rgba(0,0,0,0.8);
-      color: white;
-      padding: 10px 20px;
-      border-radius: 20px;
-      font-size: 0.9rem;
-      opacity: 0;
-      transition: opacity 0.3s, transform 0.3s;
-      pointer-events: none;
-      z-index: 2000;
-      white-space: nowrap;
+      position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 20px;
+      font-size: 0.9rem; opacity: 0; transition: opacity 0.3s, transform 0.3s;
+      pointer-events: none; z-index: 2000; white-space: nowrap;
     }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-    /* 動畫 */
-    @keyframes pop {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.2); }
-      100% { transform: scale(1); }
-    }
+    
     .pop-anim { animation: pop 0.3s ease; }
+    @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
 
   </style>
 </head>
@@ -240,122 +218,113 @@
   <h2>邱媽媽美食</h2>
 </header>
 
-<div class="menu" id="menu">
-  <!-- 餐點會由 JS 動態生成 -->
+<!-- 分類導覽列 -->
+<div class="category-tabs">
+  <button class="tab-btn active" onclick="filterMenu('all')">全部</button>
+  <button class="tab-btn" onclick="filterMenu('rice')">飯類</button>
+  <button class="tab-btn" onclick="filterMenu('noodle')">麵類</button>
+  <button class="tab-btn" onclick="filterMenu('alacarte')">單點</button>
+  <button class="tab-btn" onclick="filterMenu('soup')">湯品</button>
 </div>
 
-<!-- 懸浮購物車按鈕 -->
+<div class="menu" id="menu">
+  <!-- 餐點由 JS 動態生成 -->
+</div>
+
 <div id="cart-fab" title="前往結帳">
   <i>🛒</i>
   <div id="cart-badge">0</div>
 </div>
 
-<!-- Toast 提示 -->
 <div id="toast">已加入購物車</div>
 
 <script>
-  // ====== 營業時間設定 ======
+  // 營業時間檢查 (維持不變)
   function checkBusinessHours() {
     const now = new Date();
-    const day = now.getDay(); // 0 (Sun) - 6 (Sat)
-    const hour = now.getHours();
-    const minute = now.getMinutes();
-    const currentTime = hour * 60 + minute;
-
-    // 定義營業時間 (分鐘數)
-    // 10:30 = 630, 14:00 = 840
-    // 16:00 = 960, 20:00 = 1200
-    const morningStart = 630;
-    const morningEnd = 840;
-    const eveningStart = 960;
-    const eveningEnd = 1200;
-
-    let isOpen = false;
-
-    // 每天營業時間相同 (Mon-Sun)
-    // 若有特定公休日，可在這裡加判斷，例如 if (day === 1) return false;
-    
-    if (
-      (currentTime >= morningStart && currentTime < morningEnd) ||
-      (currentTime >= eveningStart && currentTime < eveningEnd)
-    ) {
-      isOpen = true;
-    }
-
-    // 測試用：強制開啟 (正式上線請註解掉)
-    // isOpen = true; 
-
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+    const isOpen = (currentTime >= 630 && currentTime < 840) || (currentTime >= 960 && currentTime < 1200);
+    // return true; // 測試用
     return isOpen;
   }
 
   function showClosedModal() {
-    // 建立一個全螢幕遮罩
     const modal = document.createElement('div');
     modal.style.cssText = `
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0, 0, 0, 0.85); z-index: 9999;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
       color: white; text-align: center; padding: 20px;
     `;
     modal.innerHTML = `
-      <i class="bi bi-clock-history" style="font-size: 3rem; margin-bottom: 20px; color: #ff6b6b;"></i>
       <h2 style="margin-bottom: 10px; color: #fff;">目前非營業時間</h2>
       <p style="font-size: 1.1rem; line-height: 1.6;">
-        我們的營業時間為：<br>
-        <strong>10:30 - 14:00</strong><br>
-        <strong>16:00 - 20:00</strong>
+        營業時間：<br><strong>10:30 - 14:00</strong><br><strong>16:00 - 20:00</strong>
       </p>
-      <p style="color: #aaa; margin-top: 20px; font-size: 0.9rem;">請於營業時間內再造訪，謝謝！</p>
     `;
     document.body.appendChild(modal);
-    document.body.style.overflow = 'hidden'; // 禁止捲動
+    document.body.style.overflow = 'hidden';
   }
 
-  // 頁面載入時檢查
   if (!checkBusinessHours()) {
     showClosedModal();
   }
-  // 資料
+
+  // ====== 菜單資料 (已移除加蝦選項) ======
+  // category: rice(飯), noodle(麵), alacarte(單點), soup(湯)
   const menuItems = [
-    { id: 1, name: '蝦仁炒飯', price: 100, image: 'images/shrimp_rice.png' },
-    { id: 2, name: '肉絲炒飯', price: 85, image: 'images/beef_rice.png' },
-    { id: 3, name: '香腸炒飯', price: 100, image: 'images/sausage_rice.png' },
-    { id: 4, name: '蛋炒飯', price: 75, image: 'images/egg_rice.png' },
-    { id: 5, name: '蝦仁炒麵', price: 100, image: 'images/shrimp_noodle.png' },
-    { id: 6, name: '蝦仁米苔目', price: 100, image: 'images/shrimp_rice_noodle.png' },
-    { id: 7, name: '鹹豬肉蓋飯', price: 120, image: 'images/salted_pork_rice.png' },
-    { id: 8, name: '鹹豬肉', price: 200, image: 'images/salted_pork.png' },
-    { id: 9, name: '海帶芽蛋花湯', price: 20, image: 'images/soup.png' },
-    { id: 10, name: '荷包蛋', price: 15, image: 'images/egg.png' },
+    { id: 1, name: '蛋炒飯', price: 80, image: 'images/egg_rice.png', hasLarge: true, hasDoubleEgg: true, category: 'rice' },
+    { id: 2, name: '肉絲炒飯', price: 100, image: 'images/beef_rice.png', hasLarge: true, hasDoubleEgg: true, category: 'rice' },
+    { id: 3, name: '肉絲炒麵', price: 100, image: 'images/beef_noodle.png', hasLarge: true, hasDoubleEgg: false, category: 'noodle' },
+    { id: 4, name: '香腸炒飯', price: 110, image: 'images/sausage_rice.png', hasLarge: true, hasDoubleEgg: true, category: 'rice' },
+    { id: 5, name: '蝦仁炒飯', price: 110, image: 'images/shrimp_rice.png', hasLarge: true, hasDoubleEgg: true, category: 'rice' },
+    { id: 6, name: '蝦仁炒麵', price: 110, image: 'images/shrimp_noodle.png', hasLarge: true, hasDoubleEgg: false, category: 'noodle' },
+    { id: 7, name: '蝦仁米苔目', price: 110, image: 'images/shrimp_rice_noodle.png', hasLarge: true, hasDoubleEgg: false, category: 'noodle' },
+    { id: 8, name: '鹹豬肉蓋飯', price: 130, image: 'images/salted_pork_rice.png', hasLarge: true, hasDoubleEgg: true, category: 'rice' },
+    { id: 9, name: '鹹豬肉', price: 230, image: 'images/salted_pork.png', hasLarge: false, hasDoubleEgg: false, category: 'alacarte' },
+    { id: 10, name: '海帶芽蛋花湯', price: 25, image: 'images/soup.png', hasLarge: false, hasDoubleEgg: false, category: 'soup' },
+    { id: 11, name: '荷包蛋', price: 15, image: 'images/egg.png', hasLarge: false, hasDoubleEgg: false, category: 'alacarte' },
   ];
 
-  // 狀態管理
   const menuQuantities = {};
   const menuDiv = document.getElementById('menu');
-  let userProfile = null;
+  let currentCategory = 'all';
 
-  // LIFF 初始化
   async function initLiff() {
     try {
-      await liff.init({ liffId: '2007831775-ojeB1qbw' }); // 你的 LIFF ID
-      if (!liff.isLoggedIn()) {
-        liff.login();
-      } else {
-        userProfile = await liff.getProfile();
-        console.log('User:', userProfile);
-      }
-    } catch (err) {
-      console.error('LIFF Init Error:', err);
-    }
+      await liff.init({ liffId: '2007831775-ojeB1qbw' });
+      if (!liff.isLoggedIn()) liff.login();
+    } catch (err) { console.error(err); }
   }
 
-  // 渲染菜單
+  // 切換分類
+  window.filterMenu = function(category) {
+    currentCategory = category;
+    
+    // 更新按鈕樣式
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.remove('active');
+      // 簡單判斷按鈕文字或onclick參數來加 active (這裡偷懶用 DOM 順序或文字對應較好，以下用文字判斷)
+      if (category === 'all' && btn.innerText === '全部') btn.classList.add('active');
+      else if (category === 'rice' && btn.innerText === '飯類') btn.classList.add('active');
+      else if (category === 'noodle' && btn.innerText === '麵類') btn.classList.add('active');
+      else if (category === 'alacarte' && btn.innerText === '單點') btn.classList.add('active');
+      else if (category === 'soup' && btn.innerText === '湯品') btn.classList.add('active');
+    });
+
+    renderMenu();
+  };
+
   function renderMenu() {
     menuDiv.innerHTML = '';
-    menuItems.forEach(item => {
-      menuQuantities[item.id] = 1; // 預設數量為 1
-      const hasLargeOption = item.id >= 1 && item.id <= 7; // 判斷是否有加大選項
+    
+    // 篩選資料
+    const filteredItems = currentCategory === 'all' 
+      ? menuItems 
+      : menuItems.filter(item => item.category === currentCategory);
+
+    filteredItems.forEach(item => {
+      menuQuantities[item.id] = 1;
 
       const div = document.createElement('div');
       div.className = 'item';
@@ -367,15 +336,28 @@
           <div class="item-name">${item.name}</div>
           <div class="item-price">$${item.price}</div>
           
-          ${hasLargeOption ? `
-            <div class="options">
-              <label>
-                <input type="checkbox" id="large-${item.id}" />
-                <span>加大 (+20元)</span>
-              </label>
-            </div>
-          ` : '<div style="flex-grow:1;"></div>'} 
+          <div class="options-container">
+            ${item.hasLarge ? `
+              <div class="options">
+                <label>
+                  <input type="checkbox" id="large-${item.id}" />
+                  <span>加大 (+$20)</span>
+                </label>
+              </div>
+            ` : ''}
+            
+            ${item.hasDoubleEgg ? `
+              <div class="options">
+                <label>
+                  <input type="checkbox" id="egg-${item.id}" />
+                  <span>雙蛋 (+$15)</span>
+                </label>
+              </div>
+            ` : ''}
+          </div>
           
+          <div style="flex-grow:1;"></div>
+
           <div class="controls">
             <button onclick="changeMenuQty(${item.id}, -1)">－</button>
             <span id="menu-qty-${item.id}">1</span>
@@ -389,57 +371,62 @@
     });
   }
 
-  // 修改數量
   window.changeMenuQty = function(id, delta) {
     const current = menuQuantities[id] || 1;
     const newQty = Math.max(1, current + delta);
     menuQuantities[id] = newQty;
-    
-    // 更新介面與動畫
     const qtySpan = document.getElementById(`menu-qty-${id}`);
-    qtySpan.innerText = newQty;
-    qtySpan.classList.remove('pop-anim');
-    void qtySpan.offsetWidth; // 觸發重繪
-    qtySpan.classList.add('pop-anim');
+    if (qtySpan) {
+        qtySpan.innerText = newQty;
+        qtySpan.classList.remove('pop-anim');
+        void qtySpan.offsetWidth;
+        qtySpan.classList.add('pop-anim');
+    }
   };
 
-  // 加入購物車
   window.addToCart = function(id) {
     const qty = menuQuantities[id] || 1;
-    const isLarge = (id >= 1 && id <= 7) && document.getElementById(`large-${id}`)?.checked;
-    
-    // 儲存到 localStorage
-    const key = isLarge ? `${id}-large` : `${id}-normal`;
+    const isLarge = document.getElementById(`large-${id}`)?.checked || false;
+    const isDoubleEgg = document.getElementById(`egg-${id}`)?.checked || false;
+
+    // Key 格式: ID-large-egg (如果沒有就不加)
+    const optionsKey = [
+      isLarge ? 'large' : '',
+      isDoubleEgg ? 'egg' : ''
+    ].filter(Boolean).join('-');
+
+    const key = optionsKey ? `${id}-${optionsKey}` : `${id}-normal`;
+
     const cart = JSON.parse(localStorage.getItem('cart') || '{}');
     cart[key] = (cart[key] || 0) + qty;
     localStorage.setItem('cart', JSON.stringify(cart));
 
-    // 重置介面狀態
+    // 重置
     menuQuantities[id] = 1;
-    document.getElementById(`menu-qty-${id}`).innerText = '1';
-    if (document.getElementById(`large-${id}`)) {
-      document.getElementById(`large-${id}`).checked = false;
-    }
+    if (document.getElementById(`menu-qty-${id}`)) document.getElementById(`menu-qty-${id}`).innerText = '1';
+    if (document.getElementById(`large-${id}`)) document.getElementById(`large-${id}`).checked = false;
+    if (document.getElementById(`egg-${id}`)) document.getElementById(`egg-${id}`).checked = false;
 
-    // 更新購物車圖示與提示
     updateCartBadge();
-    showToast(`已加入 ${qty} 份 ${menuItems.find(i=>i.id===id).name}${isLarge?'(大)':''}`);
     
-    // 震動回饋 (僅在支援的手機瀏覽器有效)
+    const item = menuItems.find(i => i.id === id);
+    let optText = [];
+    if (isLarge) optText.push('加大');
+    if (isDoubleEgg) optText.push('雙蛋');
+    const optString = optText.length > 0 ? `(${optText.join('、')})` : '';
+
+    showToast(`已加入 ${qty} 份 ${item.name} ${optString}`);
     if (navigator.vibrate) navigator.vibrate(50);
   };
 
-  // 更新購物車數量標記
   function updateCartBadge() {
     const cart = JSON.parse(localStorage.getItem('cart') || '{}');
     const totalCount = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
     const badge = document.getElementById('cart-badge');
     const fab = document.getElementById('cart-fab');
-
     if (totalCount > 0) {
       badge.textContent = totalCount;
       badge.classList.add('show');
-      // 圖示彈跳動畫
       fab.classList.remove('pop-anim');
       void fab.offsetWidth;
       fab.classList.add('pop-anim');
@@ -448,22 +435,16 @@
     }
   }
 
-  // 顯示 Toast 提示
   let toastTimeout;
   function showToast(message) {
     const toast = document.getElementById('toast');
     toast.textContent = message;
     toast.classList.add('show');
-    
     clearTimeout(toastTimeout);
-    toastTimeout = setTimeout(() => {
-      toast.classList.remove('show');
-    }, 2000);
+    toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, 2000);
   }
 
-  // 綁定購物車按鈕點擊事件
   document.getElementById('cart-fab').addEventListener('click', () => {
-    // 檢查購物車是否為空
     const cart = JSON.parse(localStorage.getItem('cart') || '{}');
     if (Object.keys(cart).length === 0) {
       showToast('購物車是空的喔！');
@@ -472,13 +453,11 @@
     window.location.href = 'cart.html';
   });
 
-  // 程式入口
   (async function() {
     renderMenu();
     updateCartBadge();
     await initLiff();
   })();
-
 </script>
 </body>
 </html>
