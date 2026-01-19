@@ -453,12 +453,19 @@
     try {
       await liff.init({ liffId: LIFF_ID });
       if (liff.isLoggedIn()) {
-        // 嘗試自動填入名稱 (選用)
         const profile = await liff.getProfile();
+        
+        // 1. 自動填入姓名
         const nameInput = document.getElementById('name');
-        // 如果使用者還沒填，才自動填入
         if (!nameInput.value) {
           nameInput.value = profile.displayName; 
+        }
+
+        // 2. ★★★ 自動填入上次使用的電話 ★★★
+        const savedPhone = localStorage.getItem('userPhone'); // 從瀏覽器記憶讀取
+        const phoneInput = document.getElementById('phone');
+        if (savedPhone && !phoneInput.value) {
+          phoneInput.value = savedPhone;
         }
       }
     } catch (err) {
@@ -526,6 +533,9 @@
     };
 
     localStorage.setItem('orderData', JSON.stringify(orderData));
+    
+    // ★★★ 新增這行：儲存電話號碼到瀏覽器記憶 ★★★
+    localStorage.setItem('userPhone', phone); 
 
     // 產生 Flex Message
     const flexMessage = createOrderFlexMessage(orderData, menuItems);
@@ -547,7 +557,7 @@
     return `約 ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} 取餐`;
   }
 
-  // Flex Message 產生函式 (排版已優化：移除多餘留白)
+  // Flex Message 產生函式
   function createOrderFlexMessage(orderData, menuItems) {
     const cart = orderData.cart;
     const items = [];
@@ -599,11 +609,13 @@
       altText: `新訂單 ${orderData.orderNumber} 已成立`,
       contents: {
         type: "bubble",
+        // ★★★ 修改重點 1: 移除 hero 區塊 (圖片)，解決中間大片留白 ★★★
+        
         header: {
           type: "box",
           layout: "vertical",
           paddingAll: "12px",
-          backgroundColor: "#F6F8FF",
+          backgroundColor: "#F6F8FF", // 統一背景色，讓 header 跟 body 看起來像一體的
           spacing: "sm",
           contents: [
             {
@@ -663,25 +675,20 @@
             }
           ]
         },
-        hero: {
-          type: "image",
-          url: HERO_IMAGE_URL,
-          size: "full",
-          aspectRatio: "20:9",
-          aspectMode: "cover"
-        },
         body: {
           type: "box",
           layout: "vertical",
           spacing: "sm",
-          paddingTop: "12px",
+          paddingTop: "0px", // ★★★ 修改重點 2: 這裡設為 0，緊貼 Header
           contents: [
+            // 地址欄
             {
               type: "box",
               layout: "horizontal",
               backgroundColor: "#FAFAFA",
               cornerRadius: "10px",
               paddingAll: "10px",
+              // margin: "none", 
               contents: [
                 { type: "text", text: "📍", size: "sm", flex: 1 },
                 { type: "text", text: STORE_ADDRESS, size: "sm", color: "#434343", wrap: true, flex: 11 }
