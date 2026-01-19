@@ -307,7 +307,7 @@
 <script>
   const LIFF_ID = "2007831775-ojeB1qbw"; // 你的 LIFF ID
 
-  // ====== Flex 相關常數 (保持不變) ======
+  // ====== Flex 相關常數 ======
   const ORDER_DETAIL_URL = "https://liff.line.me/2007831775-ojeB1qbw/order-detail.html";
   const STORE_PHONE      = "tel:033812828";
   const BRAND_NAME       = "邱媽媽美食";
@@ -448,7 +448,7 @@
     window.location.href = 'index.html';
   });
 
-  // 初始化 LIFF (為了自動填入資料)
+  // 初始化 LIFF
   async function initLiff() {
     try {
       await liff.init({ liffId: LIFF_ID });
@@ -470,7 +470,7 @@
   renderCart();
   initLiff();
 
-  // ====== 表單驗證與送出 (保持原有邏輯，僅修改 UI 互動) ======
+  // ====== 表單驗證與送出 ======
   submitBtn.addEventListener('click', () => {
     const cart = loadCart();
     const nameInput = document.getElementById('name');
@@ -547,7 +547,7 @@
     return `約 ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} 取餐`;
   }
 
-  // Flex Message 產生函式 (引用您原本的邏輯，這裡直接貼上以確保完整性)
+  // Flex Message 產生函式 (排版已優化：移除多餘留白)
   function createOrderFlexMessage(orderData, menuItems) {
     const cart = orderData.cart;
     const items = [];
@@ -574,11 +574,13 @@
           { type: "text", text: `x${qty}`, size: "sm", color: "#666666", flex: 2, align: "center" },
           { type: "text", text: `$${subtotal}`, size: "sm", color: "#111111", flex: 3, align: "end" }
         ],
-        margin: "sm" // 每個品項間只留一點點縫隙
+        margin: "sm"
       });
     }
 
     const paymentText = orderData.paymentMethod === "cash" ? "現金" : orderData.paymentMethod;
+    const pickupSingleLine = `⏰ ${orderData.pickupTime}`;
+
     const notesBox = orderData.notes ? {
       type: "box",
       layout: "vertical",
@@ -597,48 +599,155 @@
       altText: `新訂單 ${orderData.orderNumber} 已成立`,
       contents: {
         type: "bubble",
-        hero: { type: "image", url: HERO_IMAGE_URL, size: "full", aspectRatio: "20:6", aspectMode: "cover" },
         header: {
-          type: "box", layout: "vertical", paddingAll: "12px", backgroundColor: "#F6F8FF", spacing: "sm",
+          type: "box",
+          layout: "vertical",
+          paddingAll: "12px",
+          backgroundColor: "#F6F8FF",
+          spacing: "sm",
           contents: [
             {
-              type: "box", layout: "horizontal", spacing: "12px",
+              type: "box",
+              layout: "horizontal",
+              spacing: "12px",
               contents: [
                 { type: "image", url: BRAND_LOGO_URL, size: "sm", aspectMode: "cover", aspectRatio: "1:1" },
-                { type: "box", layout: "vertical", contents: [{ type: "text", text: BRAND_NAME, weight: "bold", size: "md", color: "#1F1F1F" }, { type: "text", text: `#${orderData.orderNumber}`, size: "xs", color: "#8C8C8C" }] }
+                {
+                  type: "box",
+                  layout: "vertical",
+                  contents: [
+                    { type: "text", text: BRAND_NAME, weight: "bold", size: "md", color: "#1F1F1F" },
+                    { type: "text", text: `#${orderData.orderNumber}`, size: "xs", color: "#8C8C8C" }
+                  ]
+                }
               ]
             },
-            { type: "box", layout: "vertical", margin: "sm", contents: [{ type: "text", text: `姓名：${orderData.name}`, size: "sm", color: "#595959" }, { type: "text", text: `電話：${orderData.phone}`, size: "sm", color: "#595959", margin: "xs" }] },
             {
-              type: "box", layout: "horizontal", spacing: "sm", margin: "sm",
+              type: "box",
+              layout: "vertical",
+              margin: "sm",
               contents: [
-                { type: "box", layout: "vertical", backgroundColor: "#E6FFFB", cornerRadius: "12px", paddingAll: "8px", contents: [{ type: "text", text: `⏰ ${orderData.pickupTime}`, size: "sm", color: "#08979C", wrap: false }], flex: 7 },
-                { type: "box", layout: "vertical", backgroundColor: "#FFF1F0", cornerRadius: "12px", paddingAll: "8px", contents: [{ type: "text", text: `💳 ${paymentText}`, size: "sm", color: "#D4380D", wrap: false }], flex: 5 }
+                { type: "text", text: `姓名：${orderData.name}`, size: "sm", color: "#595959" },
+                { type: "text", text: `電話：${orderData.phone}`, size: "sm", color: "#595959", margin: "xs" }
+              ]
+            },
+            {
+              type: "box",
+              layout: "horizontal",
+              spacing: "sm",
+              margin: "sm",
+              contents: [
+                {
+                  type: "box",
+                  layout: "vertical",
+                  backgroundColor: "#E6FFFB",
+                  cornerRadius: "12px",
+                  paddingAll: "8px",
+                  contents: [
+                    { type: "text", text: pickupSingleLine, size: "sm", color: "#08979C", wrap: false }
+                  ],
+                  flex: 7
+                },
+                {
+                  type: "box",
+                  layout: "vertical",
+                  backgroundColor: "#FFF1F0",
+                  cornerRadius: "12px",
+                  paddingAll: "8px",
+                  contents: [
+                    { type: "text", text: `💳 ${paymentText}`, size: "sm", color: "#D4380D", wrap: false }
+                  ],
+                  flex: 5
+                }
               ]
             }
           ]
         },
+        hero: {
+          type: "image",
+          url: HERO_IMAGE_URL,
+          size: "full",
+          aspectRatio: "20:9",
+          aspectMode: "cover"
+        },
         body: {
-          type: "box", layout: "vertical", spacing: "sm", // 這裡設為 sm，讓各區塊不要分太開
-          paddingTop: "12px", // 只留一點點上邊距
+          type: "box",
+          layout: "vertical",
+          spacing: "sm",
+          paddingTop: "12px",
           contents: [
-            { type: "box", layout: "horizontal", backgroundColor: "#FAFAFA", cornerRadius: "10px", paddingAll: "10px", margin: "none", contents: [{ type: "text", text: "📍", size: "sm", flex: 1 }, { type: "text", text: STORE_ADDRESS, size: "sm", color: "#434343", wrap: true, flex: 11 }] },
-            { type: "separator", margin: "md" },
-            { type: "text", text: "品項", weight: "bold", size: "sm", color: "#262626" },
+            {
+              type: "box",
+              layout: "horizontal",
+              backgroundColor: "#FAFAFA",
+              cornerRadius: "10px",
+              paddingAll: "10px",
+              contents: [
+                { type: "text", text: "📍", size: "sm", flex: 1 },
+                { type: "text", text: STORE_ADDRESS, size: "sm", color: "#434343", wrap: true, flex: 11 }
+              ]
+            },
+            { type: "text", text: "品項", weight: "bold", size: "sm", color: "#262626", margin: "md" },
             ...items,
-            { type: "box", layout: "horizontal", backgroundColor: "#F0F5FF", cornerRadius: "10px", paddingAll: "12px", margin: "md", contents: [{ type: "text", text: "總金額", weight: "bold", flex: 5, color: "#1D39C4" }, { type: "text", text: `$${total}`, weight: "bold", flex: 7, align: "end", color: "#1D39C4" }] },
+            {
+              type: "box",
+              layout: "horizontal",
+              backgroundColor: "#F0F5FF",
+              cornerRadius: "10px",
+              paddingAll: "12px",
+              margin: "md",
+              contents: [
+                { type: "text", text: "總金額", weight: "bold", flex: 5, color: "#1D39C4" },
+                { type: "text", text: `$${total}`, weight: "bold", flex: 7, align: "end", color: "#1D39C4" }
+              ]
+            },
             ...(notesBox ? [notesBox] : [])
           ]
         },
         footer: {
-          type: "box", layout: "horizontal", spacing: "sm",
+          type: "box",
+          layout: "horizontal",
+          spacing: "sm",
           contents: [
-            { type: "box", layout: "vertical", flex: 4, backgroundColor: "#2F54EB", cornerRadius: "8px", paddingAll: "10px", action: { type: "uri", uri: ORDER_DETAIL_URL }, contents: [{ type: "text", text: "查看訂單", size: "xs", weight: "bold", align: "center", color: "#FFFFFF", wrap: false }] },
-            { type: "box", layout: "vertical", flex: 4, backgroundColor: "#595959", cornerRadius: "8px", paddingAll: "10px", action: { type: "uri", uri: STORE_PHONE }, contents: [{ type: "text", text: "聯絡店家", size: "xs", weight: "bold", align: "center", color: "#FFFFFF", wrap: false }] },
-            { type: "box", layout: "vertical", flex: 4, backgroundColor: "#1890FF", cornerRadius: "8px", paddingAll: "10px", action: { type: "uri", uri: MAPS_URL }, contents: [{ type: "text", text: "地圖導航", size: "xs", weight: "bold", align: "center", color: "#FFFFFF", wrap: false }] }
+            {
+              type: "box",
+              layout: "vertical",
+              flex: 4,
+              backgroundColor: "#2F54EB",
+              cornerRadius: "8px",
+              paddingAll: "10px",
+              action: { type: "uri", uri: ORDER_DETAIL_URL },
+              contents: [
+                { type: "text", text: "查看訂單", size: "xs", weight: "bold", align: "center", color: "#FFFFFF", wrap: false }
+              ]
+            },
+            {
+              type: "box",
+              layout: "vertical",
+              flex: 4,
+              backgroundColor: "#595959",
+              cornerRadius: "8px",
+              paddingAll: "10px",
+              action: { type: "uri", uri: STORE_PHONE },
+              contents: [
+                { type: "text", text: "聯絡店家", size: "xs", weight: "bold", align: "center", color: "#FFFFFF", wrap: false }
+              ]
+            },
+            {
+              type: "box",
+              layout: "vertical",
+              flex: 4,
+              backgroundColor: "#1890FF",
+              cornerRadius: "8px",
+              paddingAll: "10px",
+              action: { type: "uri", uri: MAPS_URL },
+              contents: [
+                { type: "text", text: "地圖導航", size: "xs", weight: "bold", align: "center", color: "#FFFFFF", wrap: false }
+              ]
+            }
           ]
         },
-        styles: { body: { separator: false }, footer: { separator: true } }
+        styles: { body: { separator: false }, footer: { separator: false } }
       }
     };
   }
