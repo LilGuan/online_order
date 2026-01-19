@@ -79,15 +79,18 @@
   .item-name {
     color: #333;
     font-weight: 500;
+    line-height: 1.4;
   }
   .item-qty {
     color: #888;
     font-size: 0.9rem;
     margin-left: 5px;
+    white-space: nowrap;
   }
   .item-price {
     font-weight: 600;
     color: #333;
+    margin-left: 10px;
   }
 
   /* 總計區塊 */
@@ -116,6 +119,7 @@
   .info-value {
     color: #333;
     font-weight: 500;
+    word-break: break-all;
   }
   
   /* 重要資訊突顯 */
@@ -174,7 +178,7 @@
 
 <div id="error-msg">
   <i class="bi bi-exclamation-circle" style="font-size: 3rem; color: #dc3545;"></i>
-  <p>找不到訂單資料</p>
+  <p class="mt-2">找不到訂單資料</p>
   <a href="index.html" class="btn btn-outline-secondary mt-3">返回首頁</a>
 </div>
 
@@ -239,7 +243,7 @@
 
 </div>
 
-<!-- 成功 Modal (保留但自動顯示) -->
+<!-- 成功 Modal (自動顯示) -->
 <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-sm">
     <div class="modal-content text-center">
@@ -259,26 +263,47 @@
 <script>
   // 餐點資料 (需與 index.html 一致)
   const menuItems = [
-    { id: 1, name: '蝦仁炒飯', price: 100 },
-    { id: 2, name: '肉絲炒飯', price: 85 },
-    { id: 3, name: '香腸炒飯', price: 100 },
-    { id: 4, name: '蛋炒飯', price: 75 },
-    { id: 5, name: '蝦仁炒麵', price: 100 },
-    { id: 6, name: '蝦仁米苔目', price: 100 },
-    { id: 7, name: '鹹豬肉蓋飯', price: 120 },
-    { id: 8, name: '鹹豬肉', price: 200 },
-    { id: 9, name: '海帶芽蛋花湯', price: 20 },
-    { id: 10, name: '荷包蛋', price: 15 },
+    { id: 1, name: '蛋炒飯', price: 80 },
+    { id: 2, name: '肉絲炒飯', price: 100 },
+    { id: 3, name: '肉絲炒麵', price: 100 },
+    { id: 4, name: '香腸炒飯', price: 110 },
+    { id: 5, name: '蝦仁炒飯', price: 110 },
+    { id: 6, name: '蝦仁炒麵', price: 110 },
+    { id: 7, name: '蝦仁米苔目', price: 110 },
+    { id: 8, name: '鹹豬肉蓋飯', price: 130 },
+    { id: 9, name: '鹹豬肉', price: 230 },
+    { id: 10, name: '海帶芽蛋花湯', price: 25 },
+    { id: 11, name: '荷包蛋', price: 15 },
   ];
 
-  function getNameById(id) {
-    const item = menuItems.find(i => i.id === parseInt(id));
-    return item ? item.name : '未知餐點';
-  }
+  // 解析 Key 邏輯 (整合雙蛋選項)
+  function parseCartItem(key) {
+    const parts = key.split('-');
+    const id = parseInt(parts[0]);
+    const options = parts.slice(1);
 
-  function getPriceById(id) {
-    const item = menuItems.find(i => i.id === parseInt(id));
-    return item ? item.price : 0;
+    const item = menuItems.find(i => i.id === id);
+    if (!item) return null;
+
+    let finalPrice = item.price;
+    let nameSuffix = [];
+
+    if (options.includes('large')) {
+      finalPrice += 20;
+      nameSuffix.push('加大');
+    }
+    if (options.includes('egg')) {
+      finalPrice += 15;
+      nameSuffix.push('雙蛋');
+    }
+
+    const displayName = item.name + (nameSuffix.length > 0 ? ` (${nameSuffix.join('、')})` : '');
+
+    return {
+      id,
+      displayName,
+      unitPrice: finalPrice
+    };
   }
 
   function renderOrder() {
@@ -319,27 +344,24 @@
       let itemsHtml = '';
 
       Object.keys(cart).forEach(key => {
-        let [idStr, size] = key.split('-');
-        let id = parseInt(idStr);
         const qty = cart[key];
-        let name = getNameById(id);
-        let price = getPriceById(id);
+        
+        // ★★★ 使用新的解析邏輯 ★★★
+        const info = parseCartItem(key);
+        if (!info) return;
 
-        if (size === 'large') {
-          name += ' (大)';
-          price += 20;
-        }
-
-        const subtotal = price * qty;
+        const subtotal = info.unitPrice * qty;
         total += subtotal;
 
         itemsHtml += `
           <div class="order-item">
-            <div>
-              <span class="item-name">${name}</span>
-              <span class="item-qty">x${qty}</span>
+            <div style="flex: 1;">
+              <span class="item-name">${info.displayName}</span>
             </div>
-            <div class="item-price">$${subtotal}</div>
+            <div>
+              <span class="item-qty">x${qty}</span>
+              <span class="item-price">$${subtotal}</span>
+            </div>
           </div>
         `;
       });
@@ -348,11 +370,9 @@
       document.getElementById('total-price').textContent = `$${total}`;
 
       // 清空購物車 (因為訂單已成立)
-      // 注意：這裡假設進入此頁面代表訂單已送出，所以清空
-      // 如果希望使用者按返回還能保留購物車，這行可以拿掉，或改在送出成功後才導向此頁
       localStorage.removeItem('cart');
 
-      // 顯示成功 Modal (選用，因為頁面本身已經很像成功頁了，可視需求保留或移除)
+      // 顯示成功 Modal (選用)
       // const modal = new bootstrap.Modal(document.getElementById('successModal'));
       // modal.show();
 
