@@ -1,51 +1,255 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>訂單明細</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body { font-family: Arial, sans-serif; margin: 1rem; background:#f7f7f7; }
-    h2 { text-align: center; }
-    pre {
-      background: white;
-      padding: 1rem;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      white-space: pre-wrap;
-      font-family: monospace;
-    }
-    #back-btn {
-      cursor: pointer;
-      user-select: none;
-      font-size: 24px;
-      margin-bottom: 1rem;
-      color: #007bff;
-    }
-    #back-btn:hover {
-      text-decoration: underline;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>訂單明細 - 邱媽媽美食</title>
+<!-- 引入 Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- 引入 Bootstrap CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- 引入 Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+<style>
+  body {
+    font-family: 'Noto Sans TC', sans-serif;
+    background-color: #f4f7f6;
+    margin: 0;
+    padding: 0;
+    padding-bottom: 80px;
+    color: #333;
+  }
+
+  /* 成功狀態頂部 */
+  .success-header {
+    background: #fff;
+    padding: 30px 20px;
+    text-align: center;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+    margin-bottom: 20px;
+  }
+  .success-icon {
+    font-size: 3rem;
+    color: #28a745;
+    margin-bottom: 10px;
+  }
+  .success-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2d3436;
+    margin-bottom: 5px;
+  }
+  .success-desc {
+    color: #666;
+    font-size: 0.9rem;
+  }
+
+  /* 資訊卡片 */
+  .container {
+    padding: 0 20px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .info-card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  .card-title {
+    font-size: 1rem;
+    font-weight: 700;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+    color: #444;
+  }
+
+  /* 明細列表 */
+  .order-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    font-size: 0.95rem;
+  }
+  .item-name {
+    color: #333;
+    font-weight: 500;
+  }
+  .item-qty {
+    color: #888;
+    font-size: 0.9rem;
+    margin-left: 5px;
+  }
+  .item-price {
+    font-weight: 600;
+    color: #333;
+  }
+
+  /* 總計區塊 */
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 2px dashed #eee;
+  }
+  .total-label { font-size: 1rem; color: #555; }
+  .total-amount { font-size: 1.3rem; font-weight: 700; color: #ff6b6b; }
+
+  /* 訂單資訊列表 */
+  .info-row {
+    display: flex;
+    margin-bottom: 10px;
+    font-size: 0.95rem;
+  }
+  .info-label {
+    width: 80px;
+    color: #888;
+    flex-shrink: 0;
+  }
+  .info-value {
+    color: #333;
+    font-weight: 500;
+  }
+  
+  /* 重要資訊突顯 */
+  .highlight-box {
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+
+  /* 底部按鈕 */
+  .bottom-btn-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: white;
+    padding: 15px 20px;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: center;
+  }
+  .home-btn {
+    background-color: #2d3436;
+    color: white;
+    border: none;
+    padding: 12px 40px;
+    border-radius: 30px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+  }
+  .home-btn:hover { background-color: #444; color: white; }
+
+  /* 載入/錯誤狀態 */
+  #loading, #error-msg {
+    text-align: center;
+    margin-top: 50px;
+    color: #666;
+  }
+  #error-msg { display: none; }
+
+</style>
 </head>
 <body>
 
-<div id="back-btn">← 返回菜單</div>
-<h2>訂單明細</h2>
-<pre id="order-display">讀取中...</pre>
+<div id="loading">載入中...</div>
 
-<!-- 訂購成功 Modal -->
-<div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
+<div id="error-msg">
+  <i class="bi bi-exclamation-circle" style="font-size: 3rem; color: #dc3545;"></i>
+  <p>找不到訂單資料</p>
+  <a href="index.html" class="btn btn-outline-secondary mt-3">返回首頁</a>
+</div>
+
+<div id="content" style="display: none;">
+  
+  <!-- 成功狀態頭部 -->
+  <div class="success-header">
+    <i class="bi bi-check-circle-fill success-icon"></i>
+    <div class="success-title">訂購成功！</div>
+    <div class="success-desc">感謝您的訂購，店家已收到訂單。</div>
+  </div>
+
+  <div class="container">
+    
+    <!-- 取餐提示 -->
+    <div class="highlight-box" id="pickup-highlight">
+      <!-- 約 12:30 取餐 -->
+    </div>
+
+    <!-- 訂單內容 -->
+    <div class="info-card">
+      <div class="card-title">餐點明細</div>
+      <div id="order-items">
+        <!-- JS 渲染 -->
+      </div>
+      <div class="total-row">
+        <span class="total-label">總計</span>
+        <span class="total-amount" id="total-price">$0</span>
+      </div>
+    </div>
+
+    <!-- 訂購人資訊 -->
+    <div class="info-card">
+      <div class="card-title">訂單資訊</div>
+      <div class="info-row">
+        <div class="info-label">訂單編號</div>
+        <div class="info-value" id="order-no"></div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">姓名</div>
+        <div class="info-value" id="order-name"></div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">電話</div>
+        <div class="info-value" id="order-phone"></div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">付款方式</div>
+        <div class="info-value" id="payment-method"></div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">備註</div>
+        <div class="info-value" id="order-notes"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bottom-btn-container">
+    <a href="index.html" class="home-btn">返回菜單</a>
+  </div>
+
+</div>
+
+<!-- 成功 Modal (保留但自動顯示) -->
+<div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
     <div class="modal-content text-center">
-      <div class="modal-header">
-        <h5 class="modal-title w-100" id="successModalLabel">訂購成功</h5>
+      <div class="modal-body py-4">
+        <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+        <h5 class="mt-3">訂購成功</h5>
+        <p class="text-muted mb-0">我們正在準備您的餐點</p>
       </div>
-      <div class="modal-body">
-        感謝您的訂購！我們正在準備您的餐點。
-      </div>
-      <div class="modal-footer justify-content-center">
-        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">確定</button>
+      <div class="modal-footer justify-content-center p-2">
+        <button type="button" class="btn btn-sm btn-primary w-100" data-bs-dismiss="modal">確定</button>
       </div>
     </div>
   </div>
@@ -53,10 +257,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  document.getElementById('back-btn').addEventListener('click', () => {
-    window.location.href = 'index.html';
-  });
-
+  // 餐點資料 (需與 index.html 一致)
   const menuItems = [
     { id: 1, name: '蝦仁炒飯', price: 100 },
     { id: 2, name: '肉絲炒飯', price: 85 },
@@ -80,40 +281,44 @@
     return item ? item.price : 0;
   }
 
-  function goBackToMenu() {
-    window.location.href = 'index.html';
-  }
-
-  function showOrder() {
+  function renderOrder() {
     const orderDataStr = localStorage.getItem('orderData');
-    const display = document.getElementById('order-display');
+    const loadingEl = document.getElementById('loading');
+    const errorEl = document.getElementById('error-msg');
+    const contentEl = document.getElementById('content');
+
+    loadingEl.style.display = 'none';
 
     if (!orderDataStr) {
-      display.textContent = '訂單資料錯誤或不存在';
+      errorEl.style.display = 'block';
       return;
     }
 
     try {
       const orderData = JSON.parse(orderDataStr);
       const { cart, notes, paymentMethod, orderNumber, pickupTime, name, phone } = orderData;
+
       if (!cart || Object.keys(cart).length === 0) {
-        display.textContent = '訂單資料錯誤或不存在';
+        errorEl.style.display = 'block';
         return;
       }
 
-      let text = '';
-      text += `訂單編號：${orderNumber}\n`;
-      text += `取餐時間：${pickupTime}\n`;
-      text += `付款方式：${paymentMethod === 'cash' ? '現金' : paymentMethod}\n`;
-      text += `姓名：${name}\n`;
-      text += `電話：${phone}\n`;
-      text += `備註：${notes || '無'}\n\n`;
-      text += `訂單明細：\n`;
+      contentEl.style.display = 'block';
 
+      // 填入資訊
+      document.getElementById('order-no').textContent = `#${orderNumber}`;
+      document.getElementById('pickup-highlight').textContent = `⏰ ${pickupTime}`;
+      document.getElementById('order-name').textContent = name;
+      document.getElementById('order-phone').textContent = phone;
+      document.getElementById('payment-method').textContent = paymentMethod === 'cash' ? '現金付款' : paymentMethod;
+      document.getElementById('order-notes').textContent = notes || '無';
+
+      // 渲染明細列表
+      const itemsContainer = document.getElementById('order-items');
       let total = 0;
+      let itemsHtml = '';
 
       Object.keys(cart).forEach(key => {
-        // key 可能是 "1-normal" 或 "1-large" 或單純 "8"（沒有加大）
         let [idStr, size] = key.split('-');
         let id = parseInt(idStr);
         const qty = cart[key];
@@ -121,33 +326,45 @@
         let price = getPriceById(id);
 
         if (size === 'large') {
-          name += '（加大）';
+          name += ' (大)';
           price += 20;
         }
 
         const subtotal = price * qty;
         total += subtotal;
-        text += `  - ${name} x ${qty}（單價 $${price}，小計 $${subtotal}）\n`;
+
+        itemsHtml += `
+          <div class="order-item">
+            <div>
+              <span class="item-name">${name}</span>
+              <span class="item-qty">x${qty}</span>
+            </div>
+            <div class="item-price">$${subtotal}</div>
+          </div>
+        `;
       });
 
-      text += `\n總金額：$${total}`;
-      display.textContent = text;
+      itemsContainer.innerHTML = itemsHtml;
+      document.getElementById('total-price').textContent = `$${total}`;
 
-      // 清空購物車（你這邊存的是 orderData.cart，應該是清 cart）
+      // 清空購物車 (因為訂單已成立)
+      // 注意：這裡假設進入此頁面代表訂單已送出，所以清空
+      // 如果希望使用者按返回還能保留購物車，這行可以拿掉，或改在送出成功後才導向此頁
       localStorage.removeItem('cart');
 
-      // 顯示成功 Modal
-      const modal = new bootstrap.Modal(document.getElementById('successModal'));
-      modal.show();
+      // 顯示成功 Modal (選用，因為頁面本身已經很像成功頁了，可視需求保留或移除)
+      // const modal = new bootstrap.Modal(document.getElementById('successModal'));
+      // modal.show();
 
     } catch (e) {
-      display.textContent = '訂單資料錯誤或不存在';
       console.error(e);
+      errorEl.style.display = 'block';
     }
   }
 
+  // 頁面載入執行
+  renderOrder();
 
-  showOrder();
 </script>
 
 </body>
