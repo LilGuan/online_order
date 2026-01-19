@@ -2,122 +2,259 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>邱媽媽美食-線上點餐系統</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>邱媽媽美食-線上點餐</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <!-- 引入 Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    /* 你原本的 CSS 都保留 */
-    body { font-family: Arial, sans-serif; margin: 1rem; background:#f7f7f7; }
-    h2 { text-align: center; }
+    /* CSS Reset & 基礎設定 */
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f7f6; /* 更柔和的背景色 */
+      color: #333;
+      padding-bottom: 80px; /* 避免內容被底部遮擋 */
+    }
+
+    /* 標題區塊 */
+    header {
+      background-color: #fff;
+      padding: 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      text-align: center;
+    }
+    h2 { margin: 0; color: #ff6b6b; font-size: 1.5rem; }
+
+    /* 餐點列表容器 */
     .menu {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1rem;
-      margin-bottom: 2rem;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); /* 自適應欄寬，手機版約兩欄 */
+      gap: 12px;
+      padding: 12px;
+      max-width: 800px;
+      margin: 0 auto;
     }
+
+    /* 單個餐點卡片 */
     .item {
       background: white;
-      border-radius: 12px;
-      padding: 1rem;
-      text-align: center;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      border-radius: 16px;
+      overflow: hidden; /* 讓圖片圓角生效 */
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s;
+    }
+    .item:hover { transform: translateY(-2px); }
+
+    /* 餐點圖片區 */
+    .item-image-wrapper {
+      width: 100%;
+      padding-top: 75%; /* 4:3 比例 */
+      position: relative;
+      background-color: #eee;
     }
     .item img {
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 100%;
-      height: auto;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* 餐點內容區 */
+    .item-content {
+      padding: 10px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .item-name {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+      line-height: 1.3;
+      color: #2d3436;
+    }
+
+    .item-price {
+      color: #ff6b6b;
+      font-weight: 600;
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+    }
+
+    /* 選項區域 (加大) */
+    .options {
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      font-size: 0.9rem;
+      color: #636e72;
+    }
+    .options label {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      width: 100%;
+      background: #f8f9fa;
+      padding: 6px 8px;
       border-radius: 8px;
     }
-    .item-name { margin: 0.5rem 0; font-weight: bold; }
+    .options input[type="checkbox"] {
+      margin-right: 6px;
+      width: 18px;
+      height: 18px;
+      accent-color: #ff6b6b; /* Checkbox 顏色 */
+    }
+
+    /* 數量控制區 */
     .controls {
       display: flex;
-      justify-content: center;
       align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 0.5rem;
+      justify-content: space-between;
+      margin-top: auto; /* 推到底部 */
+      background: #f1f3f5;
+      border-radius: 20px;
+      padding: 2px;
     }
     .controls button {
-      width: 30px; height: 30px; font-size: 20px; cursor: pointer;
-      transition: transform 0.15s ease, background-color 0.3s ease;
-      user-select: none;
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: white;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      color: #ff6b6b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    .controls button:hover { transform: scale(1.05); }
-    .controls button:active { transform: scale(0.95); background-color: #ddd; }
+    .controls span {
+      font-weight: 600;
+      min-width: 24px;
+      text-align: center;
+    }
+
+    /* 加入購物車按鈕 */
     button.add-to-cart {
-      background: #28a745;
+      margin-top: 10px;
+      width: 100%;
+      background: #ff6b6b;
       color: white;
       border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
       cursor: pointer;
-      font-weight: bold;
-      transition: transform 0.15s ease, background-color 0.3s ease;
+      transition: background-color 0.2s;
     }
-    button.add-to-cart:hover { transform: scale(1.05); }
-    button.add-to-cart:active { transform: scale(0.95); background-color: #1c7430; }
+    button.add-to-cart:active { background-color: #fa5252; }
 
-    #cart-icon {
+    /* 購物車懸浮按鈕 (FAB) */
+    #cart-fab {
       position: fixed;
-      top: 1rem;
-      right: 1rem;
-      background: #007bff;
+      bottom: 20px;
+      right: 20px;
+      background: #2d3436;
       color: white;
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      cursor: pointer;
-      font-size: 28px;
+      width: 60px;
+      height: 60px;
+      border-radius: 30px;
       display: flex;
-      justify-content: center;
       align-items: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      transition: transform 0.15s ease, background-color 0.3s ease;
-      user-select: none;
+      justify-content: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      cursor: pointer;
       z-index: 1000;
+      transition: transform 0.2s;
     }
-    #cart-icon:hover { transform: scale(1.1); background-color: #0056b3; }
-    #cart-icon:active { transform: scale(0.9); background-color: #003d80; }
+    #cart-fab:active { transform: scale(0.95); }
+    #cart-fab i { font-style: normal; font-size: 24px; }
 
-    #cart-count {
+    #cart-badge {
       position: absolute;
-      top: 4px;
-      right: 4px;
-      background: red;
+      top: -5px;
+      right: -5px;
+      background: #ff6b6b;
       color: white;
       font-size: 12px;
-      padding: 2px 6px;
+      height: 24px;
+      min-width: 24px;
+      padding: 0 6px;
       border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-weight: bold;
-      min-width: 20px;
-      text-align: center;
-      pointer-events: none;
+      border: 2px solid #f4f7f6;
+      opacity: 0;
+      transform: scale(0);
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
-    @keyframes bump {
+    #cart-badge.show { opacity: 1; transform: scale(1); }
+
+    /* Toast 提示訊息 */
+    #toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s;
+      pointer-events: none;
+      z-index: 2000;
+      white-space: nowrap;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* 動畫 */
+    @keyframes pop {
       0% { transform: scale(1); }
-      50% { transform: scale(1.3); }
+      50% { transform: scale(1.2); }
       100% { transform: scale(1); }
     }
-    #cart-icon.bump { animation: bump 0.3s ease-out; }
+    .pop-anim { animation: pop 0.3s ease; }
 
-    @keyframes bounce {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.4); }
-    }
-    #cart-count.bounce { animation: bounce 0.3s ease; }
   </style>
 </head>
 <body>
 
-<h2>邱媽媽美食</h2>
+<header>
+  <h2>邱媽媽美食</h2>
+</header>
 
-<div class="menu" id="menu"></div>
-
-<!-- 右上角購物車icon -->
-<div id="cart-icon" title="購物車">
-  🛒
-  <div id="cart-count" style="display:none;">0</div>
+<div class="menu" id="menu">
+  <!-- 餐點會由 JS 動態生成 -->
 </div>
 
+<!-- 懸浮購物車按鈕 -->
+<div id="cart-fab" title="前往結帳">
+  <i>🛒</i>
+  <div id="cart-badge">0</div>
+</div>
+
+<!-- Toast 提示 -->
+<div id="toast">已加入購物車</div>
+
 <script>
+  // 資料
   const menuItems = [
     { id: 1, name: '蝦仁炒飯', price: 100, image: 'images/shrimp_rice.png' },
     { id: 2, name: '肉絲炒飯', price: 85, image: 'images/beef_rice.png' },
@@ -130,119 +267,156 @@
     { id: 9, name: '海帶芽蛋花湯', price: 20, image: 'images/soup.png' },
     { id: 10, name: '荷包蛋', price: 15, image: 'images/egg.png' },
   ];
+
+  // 狀態管理
   const menuQuantities = {};
   const menuDiv = document.getElementById('menu');
-
   let userProfile = null;
 
-  async function main() {
-    await liff.init({ liffId: '2007831775-ojeB1qbw' });
-    if (!liff.isLoggedIn()) liff.login();
-
-    userProfile = await liff.getProfile();
-    console.log('使用者:', userProfile.displayName, userProfile.userId);
+  // LIFF 初始化
+  async function initLiff() {
+    try {
+      await liff.init({ liffId: '2007831775-ojeB1qbw' }); // 你的 LIFF ID
+      if (!liff.isLoggedIn()) {
+        liff.login();
+      } else {
+        userProfile = await liff.getProfile();
+        console.log('User:', userProfile);
+      }
+    } catch (err) {
+      console.error('LIFF Init Error:', err);
+    }
   }
 
+  // 渲染菜單
   function renderMenu() {
     menuDiv.innerHTML = '';
     menuItems.forEach(item => {
-      menuQuantities[item.id] = 1;
-      const hasLargeOption = item.id >= 1 && item.id <= 7;
+      menuQuantities[item.id] = 1; // 預設數量為 1
+      const hasLargeOption = item.id >= 1 && item.id <= 7; // 判斷是否有加大選項
+
       const div = document.createElement('div');
       div.className = 'item';
       div.innerHTML = `
-        <img src="${item.image}" alt="${item.name}" />
-        <div class="item-name">${item.name}</div>
-        <div class="item-price">價格：$${item.price}</div>
-        ${hasLargeOption ? `
-          <label>
-            <input type="checkbox" id="large-${item.id}" />
-            加大（+$20）
-          </label>
-        ` : ''}
-        <div class="controls">
-          <button onclick="changeMenuQty(${item.id}, -1)">－</button>
-          <span id="menu-qty-${item.id}">1</span>
-          <button onclick="changeMenuQty(${item.id}, 1)">＋</button>
+        <div class="item-image-wrapper">
+          <img src="${item.image}" alt="${item.name}" loading="lazy" />
         </div>
-        <button class="add-to-cart" onclick="addToCart(${item.id})">加入購物車</button>
+        <div class="item-content">
+          <div class="item-name">${item.name}</div>
+          <div class="item-price">$${item.price}</div>
+          
+          ${hasLargeOption ? `
+            <div class="options">
+              <label>
+                <input type="checkbox" id="large-${item.id}" />
+                <span>加大 (+20元)</span>
+              </label>
+            </div>
+          ` : '<div style="flex-grow:1;"></div>'} 
+          
+          <div class="controls">
+            <button onclick="changeMenuQty(${item.id}, -1)">－</button>
+            <span id="menu-qty-${item.id}">1</span>
+            <button onclick="changeMenuQty(${item.id}, 1)">＋</button>
+          </div>
+          
+          <button class="add-to-cart" onclick="addToCart(${item.id})">加入購物車</button>
+        </div>
       `;
       menuDiv.appendChild(div);
     });
   }
 
-  function changeMenuQty(id, delta) {
+  // 修改數量
+  window.changeMenuQty = function(id, delta) {
     const current = menuQuantities[id] || 1;
-    menuQuantities[id] = Math.max(1, current + delta);
-    document.getElementById(`menu-qty-${id}`).innerText = menuQuantities[id];
-  }
+    const newQty = Math.max(1, current + delta);
+    menuQuantities[id] = newQty;
+    
+    // 更新介面與動畫
+    const qtySpan = document.getElementById(`menu-qty-${id}`);
+    qtySpan.innerText = newQty;
+    qtySpan.classList.remove('pop-anim');
+    void qtySpan.offsetWidth; // 觸發重繪
+    qtySpan.classList.add('pop-anim');
+  };
 
-  function updateCartCount() {
-    const cart = JSON.parse(localStorage.getItem('cart') || '{}');
-    const totalCount = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
-    const countEl = document.getElementById('cart-count');
-    if (totalCount > 0) {
-      countEl.style.display = 'block';
-      countEl.textContent = totalCount;
-      countEl.classList.remove('bounce');
-      void countEl.offsetWidth;
-      countEl.classList.add('bounce');
-    } else {
-      countEl.style.display = 'none';
-    }
-  }
-
-  function animateCartIcon() {
-    const cartIcon = document.getElementById('cart-icon');
-    cartIcon.classList.add('bump');
-    setTimeout(() => {
-      cartIcon.classList.remove('bump');
-    }, 300);
-  }
-
-  async function addToCart(id) {
+  // 加入購物車
+  window.addToCart = function(id) {
     const qty = menuQuantities[id] || 1;
-    if (qty <= 0) {
-      alert('請先設定數量');
-      return;
-    }
-
     const isLarge = (id >= 1 && id <= 7) && document.getElementById(`large-${id}`)?.checked;
+    
+    // 儲存到 localStorage
     const key = isLarge ? `${id}-large` : `${id}-normal`;
     const cart = JSON.parse(localStorage.getItem('cart') || '{}');
-
     cart[key] = (cart[key] || 0) + qty;
     localStorage.setItem('cart', JSON.stringify(cart));
 
+    // 重置介面狀態
     menuQuantities[id] = 1;
     document.getElementById(`menu-qty-${id}`).innerText = '1';
     if (document.getElementById(`large-${id}`)) {
       document.getElementById(`large-${id}`).checked = false;
     }
 
-    updateCartCount();
-    animateCartIcon();
+    // 更新購物車圖示與提示
+    updateCartBadge();
+    showToast(`已加入 ${qty} 份 ${menuItems.find(i=>i.id===id).name}${isLarge?'(大)':''}`);
+    
+    // 震動回饋 (僅在支援的手機瀏覽器有效)
+    if (navigator.vibrate) navigator.vibrate(50);
+  };
 
-    // try {
-    //   await liff.sendMessages([
-    //     {
-    //       type: 'text',
-    //       text: `${userProfile.displayName} 您好，已將「${menuItems.find(m => m.id === id).name}${isLarge ? '（加大）' : ''} x${qty}」加入購物車 ✅`
-    //     }
-    //   ]);
-    // } catch (err) {
-    //   console.error('發送訊息失敗', err);
-    // }
+  // 更新購物車數量標記
+  function updateCartBadge() {
+    const cart = JSON.parse(localStorage.getItem('cart') || '{}');
+    const totalCount = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
+    const badge = document.getElementById('cart-badge');
+    const fab = document.getElementById('cart-fab');
+
+    if (totalCount > 0) {
+      badge.textContent = totalCount;
+      badge.classList.add('show');
+      // 圖示彈跳動畫
+      fab.classList.remove('pop-anim');
+      void fab.offsetWidth;
+      fab.classList.add('pop-anim');
+    } else {
+      badge.classList.remove('show');
+    }
   }
 
-  document.getElementById('cart-icon').addEventListener('click', () => {
+  // 顯示 Toast 提示
+  let toastTimeout;
+  function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.add('show');
+    
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => {
+      toast.classList.remove('show');
+    }, 2000);
+  }
+
+  // 綁定購物車按鈕點擊事件
+  document.getElementById('cart-fab').addEventListener('click', () => {
+    // 檢查購物車是否為空
+    const cart = JSON.parse(localStorage.getItem('cart') || '{}');
+    if (Object.keys(cart).length === 0) {
+      showToast('購物車是空的喔！');
+      return;
+    }
     window.location.href = 'cart.html';
   });
 
-  main().then(() => {
+  // 程式入口
+  (async function() {
     renderMenu();
-    updateCartCount();
-  });
+    updateCartBadge();
+    await initLiff();
+  })();
+
 </script>
 </body>
 </html>
