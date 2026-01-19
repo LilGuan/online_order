@@ -254,6 +254,68 @@
 <div id="toast">已加入購物車</div>
 
 <script>
+  // ====== 營業時間設定 ======
+  function checkBusinessHours() {
+    const now = new Date();
+    const day = now.getDay(); // 0 (Sun) - 6 (Sat)
+    const hour = now.getHours();
+    const minute = now.getMinutes();
+    const currentTime = hour * 60 + minute;
+
+    // 定義營業時間 (分鐘數)
+    // 10:30 = 630, 14:00 = 840
+    // 16:00 = 960, 20:00 = 1200
+    const morningStart = 630;
+    const morningEnd = 840;
+    const eveningStart = 960;
+    const eveningEnd = 1200;
+
+    let isOpen = false;
+
+    // 每天營業時間相同 (Mon-Sun)
+    // 若有特定公休日，可在這裡加判斷，例如 if (day === 1) return false;
+    
+    if (
+      (currentTime >= morningStart && currentTime < morningEnd) ||
+      (currentTime >= eveningStart && currentTime < eveningEnd)
+    ) {
+      isOpen = true;
+    }
+
+    // 測試用：強制開啟 (正式上線請註解掉)
+    // isOpen = true; 
+
+    return isOpen;
+  }
+
+  function showClosedModal() {
+    // 建立一個全螢幕遮罩
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.85); z-index: 9999;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: white; text-align: center; padding: 20px;
+    `;
+    modal.innerHTML = `
+      <i class="bi bi-clock-history" style="font-size: 3rem; margin-bottom: 20px; color: #ff6b6b;"></i>
+      <h2 style="margin-bottom: 10px; color: #fff;">目前非營業時間</h2>
+      <p style="font-size: 1.1rem; line-height: 1.6;">
+        我們的營業時間為：<br>
+        <strong>10:30 - 14:00</strong><br>
+        <strong>16:00 - 20:00</strong>
+      </p>
+      <p style="color: #aaa; margin-top: 20px; font-size: 0.9rem;">請於營業時間內再造訪，謝謝！</p>
+    `;
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden'; // 禁止捲動
+  }
+
+  // 頁面載入時檢查
+  if (!checkBusinessHours()) {
+    showClosedModal();
+  }
   // 資料
   const menuItems = [
     { id: 1, name: '蝦仁炒飯', price: 100, image: 'images/shrimp_rice.png' },
