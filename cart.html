@@ -825,6 +825,11 @@
     // 取得付款方式
     const paymentMethod = document.getElementById('payment-method').value;
 
+    const orderData = { name, phone, cart, notes, paymentMethod, orderNumber, pickupTime: finalPickupTime };
+    localStorage.setItem('orderData', JSON.stringify(orderData));
+    localStorage.setItem('userPhone', phone); 
+
+
     // ★★★ LINE Pay 串接邏輯 ★★★
     if (paymentMethod === 'linepay_online') {
         
@@ -920,11 +925,6 @@
         return; // 阻止後續執行 (不送出 LINE 訊息，因為要先付款)
     }
     // ★★★★★★ 綠界金流串接邏輯結束 ★★★★★★
-
-    const orderData = { name, phone, cart, notes, paymentMethod, orderNumber, pickupTime: finalPickupTime };
-
-    localStorage.setItem('orderData', JSON.stringify(orderData));
-    localStorage.setItem('userPhone', phone); 
 
     const flexMessage = createOrderFlexMessage(orderData, menuItems);
     sendOrderMessage(flexMessage);
