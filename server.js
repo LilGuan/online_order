@@ -132,8 +132,15 @@ app.get('/api/linepay/confirm', async (req, res) => {
 
         if (response.data.returnCode === '0000') {
             console.log('✅ 付款成功');
-            // ★★★ 請將這裡改成您的前端 GitHub Pages 網址 ★★★
-            res.redirect(`https://chiufood.netlify.app/order-detail.html?status=success&orderId=${orderId}`);
+            // 清除暫存
+            delete ordersCache[orderId];
+            
+            // ★★★ 修改這裡：帶上參數 ★★★
+            // 請換成您的 GitHub Pages 網址
+            const frontendUrl = `https://chiufood.netlify.app/order-detail.html`;
+            
+            // 加上 Query Parameters
+            res.redirect(`${frontendUrl}?status=success&orderId=${orderId}`);
         } else {
             console.error('付款失敗:', response.data);
             res.send('付款失敗');

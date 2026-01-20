@@ -342,7 +342,7 @@
 
     // 這裡特別標註「已付款」
     let paymentText = "現金";
-    if (orderData.paymentMethod === 'linepay_online') paymentText = "LINE Pay (已付款)";
+    if (orderData.paymentMethod === 'Line pay') paymentText = "LINE Pay (已付款)";
     else if (orderData.paymentMethod === 'online_payment') paymentText = "線上付款 (已付款)";
 
     const notesBox = orderData.notes ? {
@@ -389,40 +389,59 @@
   async function checkPaymentStatus() {
     const urlParams = new URLSearchParams(window.location.search);
     const status = urlParams.get('status');
-    // const orderId = urlParams.get('orderId'); // 可選：用於驗證
+    const orderId = urlParams.get('orderId');
 
-    // 只有在 status=success 時才執行補發訊息
+    console.log("URL Params:", status, orderId); // 除錯用
+
     if (status === 'success') {
       
-      // 顯示成功 Modal
+      // 1. 顯示成功 Modal
       const modal = new bootstrap.Modal(document.getElementById('successModal'));
       modal.show();
 
-      // 從 localStorage 讀取暫存訂單
+      // 2. 補發 LINE 訊息
       const orderDataStr = localStorage.getItem('orderData');
       if (orderDataStr) {
         const orderData = JSON.parse(orderDataStr);
         
-        // 嘗試初始化 LIFF 並發送訊息
+        // 確保訂單編號一致 (選用，避免資料錯亂)
+        if (orderId && orderData.orderNumber !== orderId) {
+             console.warn("URL orderId 與 localStorage 不符，但仍嘗試發送");
+        }
+
         try {
+            // 初始化 LIFF
             await liff.init({ liffId: LIFF_ID });
-            if (liff.isLoggedIn()) {
+            
+            // 檢查是否登入
+            if (!liff.isLoggedIn()) {
+                console.log("使用者未登入，嘗試登入...");
+                liff.login({ redirectUri: window.location.href }); // 登入後跳回當前頁面
+                return; // 登入會重整頁面，這裡先中斷
+            }
+
+            if (liff.isInClient() || liff.isLoggedIn()) {
+               console.log("準備發送 Flex Message...");
                const flex = createOrderFlexMessage(orderData, menuItems);
+               
                await liff.sendMessages([flex]);
-               console.log('Flex message sent');
+               console.log("Flex message 已發送！");
             }
         } catch (err) {
-            console.error('LIFF Error:', err);
+            console.error('LIFF/SendMsg Error:', err);
+            // alert('訊息補發失敗: ' + err.message); // 開發時可打開
         }
       }
       
-      // 清空購物車 (避免重複下單)
-      localStorage.removeItem('cart');
-      
-      // 清除 URL 參數，避免重新整理又觸發
+      // 3. 清理工作
+      localStorage.removeItem('cart'); // 清空購物車
+      // 清除 URL 參數，避免重新整理又觸發 (這行最後執行)
       window.history.replaceState({}, document.title, window.location.pathname);
-    } 
-    // 注意：不要在 else 裡清空購物車，因為 renderOrder 需要它來顯示明細
+      
+    } else {
+       // 一般進入 (非付款回調)，如果已結帳過，清空購物車
+       // (這裡的邏輯視您的需求而定)
+    }
   }
 
   function renderOrder() {
