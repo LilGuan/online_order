@@ -385,62 +385,79 @@
     };
   }
 
-  // 檢查是否為付款後跳轉回來
+  // ★★★ 檢查 URL 參數並補發訊息 ★★★
   async function checkPaymentStatus() {
+    // 1. 抓取網址參數
     const urlParams = new URLSearchParams(window.location.search);
-    const status = urlParams.get('status');
-    const orderId = urlParams.get('orderId');
+    const status = urlParams.get('status');   // 例如: success
+    const orderId = urlParams.get('orderId'); // 例如: T1234AB
+    const method = urlParams.get('method');   // 例如: cash (現金付款會有這個，LINE Pay 沒有)
 
-    console.log("URL Params:", status, orderId); // 除錯用
+    console.log("URL Params - Status:", status, "OrderID:", orderId, "Method:", method);
 
+    // 2. 判斷是否為「成功狀態」
     if (status === 'success') {
       
-      // 1. 顯示成功 Modal
+      // 顯示成功視窗
       const modal = new bootstrap.Modal(document.getElementById('successModal'));
       modal.show();
 
-      // 2. 補發 LINE 訊息
+      // 3. 讀取 LocalStorage 中的訂單資料
       const orderDataStr = localStorage.getItem('orderData');
+      
       if (orderDataStr) {
         const orderData = JSON.parse(orderDataStr);
         
-        // 確保訂單編號一致 (選用，避免資料錯亂)
+        // (選用) 驗證網址的 orderId 是否跟本地存的一樣，確保資料正確
         if (orderId && orderData.orderNumber !== orderId) {
-             console.warn("URL orderId 與 localStorage 不符，但仍嘗試發送");
+             console.warn("警告：網址訂單號與本地暫存不符，可能讀到舊資料");
         }
 
-        try {
-            // 初始化 LIFF
-            await liff.init({ liffId: LIFF_ID });
-            
-            // 檢查是否登入
-            if (!liff.isLoggedIn()) {
-                console.log("使用者未登入，嘗試登入...");
-                liff.login({ redirectUri: window.location.href }); // 登入後跳回當前頁面
-                return; // 登入會重整頁面，這裡先中斷
-            }
+        // 4. 判斷是否需要「補發卡片」
+        // 邏輯：如果是「現金付款 (method=cash)」，在上一頁已經發過了，這裡不發。
+        //      如果是「LINE Pay (method是空的)」，代表還沒發，這裡要發。
+        if (method !== 'cash') {
+            try {
+                // 初始化 LIFF
+                await liff.init({ liffId: LIFF_ID });
+                
+                // 確保使用者已登入
+                if (!liff.isLoggedIn()) {
+                    console.log("使用者未登入，執行登入...");
+                    // 登入後會跳回此頁面，網址參數還在，會重新觸發此函式
+                    liff.login({ redirectUri: window.location.href });
+                    return; 
+                }
 
-            if (liff.isInClient() || liff.isLoggedIn()) {
-               console.log("準備發送 Flex Message...");
-               const flex = createOrderFlexMessage(orderData, menuItems);
-               
-               await liff.sendMessages([flex]);
-               console.log("Flex message 已發送！");
+                // 製作卡片並發送
+                if (liff.isInClient() || liff.isLoggedIn()) {
+                   console.log("正在補發 LINE Pay 訂單卡片...");
+                   
+                   // ★★★ 在這裡呼叫製作卡片的函式 ★★★
+                   const flex = createOrderFlexMessage(orderData, menuItems);
+                   
+                   await liff.sendMessages([flex]);
+                   console.log("Flex message 補發成功！");
+                }
+            } catch (err) {
+                console.error('LIFF 發送失敗:', err);
+                // 這裡可以選擇不跳 alert，以免干擾使用者，反正訂單畫面已經顯示出來了
             }
-        } catch (err) {
-            console.error('LIFF/SendMsg Error:', err);
-            // alert('訊息補發失敗: ' + err.message); // 開發時可打開
         }
       }
       
-      // 3. 清理工作
-      localStorage.removeItem('cart'); // 清空購物車
-      // 清除 URL 參數，避免重新整理又觸發 (這行最後執行)
-      window.history.replaceState({}, document.title, window.location.pathname);
+      // 5. 清理工作 (重要)
+      // 清空購物車，避免重複下單
+      localStorage.removeItem('cart');
+      
+      // ★ 清除網址參數 ★
+      // 這樣使用者重新整理頁面時，就不會再次觸發「補發訊息」或「顯示成功視窗」
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
       
     } else {
-       // 一般進入 (非付款回調)，如果已結帳過，清空購物車
-       // (這裡的邏輯視您的需求而定)
+       // 如果網址沒有 status=success，代表是從首頁點進來查看舊訂單的
+       // 這邊不需要做什麼，保持靜默即可
     }
   }
 
