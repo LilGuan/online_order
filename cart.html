@@ -330,25 +330,25 @@
     return isOpen;
   }
 
-  if (!checkBusinessHours()) {
-    document.body.innerHTML = `
-      <div style="
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: #f4f7f6; display: flex; flex-direction: column;
-        align-items: center; justify-content: center; text-align: center;
-        padding: 20px; color: #333;
-      ">
-        <h2 style="color:#ff6b6b;">休息中 😴</h2>
-        <p>目前非營業時間，無法進行結帳。</p>
-        <p>營業時間：10:30-14:00 / 16:00-20:00</p>
-        <a href="index.html" style="
-          margin-top: 20px; padding: 10px 20px;
-          background: #333; color: white; border-radius: 20px;
-          text-decoration: none;
-        ">返回首頁</a>
-      </div>
-    `;
-  }
+  // if (!checkBusinessHours()) {
+  //   document.body.innerHTML = `
+  //     <div style="
+  //       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  //       background: #f4f7f6; display: flex; flex-direction: column;
+  //       align-items: center; justify-content: center; text-align: center;
+  //       padding: 20px; color: #333;
+  //     ">
+  //       <h2 style="color:#ff6b6b;">休息中 😴</h2>
+  //       <p>目前非營業時間，無法進行結帳。</p>
+  //       <p>營業時間：10:30-14:00 / 16:00-20:00</p>
+  //       <a href="index.html" style="
+  //         margin-top: 20px; padding: 10px 20px;
+  //         background: #333; color: white; border-radius: 20px;
+  //         text-decoration: none;
+  //       ">返回首頁</a>
+  //     </div>
+  //   `;
+  // }
 
   const LIFF_ID = "2007831775-ojeB1qbw"; // 你的 LIFF ID
 
