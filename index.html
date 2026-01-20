@@ -243,13 +243,19 @@
   function checkBusinessHours() {
     const now = new Date();
     const currentTime = now.getHours() * 60 + now.getMinutes();
+    // 10:30 (630) - 14:00 (840), 16:00 (960) - 20:00 (1200)
     const isOpen = (currentTime >= 630 && currentTime < 840) || (currentTime >= 960 && currentTime < 1200);
     // return true; // 測試用
     return isOpen;
   }
 
+  // 顯示非營業時間遮罩
   function showClosedModal() {
+    const modalId = 'closed-modal';
+    if (document.getElementById(modalId)) return; // 避免重複建立
+
     const modal = document.createElement('div');
+    modal.id = modalId;
     modal.style.cssText = `
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0, 0, 0, 0.85); z-index: 9999;
@@ -258,12 +264,24 @@
     `;
     modal.innerHTML = `
       <h2 style="margin-bottom: 10px; color: #fff;">目前非營業時間</h2>
-      <p style="font-size: 1.1rem; line-height: 1.6;">
+      <p style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 20px;">
         營業時間：<br><strong>10:30 - 14:00</strong><br><strong>16:00 - 20:00</strong>
       </p>
+      <!-- 新增：前往預訂按鈕 -->
+      <button id="preorder-btn" style="
+        background: #ff6b6b; color: white; border: none; padding: 12px 30px;
+        font-size: 1rem; border-radius: 25px; cursor: pointer; font-weight: bold;
+        box-shadow: 0 4px 10px rgba(255, 107, 107, 0.4);
+      ">前往預訂</button>
     `;
     document.body.appendChild(modal);
     document.body.style.overflow = 'hidden';
+
+    // 綁定關閉事件
+    document.getElementById('preorder-btn').addEventListener('click', () => {
+      modal.style.display = 'none';
+      document.body.style.overflow = ''; // 恢復捲動
+    });
   }
 
   if (!checkBusinessHours()) {
@@ -396,11 +414,12 @@
     const qty = menuQuantities[id] || 1;
     const isLarge = document.getElementById(`large-${id}`)?.checked || false;
     const isDoubleEgg = document.getElementById(`egg-${id}`)?.checked || false;
-
+    const isDoubleShrimp = document.getElementById(`shrimp-${id}`)?.checked || false;
     // Key 格式: ID-large-egg (如果沒有就不加)
     const optionsKey = [
       isLarge ? 'large' : '',
-      isDoubleEgg ? 'egg' : ''
+      isDoubleEgg ? 'egg' : '',
+      isDoubleShrimp ? 'shrimp' : ''
     ].filter(Boolean).join('-');
 
     const key = optionsKey ? `${id}-${optionsKey}` : `${id}-normal`;
@@ -414,6 +433,7 @@
     if (document.getElementById(`menu-qty-${id}`)) document.getElementById(`menu-qty-${id}`).innerText = '1';
     if (document.getElementById(`large-${id}`)) document.getElementById(`large-${id}`).checked = false;
     if (document.getElementById(`egg-${id}`)) document.getElementById(`egg-${id}`).checked = false;
+    if (document.getElementById(`shrimp-${id}`)) document.getElementById(`shrimp-${id}`).checked = false;
 
     updateCartBadge();
     
@@ -421,6 +441,7 @@
     let optText = [];
     if (isLarge) optText.push('加大');
     if (isDoubleEgg) optText.push('雙蛋');
+    if (isDoubleShrimp) optText.push('加蝦');
     const optString = optText.length > 0 ? `(${optText.join('、')})` : '';
 
     showToast(`已加入 ${qty} 份 ${item.name} ${optString}`);

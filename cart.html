@@ -266,7 +266,15 @@
       <input type="tel" id="phone" class="form-input" placeholder="09xxxxxxxx" maxlength="10" />
       <div class="error-text" id="phone-error">請輸入正確的電話號碼</div>
     </div>
-
+    <!-- 在電話輸入框下方加入 -->
+    <div class="form-group">
+      <label class="form-label" for="pickup-time">取餐時間 (預約) <span style="color:red">*</span></label>
+      <select id="pickup-time" class="form-select">
+        <option value="" disabled selected>請選擇取餐時間</option>
+        <!-- JS 動態生成選項 -->
+      </select>
+      <div class="error-text" id="time-error">請選擇取餐時間</div>
+    </div>
     <div class="form-group">
       <label class="form-label" for="payment-method">付款方式</label>
       <select id="payment-method" class="form-select">
@@ -374,6 +382,7 @@
   const emptyMsg = document.getElementById('empty-msg');
   const submitBtn = document.getElementById('submit-order');
   const emptyCartModal = new bootstrap.Modal(document.getElementById('emptyCartModal'));
+  const pickupTimeSelect = document.getElementById('pickup-time');
 
   // 載入購物車資料
   function loadCart() {
@@ -507,7 +516,7 @@
   document.getElementById('back-btn').addEventListener('click', () => {
     window.location.href = 'index.html';
   });
-
+  
   // 初始化 LIFF (包含自動填入電話)
   async function initLiff() {
     try {
@@ -532,10 +541,54 @@
       console.error(err);
     }
   }
-  
+  // ★★★ 新增：產生取餐時間選項 ★★★
+  function generateTimeSlots() {
+    pickupTimeSelect.innerHTML = '<option value="" disabled selected>請選擇取餐時間</option>';
+    
+    // 定義營業時段 (分鐘數)
+    // 午餐: 10:30 (630) - 14:00 (840)
+    // 晚餐: 16:00 (960) - 20:00 (1200)
+    const slots = [];
+    
+    function addSlots(start, end) {
+      for (let time = start; time <= end; time += 30) {
+        slots.push(time);
+      }
+    }
+    addSlots(630, 840);  // 10:30 - 14:00
+    addSlots(960, 1200); // 16:00 - 20:00
+
+    // 取得當前時間
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    let hasValidTime = false;
+
+    slots.forEach(time => {
+        const h = Math.floor(time / 60).toString().padStart(2, '0');
+        const m = (time % 60).toString().padStart(2, '0');
+        const timeStr = `${h}:${m}`;
+        
+        const option = document.createElement('option');
+        option.value = timeStr;
+        
+        // 如果時間已過，標示並禁用
+        if (time < currentMinutes) {
+            option.text = `${timeStr} (已過時)`;
+            option.disabled = true;
+        } else {
+            option.text = timeStr;
+            // (選用) 自動選取第一個有效時段
+            // if (!hasValidTime) { pickupTimeSelect.value = timeStr; hasValidTime = true; }
+        }
+        pickupTimeSelect.appendChild(option);
+    });
+  }
   // 頁面載入執行
   renderCart();
   initLiff();
+  generateTimeSlots(); 
+
 
   // ====== 表單驗證與送出 ======
   submitBtn.addEventListener('click', () => {
@@ -544,7 +597,8 @@
     const phoneInput = document.getElementById('phone');
     const nameError = document.getElementById('name-error');
     const phoneError = document.getElementById('phone-error');
-    
+    const timeInput = document.getElementById('pickup-time');
+    const timeError = document.getElementById('time-error');
     let isValid = true;
 
     // 重置錯誤狀態
@@ -552,6 +606,8 @@
     phoneInput.classList.remove('is-invalid');
     nameError.style.display = 'none';
     phoneError.style.display = 'none';
+    timeInput.classList.remove('is-invalid');
+    timeError.style.display = 'none';
 
     if (Object.keys(cart).length === 0) {
       emptyCartModal.show();
@@ -575,6 +631,16 @@
       isValid = false;
     }
 
+    // ★★★ 新增：驗證取餐時間 ★★★
+    const pickupTime = timeInput.value;
+    if (!pickupTime) {
+      timeInput.classList.add('is-invalid');
+      timeError.style.display = 'block';
+      isValid = false;
+    }
+
+    if (!isValid) return;
+
     if (!isValid) return; // 驗證未通過則停止
 
     // 邏輯處理 (加稱謂)
@@ -584,7 +650,7 @@
 
     // 產生訂單資料
     const orderNumber = generateOrderNumber();
-    const pickupTime = getPickupTime();
+    // const pickupTime = getPickupTime();
     const notes = document.getElementById('notes').value.trim();
     const paymentMethod = document.getElementById('payment-method').value;
 
@@ -605,7 +671,7 @@
   });
 
   function generateOrderNumber() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const chars = 'ABCDEF0123456789';
     let result = '';
     for (let i = 0; i < 6; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
     return result;
