@@ -342,7 +342,7 @@
 
     // 這裡特別標註「已付款」
     let paymentText = "現金";
-    if (orderData.paymentMethod === 'Line pay') paymentText = "LINE Pay (已付款)";
+    if (orderData.paymentMethod === 'linepay_online') paymentText = "LINE Pay (已付款)";
     else if (orderData.paymentMethod === 'online_payment') paymentText = "線上付款 (已付款)";
 
     const notesBox = orderData.notes ? {
