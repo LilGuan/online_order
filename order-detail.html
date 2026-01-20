@@ -309,6 +309,122 @@
     };
   }
 
+  // ====== Flex Message 相關設定 (從 cart.html 複製過來) ======
+  const BRAND_LOGO_URL = "https://raw.githubusercontent.com/LilGuan/online_order/main/images/logo.jpg";
+  const BRAND_NAME = "邱媽媽美食";
+  const STORE_ADDRESS = "桃園市大園區皇家六街12號";
+  const HERO_IMAGE_URL = "https://images.unsplash.com/photo-1604908554007-0880a8a94571?q=80&w=1600&auto=format&fit=crop";
+  const STORE_PHONE = "tel:033812828";
+  const MAPS_URL = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(STORE_ADDRESS);
+  const ORDER_DETAIL_URL = "https://liff.line.me/2007831775-ojeB1qbw/order-detail.html";
+  const LIFF_ID = "2007831775-ojeB1qbw"; // 您的 LIFF ID
+
+  function createOrderFlexMessage(orderData, menuItems) {
+    const cart = orderData.cart;
+    const items = [];
+    let total = 0;
+
+    for (const key in cart) {
+        const qty = cart[key];
+        const info = parseCartItem(key);
+        if (!info) continue;
+        const subtotal = info.unitPrice * qty;
+        total += subtotal;
+        items.push({
+            type: "box", layout: "horizontal", margin: "sm",
+            contents: [
+                { type: "text", text: info.displayName, size: "sm", color: "#333333", flex: 5, wrap: true },
+                { type: "text", text: `x${qty}`, size: "sm", color: "#666666", flex: 2, align: "center" },
+                { type: "text", text: `$${subtotal}`, size: "sm", color: "#111111", flex: 3, align: "end" }
+            ]
+        });
+    }
+
+    // 這裡特別標註「已付款」
+    let paymentText = "現金";
+    if (orderData.paymentMethod === 'linepay_online') paymentText = "LINE Pay (已付款)";
+    else if (orderData.paymentMethod === 'online_payment') paymentText = "線上付款 (已付款)";
+
+    const notesBox = orderData.notes ? {
+        type: "box", layout: "vertical", backgroundColor: "#FFF8E1", cornerRadius: "8px", paddingAll: "10px", margin: "md",
+        contents: [{ type: "text", text: "備註", weight: "bold", size: "sm", color: "#946200" }, { type: "text", text: orderData.notes, size: "sm", color: "#946200", wrap: true, margin: "xs" }]
+    } : null;
+
+    return {
+        type: "flex", altText: `新訂單 ${orderData.orderNumber} (已付款)`,
+        contents: {
+            type: "bubble",
+            header: {
+                type: "box", layout: "vertical", paddingAll: "12px", backgroundColor: "#F6F8FF", spacing: "sm",
+                contents: [
+                    { type: "box", layout: "horizontal", contents: [{ type: "text", text: "✅ 訂單已付款，店家準備中", weight: "bold", color: "#28a745", size: "sm" }] },
+                    { type: "box", layout: "horizontal", spacing: "12px", contents: [{ type: "image", url: BRAND_LOGO_URL, size: "sm", aspectMode: "cover", aspectRatio: "1:1" }, { type: "box", layout: "vertical", contents: [{ type: "text", text: BRAND_NAME, weight: "bold", size: "md", color: "#1F1F1F" }, { type: "text", text: `#${orderData.orderNumber}`, size: "xs", color: "#8C8C8C" }] }] },
+                    { type: "box", layout: "vertical", margin: "sm", contents: [{ type: "text", text: `姓名：${orderData.name}`, size: "sm", color: "#595959" }, { type: "text", text: `電話：${orderData.phone}`, size: "sm", color: "#595959", margin: "xs" }] },
+                    { type: "box", layout: "horizontal", spacing: "sm", margin: "sm", contents: [{ type: "box", layout: "vertical", backgroundColor: "#E6FFFB", cornerRadius: "12px", paddingAll: "8px", flex: 7, contents: [{ type: "text", text: `⏰ ${orderData.pickupTime}`, size: "sm", color: "#08979C", wrap: false }] }, { type: "box", layout: "vertical", backgroundColor: "#FFF1F0", cornerRadius: "12px", paddingAll: "8px", flex: 5, contents: [{ type: "text", text: `💳 ${paymentText}`, size: "sm", color: "#D4380D", wrap: false }] }] }
+                ]
+            },
+            body: {
+                type: "box", layout: "vertical", spacing: "sm", paddingTop: "0px",
+                contents: [
+                    { type: "box", layout: "horizontal", backgroundColor: "#FAFAFA", cornerRadius: "10px", paddingAll: "10px", contents: [{ type: "text", text: "📍", size: "sm", flex: 1 }, { type: "text", text: STORE_ADDRESS, size: "sm", color: "#434343", wrap: true, flex: 11 }] },
+                    { type: "text", text: "品項", weight: "bold", size: "sm", color: "#262626", margin: "md" },
+                    ...items,
+                    { type: "box", layout: "horizontal", backgroundColor: "#F0F5FF", cornerRadius: "10px", paddingAll: "12px", margin: "md", contents: [{ type: "text", text: "總金額", weight: "bold", flex: 5, color: "#1D39C4" }, { type: "text", text: `$${total}`, weight: "bold", flex: 7, align: "end", color: "#1D39C4" }] },
+                    ...(notesBox ? [notesBox] : [])
+                ]
+            },
+            footer: {
+                type: "box", layout: "horizontal", spacing: "sm",
+                contents: [
+                    { type: "box", layout: "vertical", flex: 4, backgroundColor: "#2F54EB", cornerRadius: "8px", paddingAll: "10px", action: { type: "uri", uri: ORDER_DETAIL_URL }, contents: [{ type: "text", text: "查看訂單", size: "xs", weight: "bold", align: "center", color: "#FFFFFF", wrap: false }] },
+                    { type: "box", layout: "vertical", flex: 4, backgroundColor: "#595959", cornerRadius: "8px", paddingAll: "10px", action: { type: "uri", uri: STORE_PHONE }, contents: [{ type: "text", text: "聯絡店家", size: "xs", weight: "bold", align: "center", color: "#FFFFFF", wrap: false }] },
+                    { type: "box", layout: "vertical", flex: 4, backgroundColor: "#1890FF", cornerRadius: "8px", paddingAll: "10px", action: { type: "uri", uri: MAPS_URL }, contents: [{ type: "text", text: "地圖導航", size: "xs", weight: "bold", align: "center", color: "#FFFFFF", wrap: false }] }
+                ]
+            }
+        }
+    };
+  }
+
+  // 檢查是否為付款後跳轉回來
+  async function checkPaymentStatus() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const status = urlParams.get('status');
+    // const orderId = urlParams.get('orderId'); // 可選：用於驗證
+
+    // 只有在 status=success 時才執行補發訊息
+    if (status === 'success') {
+      
+      // 顯示成功 Modal
+      const modal = new bootstrap.Modal(document.getElementById('successModal'));
+      modal.show();
+
+      // 從 localStorage 讀取暫存訂單
+      const orderDataStr = localStorage.getItem('orderData');
+      if (orderDataStr) {
+        const orderData = JSON.parse(orderDataStr);
+        
+        // 嘗試初始化 LIFF 並發送訊息
+        try {
+            await liff.init({ liffId: LIFF_ID });
+            if (liff.isLoggedIn()) {
+               const flex = createOrderFlexMessage(orderData, menuItems);
+               await liff.sendMessages([flex]);
+               console.log('Flex message sent');
+            }
+        } catch (err) {
+            console.error('LIFF Error:', err);
+        }
+      }
+      
+      // 清空購物車 (避免重複下單)
+      localStorage.removeItem('cart');
+      
+      // 清除 URL 參數，避免重新整理又觸發
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } 
+    // 注意：不要在 else 裡清空購物車，因為 renderOrder 需要它來顯示明細
+  }
+
   function renderOrder() {
     const orderDataStr = localStorage.getItem('orderData');
     const loadingEl = document.getElementById('loading');
@@ -387,7 +503,7 @@
 
   // 頁面載入執行
   renderOrder();
-
+  checkPaymentStatus();
 </script>
 
 </body>
