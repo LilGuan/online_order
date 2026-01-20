@@ -358,7 +358,7 @@
             ${item.hasLarge ? `
               <div class="options">
                 <label>
-                  <input type="checkbox" id="large-${item.id}" />
+                  <input type="checkbox" id="large-${item.id}" onchange="updateItemPrice(${item.id})"/>
                   <span>加大 (+$20)</span>
                 </label>
               </div>
@@ -367,7 +367,7 @@
             ${item.hasDoubleEgg ? `
               <div class="options">
                 <label>
-                  <input type="checkbox" id="egg-${item.id}" />
+                  <input type="checkbox" id="egg-${item.id}" onchange="updateItemPrice(${item.id})" />
                   <span>雙蛋 (+$15)</span>
                 </label>
               </div>
@@ -375,7 +375,7 @@
             ${item.hasDoubleShrimp ? `
               <div class="options">
                 <label>
-                  <input type="checkbox" id="shrimp-${item.id}" />
+                  <input type="checkbox" id="shrimp-${item.id}" onchange="updateItemPrice(${item.id})" />
                   <span>加蝦 (+$35)</span>
                 </label>
               </div>
@@ -396,6 +396,36 @@
       menuDiv.appendChild(div);
     });
   }
+
+  // ★★★ 新增：即時更新單品價格 ★★★
+  window.updateItemPrice = function(id) {
+    const item = menuItems.find(i => i.id === id);
+    if (!item) return;
+
+    let currentPrice = item.price;
+
+    // 檢查各選項是否被勾選，若有則累加金額
+    const isLarge = document.getElementById(`large-${id}`)?.checked;
+    const isDoubleEgg = document.getElementById(`egg-${id}`)?.checked;
+    const isDoubleShrimp = document.getElementById(`shrimp-${id}`)?.checked;
+
+    if (isLarge) currentPrice += 20;
+    if (isDoubleEgg) currentPrice += 15;
+    if (isDoubleShrimp) currentPrice += 35;
+
+    // 更新介面上的價格文字
+    const priceEl = document.getElementById(`price-${id}`);
+    if (priceEl) {
+      priceEl.innerText = `$${currentPrice}`;
+      
+      // (選用) 增加一點視覺回饋，讓使用者知道價格變了
+      priceEl.style.transition = 'color 0.2s';
+      priceEl.style.color = '#2d3436'; // 暫時變深色
+      setTimeout(() => {
+        priceEl.style.color = '#ff6b6b'; // 變回原本的顏色
+      }, 200);
+    }
+  };
 
   window.changeMenuQty = function(id, delta) {
     const current = menuQuantities[id] || 1;
@@ -443,6 +473,13 @@
     if (isDoubleEgg) optText.push('雙蛋');
     if (isDoubleShrimp) optText.push('加蝦');
     const optString = optText.length > 0 ? `(${optText.join('、')})` : '';
+
+    if (document.getElementById(`shrimp-${id}`)) document.getElementById(`shrimp-${id}`).checked = false;
+
+    // ★★★ 新增：重置後，更新價格顯示回原價 ★★★
+    updateItemPrice(id); 
+
+    updateCartBadge();
 
     showToast(`已加入 ${qty} 份 ${item.name} ${optString}`);
     if (navigator.vibrate) navigator.vibrate(50);
