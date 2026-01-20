@@ -551,12 +551,12 @@
     const slots = [];
     
     function addSlots(start, end) {
-      for (let time = start; time <= end; time += 30) {
+      for (let time = start; time <= end; time += 15) {
         slots.push(time);
       }
     }
-    addSlots(630, 840);  // 10:30 - 14:00
-    addSlots(960, 1200); // 16:00 - 20:00
+    addSlots(645, 840);  // 10:45 - 14:00
+    addSlots(975, 1200); // 16:15 - 20:00
 
     // 取得當前時間
     const now = new Date();
@@ -579,7 +579,7 @@
         } else {
             option.text = timeStr;
             // (選用) 自動選取第一個有效時段
-            // if (!hasValidTime) { pickupTimeSelect.value = timeStr; hasValidTime = true; }
+            if (!hasValidTime) { pickupTimeSelect.value = timeStr; hasValidTime = true; }
         }
         pickupTimeSelect.appendChild(option);
     });
