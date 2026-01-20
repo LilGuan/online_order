@@ -175,7 +175,43 @@
     border-color: #ff6b6b;
     background-color: #fff;
   }
-
+  .mode-switch {
+    display: flex;
+    background: #f1f3f5;
+    border-radius: 20px;
+    padding: 3px;
+    position: relative;
+    width: 140px;
+    cursor: pointer;
+  }
+  .mode-option {
+    flex: 1;
+    text-align: center;
+    font-size: 0.85rem;
+    padding: 6px 0;
+    z-index: 2;
+    transition: color 0.3s;
+    font-weight: 600;
+    color: #666;
+  }
+  .mode-option.active {
+    color: #fff;
+  }
+  .mode-bg {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 50%; /* 減去 padding */
+    height: calc(100% - 6px);
+    background: #ff6b6b;
+    border-radius: 17px;
+    transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+    z-index: 1;
+  }
+  /* 預約模式時，背景滑到右邊 */
+  .mode-switch.reserve .mode-bg {
+    transform: translateX(calc(100% - 3px)); /* 微調位置 */
+  }
   /* 底部固定結帳區 */
   .checkout-bar {
     position: fixed;
@@ -254,7 +290,14 @@
 
   <div class="form-section">
     <div class="form-title">訂購人資訊</div>
-    
+
+    <div class="mode-switch" id="mode-switch">
+        <div class="mode-bg"></div>
+        <div class="mode-option active" id="mode-instant">即時</div>
+        <div class="mode-option" id="mode-reserve">預約</div>
+      </div>
+    </div>
+
     <div class="form-group">
       <label class="form-label" for="name">姓名 <span style="color:red">*</span></label>
       <input type="text" id="name" class="form-input" placeholder="請輸入您的姓名" />
@@ -266,15 +309,22 @@
       <input type="tel" id="phone" class="form-input" placeholder="09xxxxxxxx" maxlength="10" />
       <div class="error-text" id="phone-error">請輸入正確的電話號碼</div>
     </div>
-    <!-- 在電話輸入框下方加入 -->
-    <div class="form-group">
-      <label class="form-label" for="pickup-time">取餐時間 (預約) <span style="color:red">*</span></label>
+
+    <!-- 預約日期 (打烊後才顯示) -->
+    <div class="form-group" id="date-group" style="display: none;">
+      <label class="form-label" for="pickup-date">取餐日期 <span style="color:red">*</span></label>
+      <select id="pickup-date" class="form-select"></select>
+    </div>
+
+    <!-- 取餐時間 (預約模式才顯示) -->
+    <div class="form-group" id="time-group" style="display: none;">
+      <label class="form-label" for="pickup-time">取餐時間 <span style="color:red">*</span></label>
       <select id="pickup-time" class="form-select">
         <option value="" disabled selected>請選擇取餐時間</option>
-        <!-- JS 動態生成選項 -->
       </select>
       <div class="error-text" id="time-error">請選擇取餐時間</div>
     </div>
+
     <div class="form-group">
       <label class="form-label" for="payment-method">付款方式</label>
       <select id="payment-method" class="form-select">
@@ -383,6 +433,17 @@
   const submitBtn = document.getElementById('submit-order');
   const emptyCartModal = new bootstrap.Modal(document.getElementById('emptyCartModal'));
   const pickupTimeSelect = document.getElementById('pickup-time');
+  const pickupDateSelect = document.getElementById('pickup-date');
+  const timeGroup = document.getElementById('time-group');
+  const dateGroup = document.getElementById('date-group');
+  const modeSwitch = document.getElementById('mode-switch');
+  const modeInstant = document.getElementById('mode-instant');
+  const modeReserve = document.getElementById('mode-reserve');
+
+  // 狀態變數
+  let currentMode = 'instant'; // 'instant' 或 'reserve'
+  let isBusinessHours = false;
+  let isClosedForToday = false; // 是否已過今日營業時間 (打烊)
 
   // 載入購物車資料
   function loadCart() {
@@ -541,28 +602,109 @@
       console.error(err);
     }
   }
-  // ★★★ 新增：產生取餐時間選項 ★★★
-  function generateTimeSlots() {
-    pickupTimeSelect.innerHTML = '<option value="" disabled selected>請選擇取餐時間</option>';
-    
-    // 定義營業時段 (分鐘數)
-    // 午餐: 10:30 (630) - 14:00 (840)
-    // 晚餐: 16:00 (960) - 20:00 (1200)
-    const slots = [];
-    
-    function addSlots(start, end) {
-      for (let time = start; time <= end; time += 15) {
-        slots.push(time);
-      }
-    }
-    addSlots(645, 840);  // 10:45 - 14:00
-    addSlots(975, 1200); // 16:15 - 20:00
+  // ====== 時段邏輯處理 ======
 
-    // 取得當前時間
+  function initMode() {
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-    let hasValidTime = false;
+    // 營業時間判斷
+    // 午餐: 10:30 (630) - 14:00 (840)
+    // 晚餐: 16:00 (960) - 20:00 (1200)
+    isBusinessHours = (currentMinutes >= 630 && currentMinutes < 840) || (currentMinutes >= 960 && currentMinutes < 1200);
+    
+    // 判斷是否已打烊 (超過 20:00)
+    isClosedForToday = currentMinutes >= 1200;
+
+    if (!isBusinessHours) {
+      // 非營業時間，強制切換到預約模式並鎖定
+      setMode('reserve');
+      modeSwitch.style.pointerEvents = 'none'; // 禁用切換
+      modeSwitch.style.opacity = '0.7'; // 稍微變淡提示不可用
+      
+      // 如果已打烊，顯示日期選擇
+      if (isClosedForToday) {
+        initDateSelect();
+      }
+    } else {
+      // 營業時間內，預設即時，可切換
+      setMode('instant');
+      modeSwitch.style.pointerEvents = 'auto';
+      modeSwitch.style.opacity = '1';
+    }
+
+    // 初始化時間選單 (根據預設模式)
+    updateTimeSlots();
+  }
+
+  function setMode(mode) {
+    currentMode = mode;
+    if (mode === 'instant') {
+      modeSwitch.classList.remove('reserve');
+      modeInstant.classList.add('active');
+      modeReserve.classList.remove('active');
+      timeGroup.style.display = 'none';
+      dateGroup.style.display = 'none';
+    } else {
+      modeSwitch.classList.add('reserve');
+      modeInstant.classList.remove('active');
+      modeReserve.classList.add('active');
+      timeGroup.style.display = 'block';
+      if (isClosedForToday) {
+         dateGroup.style.display = 'block';
+      }
+    }
+    updateTimeSlots();
+  }
+
+  // 點擊切換模式
+  modeSwitch.addEventListener('click', () => {
+    // 如果被鎖定 (非營業時間)，不執行切換
+    if (modeSwitch.style.pointerEvents === 'none') return;
+    
+    if (currentMode === 'instant') setMode('reserve');
+    else setMode('instant');
+  });
+
+  // 初始化日期選單 (未來三天)
+  function initDateSelect() {
+    pickupDateSelect.innerHTML = '';
+    const today = new Date();
+    
+    for (let i = 1; i <= 3; i++) { // 從明天開始算 3 天
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      
+      const dateStr = d.toISOString().split('T')[0]; // YYYY-MM-DD
+      const displayStr = `${d.getMonth() + 1}/${d.getDate()} (週${['日','一','二','三','四','五','六'][d.getDay()]})`;
+      
+      const option = document.createElement('option');
+      option.value = dateStr;
+      option.text = displayStr;
+      pickupDateSelect.appendChild(option);
+    }
+  }
+
+  function updateTimeSlots() {
+    if (currentMode === 'instant') return; // 即時模式不需要產生選單
+
+    pickupTimeSelect.innerHTML = '<option value="" disabled selected>請選擇取餐時間</option>';
+    const slots = [];
+    
+    function addSlots(start, end) {
+      for (let time = start; time <= end; time += 30) {
+        slots.push(time);
+      }
+    }
+    addSlots(645, 825);  // 10:45 - 13:45
+    addSlots(975, 1185); // 16:15 - 19:45
+
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    // 如果是打烊後預約 (選擇了未來日期)，則所有時段都開放
+    // 如果是今日非營業時間 (午休)，則檢查時段
+    const isFutureDate = isClosedForToday; // 打烊後只能選明天，所以一定是未來
 
     slots.forEach(time => {
         const h = Math.floor(time / 60).toString().padStart(2, '0');
@@ -572,14 +714,16 @@
         const option = document.createElement('option');
         option.value = timeStr;
         
-        // 如果時間已過，標示並禁用
-        if (time < currentMinutes) {
-            option.text = `${timeStr} (已過時)`;
-            option.disabled = true;
+        // 邏輯：
+        // 1. 如果是未來日期 (打烊後預約)，全開放
+        // 2. 如果是今日，只開放晚於現在的時間
+        if (!isFutureDate && time < currentMinutes) {
+             // 過去時間不顯示，或顯示為 disable
+             // 這裡選擇不加入或是 disabled
+             option.text = `${timeStr} (已過)`;
+             option.disabled = true;
         } else {
-            option.text = timeStr;
-            // (選用) 自動選取第一個有效時段
-            if (!hasValidTime) { pickupTimeSelect.value = timeStr; hasValidTime = true; }
+             option.text = timeStr;
         }
         pickupTimeSelect.appendChild(option);
     });
@@ -587,59 +731,60 @@
   // 頁面載入執行
   renderCart();
   initLiff();
-  generateTimeSlots(); 
-
+  initMode(); 
 
   // ====== 表單驗證與送出 ======
   submitBtn.addEventListener('click', () => {
     const cart = loadCart();
     const nameInput = document.getElementById('name');
     const phoneInput = document.getElementById('phone');
+    const timeInput = document.getElementById('pickup-time');
+    const dateInput = document.getElementById('pickup-date');
+    
     const nameError = document.getElementById('name-error');
     const phoneError = document.getElementById('phone-error');
-    const timeInput = document.getElementById('pickup-time');
     const timeError = document.getElementById('time-error');
+    
     let isValid = true;
-
-    // 重置錯誤狀態
     nameInput.classList.remove('is-invalid');
     phoneInput.classList.remove('is-invalid');
+    timeInput.classList.remove('is-invalid');
     nameError.style.display = 'none';
     phoneError.style.display = 'none';
-    timeInput.classList.remove('is-invalid');
     timeError.style.display = 'none';
 
-    if (Object.keys(cart).length === 0) {
-      emptyCartModal.show();
-      return;
-    }
+    if (Object.keys(cart).length === 0) { emptyCartModal.show(); return; }
 
-    // 驗證姓名
     let name = nameInput.value.trim();
-    if (!name) {
-      nameInput.classList.add('is-invalid');
-      nameError.style.display = 'block';
-      isValid = false;
-    }
+    if (!name) { nameInput.classList.add('is-invalid'); nameError.style.display = 'block'; isValid = false; }
 
-    // 驗證電話
     const phone = phoneInput.value.trim();
     const taiwanPhoneRegex = /^09\d{8}$|^0\d{1,2}-?\d{6,8}$/;
-    if (!phone || !taiwanPhoneRegex.test(phone)) {
-      phoneInput.classList.add('is-invalid');
-      phoneError.style.display = 'block';
-      isValid = false;
-    }
+    if (!phone || !taiwanPhoneRegex.test(phone)) { phoneInput.classList.add('is-invalid'); phoneError.style.display = 'block'; isValid = false; }
 
-    // ★★★ 新增：驗證取餐時間 ★★★
-    const pickupTime = timeInput.value;
-    if (!pickupTime) {
-      timeInput.classList.add('is-invalid');
-      timeError.style.display = 'block';
-      isValid = false;
+    // 驗證時間 (僅在預約模式下)
+    let finalPickupTime = "";
+    if (currentMode === 'reserve') {
+        const timeVal = timeInput.value;
+        if (!timeVal) {
+            timeInput.classList.add('is-invalid');
+            timeError.style.display = 'block';
+            isValid = false;
+        } else {
+            // 如果有日期 (打烊後)，組合日期+時間
+            if (isClosedForToday) {
+                 const dateVal = dateInput.options[dateInput.selectedIndex].text; // 拿顯示文字 (1/20 週一)
+                 finalPickupTime = `${dateVal} ${timeVal}`;
+            } else {
+                 finalPickupTime = timeVal; // 僅時間
+            }
+        }
+    } else {
+        // 即時模式：自動計算 現在 + 15 分
+        const now = new Date();
+        now.setMinutes(now.getMinutes() + 15);
+        finalPickupTime = `約 ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} 取餐`;
     }
-
-    if (!isValid) return;
 
     if (!isValid) return; // 驗證未通過則停止
 
