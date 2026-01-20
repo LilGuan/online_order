@@ -488,12 +488,15 @@
       itemsContainer.innerHTML = itemsHtml;
       document.getElementById('total-price').textContent = `$${total}`;
 
-      // 清空購物車 (因為訂單已成立)
-      localStorage.removeItem('cart');
-
-      // 顯示成功 Modal (選用)
-      // const modal = new bootstrap.Modal(document.getElementById('successModal'));
-      // modal.show();
+      // ★★★ 修改這裡 ★★★
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('status') !== 'success') {
+          // 只有在「非」付款跳轉回來的一般流程（現金付款），才在這裡清空
+          localStorage.removeItem('cart');
+          // 這裡也可以顯示成功 Modal
+          const modal = new bootstrap.Modal(document.getElementById('successModal'));
+          modal.show();
+      }
 
     } catch (e) {
       console.error(e);
