@@ -340,6 +340,7 @@
       <label class="form-label" for="payment-method">付款方式</label>
       <select id="payment-method" class="form-select">
         <option value="cash" selected>現金付款</option>
+        <option value="online_payment">信用卡 / Apple Pay / Google Pay (線上付款)</option>
         <option value="linepay" disabled>LINE Pay (尚未開放)</option>
       </select>
     </div>
@@ -816,13 +817,58 @@
     if (name.length <= 5) name += ' 先生/小姐';
 
     const orderNumber = (() => {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        const chars = 'ABCDEF0123456789';
         let r = ''; for(let i=0; i<6; i++) r += chars.charAt(Math.floor(Math.random()*chars.length));
         return r;
     })();
 
     const notes = document.getElementById('notes').value.trim();
+    // 取得付款方式
     const paymentMethod = document.getElementById('payment-method').value;
+
+    // ★★★★★★ 新增：綠界金流串接邏輯 ★★★★★★
+    if (paymentMethod === 'online_payment') { 
+        // 計算總金額
+        let totalAmount = 0;
+        let itemNames = [];
+        
+        for (const key in cart) {
+            const qty = cart[key];
+            const info = parseCartItem(key);
+            if (info) {
+                totalAmount += info.unitPrice * qty;
+                itemNames.push(`${info.displayName} x ${qty}`);
+            }
+        }
+
+        // 您的 ngrok 網址 (請換成您實際運作中的網址)
+        const backendUrl = 'https://6f2e473460c2.ngrok-free.app/api/createOrder'; 
+
+        // 呼叫後端 API
+        fetch(backendUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                totalAmount: totalAmount, 
+                items: itemNames,
+                tradeDesc: '邱媽媽美食線上訂購'
+            })
+        })
+        .then(response => response.text())
+        .then(html => {
+            // 將後端回傳的 HTML 表單寫入頁面並自動送出，跳轉至綠界
+            document.open();
+            document.write(html);
+            document.close();
+        })
+        .catch(error => {
+            console.error('付款失敗:', error);
+            alert('無法連接付款伺服器，請稍後再試。');
+        });
+        
+        return; // 阻止後續執行 (不送出 LINE 訊息，因為要先付款)
+    }
+    // ★★★★★★ 綠界金流串接邏輯結束 ★★★★★★
 
     const orderData = { name, phone, cart, notes, paymentMethod, orderNumber, pickupTime: finalPickupTime };
 
