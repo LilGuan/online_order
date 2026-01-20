@@ -277,9 +277,9 @@
     { id: 2, name: '肉絲炒飯', price: 100, image: 'images/beef_rice.png', hasLarge: true, hasDoubleEgg: true, category: 'rice' },
     { id: 3, name: '肉絲炒麵', price: 100, image: 'images/beef_noodle.png', hasLarge: true, hasDoubleEgg: false, category: 'noodle' },
     { id: 4, name: '香腸炒飯', price: 110, image: 'images/sausage_rice.png', hasLarge: true, hasDoubleEgg: true, category: 'rice' },
-    { id: 5, name: '蝦仁炒飯', price: 110, image: 'images/shrimp_rice.png', hasLarge: true, hasDoubleEgg: true, category: 'rice' },
-    { id: 6, name: '蝦仁炒麵', price: 110, image: 'images/shrimp_noodle.png', hasLarge: true, hasDoubleEgg: false, category: 'noodle' },
-    { id: 7, name: '蝦仁米苔目', price: 110, image: 'images/shrimp_rice_noodle.png', hasLarge: true, hasDoubleEgg: false, category: 'noodle' },
+    { id: 5, name: '蝦仁炒飯', price: 110, image: 'images/shrimp_rice.png', hasLarge: true, hasDoubleEgg: true, hasDoubleShrimp: true, category: 'rice' },
+    { id: 6, name: '蝦仁炒麵', price: 110, image: 'images/shrimp_noodle.png', hasLarge: true, hasDoubleEgg: false, hasDoubleShrimp: true, category: 'noodle' },
+    { id: 7, name: '蝦仁米苔目', price: 110, image: 'images/shrimp_rice_noodle.png', hasLarge: true, hasDoubleEgg: false, hasDoubleShrimp: true, category: 'noodle' },
     { id: 8, name: '鹹豬肉蓋飯', price: 130, image: 'images/salted_pork_rice.png', hasLarge: true, hasDoubleEgg: true, category: 'rice' },
     { id: 9, name: '鹹豬肉', price: 230, image: 'images/salted_pork.png', hasLarge: false, hasDoubleEgg: false, category: 'alacarte' },
     { id: 10, name: '海帶芽蛋花湯', price: 25, image: 'images/soup.png', hasLarge: false, hasDoubleEgg: false, category: 'soup' },
@@ -351,6 +351,14 @@
                 <label>
                   <input type="checkbox" id="egg-${item.id}" />
                   <span>雙蛋 (+$15)</span>
+                </label>
+              </div>
+            ` : ''}
+            ${item.hasDoubleShrimp ? `
+              <div class="options">
+                <label>
+                  <input type="checkbox" id="shrimp-${item.id}" />
+                  <span>加蝦 (+$35)</span>
                 </label>
               </div>
             ` : ''}

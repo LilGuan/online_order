@@ -406,6 +406,10 @@
       finalPrice += 15;
       nameSuffix.push('雙蛋');
     }
+    if (options.includes('shrimp')) {
+      finalPrice += 35;
+      nameSuffix.push('加蝦');
+    }
 
     const displayName = item.name + (nameSuffix.length > 0 ? ` (${nameSuffix.join('、')})` : '');
 
@@ -635,6 +639,8 @@
 
       if (options.includes('large')) { price += 20; nameSuffix.push('加大'); }
       if (options.includes('egg')) { price += 15; nameSuffix.push('雙蛋'); }
+      if (options.includes('shrimp')) { price += 35; nameSuffix.push('加蝦'); }
+      
 
       const name = item.name + (nameSuffix.length > 0 ? ` (${nameSuffix.join('、')})` : '');
       const subtotal = price * qty;
