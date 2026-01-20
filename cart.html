@@ -155,7 +155,6 @@
   .form-title {
     font-weight: 700;
     font-size: 1.1rem;
-    border-bottom: 1px solid #eee;
     padding-bottom: 10px;
   }
   
@@ -297,15 +296,19 @@
   </div>
 
   <div class="form-section">
-    <div class="form-title">訂購人資訊</div>
-
-    <div class="mode-switch" id="mode-switch">
+    <!-- ★★★ 修改重點：使用 form-header 包裹標題與切換按鈕 ★★★ -->
+    <div class="form-header">
+      <div class="form-title">訂購人資訊</div>
+      
+      <!-- 訂餐模式切換按鈕 -->
+      <div class="mode-switch" id="mode-switch">
         <div class="mode-bg"></div>
         <div class="mode-option active" id="mode-instant">即時</div>
         <div class="mode-option" id="mode-reserve">預約</div>
       </div>
     </div>
-
+    
+    <!-- 以下表單欄位保持不變 -->
     <div class="form-group">
       <label class="form-label" for="name">姓名 <span style="color:red">*</span></label>
       <input type="text" id="name" class="form-input" placeholder="請輸入您的姓名" />
@@ -704,15 +707,21 @@
         slots.push(time);
       }
     }
+    // 營業時間 (可依需求調整範圍)
     addSlots(645, 825);  // 10:45 - 13:45
     addSlots(975, 1185); // 16:15 - 19:45
 
     const now = new Date();
+    // 取得當前時間的分鐘數
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    
+    // ★★★ 設定緩衝時間 (15分鐘) ★★★
+    // 只有當預約時間 > (現在時間 + 15分鐘) 才是有效預約
+    const bufferMinutes = 15;
+    const minValidTime = currentMinutes + bufferMinutes;
 
     // 如果是打烊後預約 (選擇了未來日期)，則所有時段都開放
-    // 如果是今日非營業時間 (午休)，則檢查時段
-    const isFutureDate = isClosedForToday; // 打烊後只能選明天，所以一定是未來
+    const isFutureDate = isClosedForToday; 
 
     slots.forEach(time => {
         const h = Math.floor(time / 60).toString().padStart(2, '0');
@@ -721,18 +730,23 @@
         
         const option = document.createElement('option');
         option.value = timeStr;
+        option.text = timeStr;
         
-        // 邏輯：
-        // 1. 如果是未來日期 (打烊後預約)，全開放
-        // 2. 如果是今日，只開放晚於現在的時間
-        if (!isFutureDate && time < currentMinutes) {
-             // 過去時間不顯示，或顯示為 disable
-             // 這裡選擇不加入或是 disabled
-             option.text = `${timeStr} (已過)`;
-             option.disabled = true;
-        } else {
-             option.text = timeStr;
+        // 邏輯判斷：
+        if (!isFutureDate) {
+            // 如果是「今天」，需要檢查時間
+            if (time < minValidTime) {
+                // ★★★ 修改：如果時間早於 (現在+15分)，直接不加入選單 (隱藏) ★★★
+                // 如果你想完全不顯示，就直接 return; (在 forEach 中是 return，相當於 continue)
+                return; 
+                
+                // 如果你想顯示但 disable，保留下面這兩行，並拿掉上面的 return
+                // option.text = `${timeStr} (已過)`;
+                // option.disabled = true;
+            }
         }
+        
+        // 加入有效選項
         pickupTimeSelect.appendChild(option);
     });
   }
