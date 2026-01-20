@@ -784,9 +784,11 @@
     const taiwanPhoneRegex = /^09\d{8}$|^0\d{1,2}-?\d{6,8}$/;
     if (!phone || !taiwanPhoneRegex.test(phone)) { phoneInput.classList.add('is-invalid'); phoneError.style.display = 'block'; isValid = false; }
 
-    // 驗證時間 (僅在預約模式下)
+    // 驗證時間與賦值
     let finalPickupTime = "";
+    
     if (currentMode === 'reserve') {
+        // 預約模式：必須選時間
         const timeVal = timeInput.value;
         if (!timeVal) {
             timeInput.classList.add('is-invalid');
@@ -802,7 +804,8 @@
             }
         }
     } else {
-        // 即時模式：自動計算 現在 + 15 分
+        // ★★★ 修正這裡：即時模式也要設定 finalPickupTime ★★★
+        // 自動計算 現在 + 15 分
         const now = new Date();
         now.setMinutes(now.getMinutes() + 15);
         finalPickupTime = `約 ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} 取餐`;
@@ -810,30 +813,23 @@
 
     if (!isValid) return; // 驗證未通過則停止
 
-    // 邏輯處理 (加稱謂)
-    if (name.length <= 5) {
-      name = name + ' 先生/小姐';
-    }
+    if (name.length <= 5) name += ' 先生/小姐';
 
-    // 產生訂單資料
-    const orderNumber = generateOrderNumber();
-    // const pickupTime = getPickupTime();
+    const orderNumber = (() => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let r = ''; for(let i=0; i<6; i++) r += chars.charAt(Math.floor(Math.random()*chars.length));
+        return r;
+    })();
+
     const notes = document.getElementById('notes').value.trim();
     const paymentMethod = document.getElementById('payment-method').value;
 
-    const orderData = {
-      name, phone, cart, notes, paymentMethod, orderNumber, pickupTime
-    };
+    const orderData = { name, phone, cart, notes, paymentMethod, orderNumber, pickupTime: finalPickupTime };
 
     localStorage.setItem('orderData', JSON.stringify(orderData));
-    
-    // ★★★ 儲存電話號碼到瀏覽器記憶 ★★★
     localStorage.setItem('userPhone', phone); 
 
-    // 產生 Flex Message
     const flexMessage = createOrderFlexMessage(orderData, menuItems);
-
-    // 送出訊息
     sendOrderMessage(flexMessage);
   });
 
