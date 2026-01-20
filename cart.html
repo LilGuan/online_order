@@ -340,8 +340,7 @@
       <label class="form-label" for="payment-method">付款方式</label>
       <select id="payment-method" class="form-select">
         <option value="cash" selected>現金付款</option>
-        <option value="online_payment">信用卡 / Apple Pay / Google Pay (線上付款)</option>
-        <option value="linepay" disabled>LINE Pay (尚未開放)</option>
+        <option value="linepay_online">LINE Pay 線上付款</option>
       </select>
     </div>
 
@@ -825,6 +824,58 @@
     const notes = document.getElementById('notes').value.trim();
     // 取得付款方式
     const paymentMethod = document.getElementById('payment-method').value;
+
+    // ★★★ LINE Pay 串接邏輯 ★★★
+    if (paymentMethod === 'linepay_online') {
+        
+        // 準備傳給後端的商品資料
+        let itemsForLinePay = [];
+        for (const key in cart) {
+             const qty = cart[key];
+             const info = parseCartItem(key);
+             if (info) {
+                 itemsForLinePay.push({
+                     name: info.displayName,
+                     qty: qty,
+                     price: info.unitPrice
+                 });
+             }
+        }
+
+        // 取得目前總金額
+        let totalAmount = 0;
+        itemsForLinePay.forEach(i => totalAmount += (i.price * i.qty));
+
+        // 您的 ngrok 網址
+        const backendUrl = 'https://35e4107acd64.ngrok-free.app/api/linepay/request';
+
+        // 呼叫後端建立 LINE Pay 訂單
+        fetch(backendUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                totalAmount: totalAmount,
+                items: itemsForLinePay,
+                orderNumber: orderNumber
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.paymentUrl) {
+                // 跳轉到 LINE Pay 付款頁面
+                window.location.href = data.paymentUrl;
+            } else {
+                alert('LINE Pay 起始失敗');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('連線錯誤，請稍後再試');
+        });
+
+        return; // 暫停後續動作，等待跳轉
+    }
+    // ★★★ 結束 ★★★
 
     // ★★★★★★ 新增：綠界金流串接邏輯 ★★★★★★
     if (paymentMethod === 'online_payment') { 

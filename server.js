@@ -1,93 +1,155 @@
 const express = require('express');
-const crypto = require('crypto');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const axios = require('axios');
+const crypto = require('crypto');
+const { v4: uuidv4 } = require('uuid');
+
 const app = express();
 
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// 綠界測試環境參數
-const MerchantID = '2000132';
-const HashKey = '5294y06JbISpM5x9';
-const HashIV = 'v77hoKGq4kWxNNIS';
-const ECPayURL = 'https://payment-stage.ecpay.com.tw/Cashier/AioCheckOutV5';
+// ==========================================
+// 🟢 LINE Pay 設定區 (請填入後台查到的資料)
+// ==========================================
+const LINEPAY_CHANNEL_ID = '2008931183'; 
+const LINEPAY_CHANNEL_SECRET = 'e461fe2765ab6bf8187dd0f76c54f27b';
+const LINEPAY_VERSION = 'v3';
+const LINEPAY_SITE = 'https://sandbox-api-pay.line.me'; // 測試環境網址
 
-// 補零函式
-function pad(n) {
-    return n < 10 ? '0' + n : n;
+// 您的 ngrok 網址 (每次重開 ngrok 都要換)
+const MY_DOMAIN = 'https://35e4107acd64.ngrok-free.app'; 
+
+// 暫存訂單資訊 (為了在 callback 時知道要扣多少錢)
+// 在正式環境建議存資料庫，這裡用記憶體暫存
+const ordersCache = {};
+
+// 產生 LINE Pay 簽章 (Signature)
+function createSignature(uri, body) {
+    const nonce = uuidv4();
+    const stringToSign = `${LINEPAY_CHANNEL_SECRET}/${LINEPAY_VERSION}${uri}${body}${nonce}`;
+    const signature = crypto
+        .createHmac('sha256', LINEPAY_CHANNEL_SECRET)
+        .update(stringToSign)
+        .digest('base64');
+    return { signature, nonce };
 }
 
-// ★★★ 修正後的檢查碼計算函式 ★★★
-function genCheckMacValue(params) {
-    // 1. 參數按字母排序 (A-Z)
-    const keys = Object.keys(params).sort();
-    
-    // 2. 串接字串: HashKey + 參數 + HashIV
-    let str = `HashKey=${HashKey}`;
-    keys.forEach(key => {
-        str += `&${key}=${params[key]}`;
-    });
-    str += `&HashIV=${HashIV}`;
-    
-    // 3. URL Encode 並轉小寫
-    // 注意：encodeURIComponent 會把中文、空白、符號都編碼
-    let encoded = encodeURIComponent(str).toLowerCase();
-    
-    // 4. 依照綠界規則，將特定的「編碼後字元」替換回「原字元」
-    // (例如 %2d 換回 -，%20 換回 +)
-    encoded = encoded.replace(/%2d/g, '-')
-                     .replace(/%5f/g, '_')
-                     .replace(/%2e/g, '.')
-                     .replace(/%21/g, '!')
-                     .replace(/%2a/g, '*')
-                     .replace(/%28/g, '(')
-                     .replace(/%29/g, ')')
-                     .replace(/%20/g, '+'); // 空白轉成 +
-                     
-    // 5. SHA256 加密並轉大寫
-    const sha256 = crypto.createHash('sha256').update(encoded).digest('hex').toUpperCase();
-    return sha256;
-}
+// 1. 建立付款請求 API
+app.post('/api/linepay/request', async (req, res) => {
+    const { totalAmount, items, orderNumber } = req.body;
 
-app.post('/api/createOrder', (req, res) => {
-    const { totalAmount, items, tradeDesc } = req.body;
-    
-    const tradeNo = 'Ord' + new Date().getTime();
-    
-    // 產生時間 yyyy/MM/dd HH:mm:ss
-    const now = new Date();
-    const formattedDate = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    // 整理商品列表格式
+    const products = items.map(item => ({
+        name: item.name,
+        quantity: item.qty,
+        price: item.price
+    }));
 
-    // 基本參數
-    let baseParams = {
-        MerchantID: MerchantID,
-        MerchantTradeNo: tradeNo,
-        MerchantTradeDate: formattedDate,
-        PaymentType: 'aio',
-        TotalAmount: Math.round(totalAmount), // 金額須為整數
-        TradeDesc: tradeDesc || 'ShopOrder',
-        ItemName: items.join('#'), // 商品名稱用 # 連接
-        ReturnURL: 'https://developers.line.biz', // 付款完成通知網址 (測試用)
-        ClientBackURL: 'https://developers.line.biz', // 付款完成跳轉網址 (測試用)
-        ChoosePayment: 'ALL',
-        EncryptType: '1',
+    const orderData = {
+        amount: Math.round(totalAmount),
+        currency: 'TWD',
+        orderId: orderNumber, // 使用前端傳來的訂單編號
+        packages: [
+            {
+                id: 'pkg-1',
+                amount: Math.round(totalAmount),
+                name: '邱媽媽美食',
+                products: products
+            }
+        ],
+        redirectUrls: {
+            // 使用者在 LINE Pay 付款完會跳轉回這裡
+            confirmUrl: `${MY_DOMAIN}/api/linepay/confirm`,
+            cancelUrl: `${MY_DOMAIN}/cancel.html`
+        }
     };
 
-    console.log('Params:', baseParams);
+    // 存入暫存，供 Confirm 使用
+    ordersCache[orderNumber] = { amount: Math.round(totalAmount) };
 
-    // 計算檢查碼
-    baseParams.CheckMacValue = genCheckMacValue(baseParams);
+    const uri = '/v3/payments/request';
+    const body = JSON.stringify(orderData);
+    const { signature, nonce } = createSignature(uri, body);
 
-    // 產生自動送出的 HTML Form
-    let formHtml = `<form id="ecpay-form" action="${ECPayURL}" method="POST">`;
-    for (const key in baseParams) {
-        formHtml += `<input type="hidden" name="${key}" value="${baseParams[key]}" />`;
+    console.log(`[LINE Pay] 建立訂單: ${orderNumber}, 金額: ${totalAmount}`);
+
+    try {
+        const response = await axios.post(`${LINEPAY_SITE}${uri}`, body, {
+            headers: {
+                'Content-Type': 'application/json',
+                'X-LINE-ChannelId': LINEPAY_CHANNEL_ID,
+                'X-LINE-Authorization-Signature': signature,
+                'X-LINE-Authorization-Nonce': nonce
+            }
+        });
+
+        if (response.data.returnCode === '0000') {
+            // 回傳付款網址給前端
+            res.json({ paymentUrl: response.data.info.paymentUrl.web });
+        } else {
+            console.error('LINE Pay Error:', response.data);
+            res.status(400).send('LINE Pay 請求失敗');
+        }
+
+    } catch (error) {
+        console.error('API Error:', error);
+        res.status(500).send('Server Error');
     }
-    formHtml += `<script>document.getElementById("ecpay-form").submit();</script></form>`;
+});
 
-    res.send(formHtml);
+// 2. 確認付款 API (Confirm)
+// LINE Pay 跳轉回來會帶上 transactionId 和 orderId
+app.get('/api/linepay/confirm', async (req, res) => {
+    const { transactionId, orderId } = req.query;
+
+    console.log(`[LINE Pay] 收到回調: OrderID=${orderId}, TransID=${transactionId}`);
+
+    // 從暫存取出金額
+    const orderInfo = ordersCache[orderId];
+    if (!orderInfo) {
+        return res.status(400).send('訂單資訊遺失或已過期');
+    }
+
+    const uri = `/v3/payments/${transactionId}/confirm`;
+    const body = JSON.stringify({
+        amount: orderInfo.amount,
+        currency: 'TWD'
+    });
+    const { signature, nonce } = createSignature(uri, body);
+
+    try {
+        const response = await axios.post(`${LINEPAY_SITE}${uri}`, body, {
+            headers: {
+                'Content-Type': 'application/json',
+                'X-LINE-ChannelId': LINEPAY_CHANNEL_ID,
+                'X-LINE-Authorization-Signature': signature,
+                'X-LINE-Authorization-Nonce': nonce
+            }
+        });
+
+        if (response.data.returnCode === '0000') {
+            console.log('✅ 付款成功！');
+            // 清除暫存
+            delete ordersCache[orderId];
+            
+            // 跳轉回前端的訂單明細頁 (我們帶上參數讓前端知道成功了)
+            // 這裡假設您的前端網址是 GitHub Pages，請修改下面網址
+            // 如果是在本機測試，就用 Live Server 的網址
+            // ★★★ 重要：請改成您的前端網址 ★★★
+            res.redirect(`https://你的github帳號.github.io/你的專案名/order-detail.html?status=success`);
+            
+        } else {
+            console.error('付款確認失敗:', response.data);
+            res.send('付款確認失敗，請聯繫店家。');
+        }
+
+    } catch (error) {
+        console.error('Confirm API Error:', error);
+        res.status(500).send('Server Error');
+    }
 });
 
 const PORT = process.env.PORT || 3000;
