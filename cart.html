@@ -143,9 +143,17 @@
     margin-top: 20px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   }
+  /* ★★★ 修改重點：表單標題列排版 ★★★ */
+  .form-header {
+    display: flex;
+    justify-content: space-between; /* 標題靠左，按鈕靠右 */
+    align-items: center;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+  }
   .form-title {
     font-weight: 700;
-    margin-bottom: 15px;
     font-size: 1.1rem;
     border-bottom: 1px solid #eee;
     padding-bottom: 10px;
@@ -179,16 +187,16 @@
     display: flex;
     background: #f1f3f5;
     border-radius: 20px;
-    padding: 3px;
+    padding: 2px;
     position: relative;
-    width: 140px;
+    width: 120px;
     cursor: pointer;
   }
   .mode-option {
     flex: 1;
     text-align: center;
-    font-size: 0.85rem;
-    padding: 6px 0;
+    font-size: 0.8rem;
+    line-height: 28px; /* 垂直置中 */
     z-index: 2;
     transition: color 0.3s;
     font-weight: 600;
@@ -199,18 +207,18 @@
   }
   .mode-bg {
     position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 50%; /* 減去 padding */
-    height: calc(100% - 6px);
+    top: 2px;
+    left: 2px;
+    width: calc(50% - 2px);
+    height: calc(100% - 4px);
     background: #ff6b6b;
-    border-radius: 17px;
+    border-radius: 18px;
     transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
     z-index: 1;
   }
   /* 預約模式時，背景滑到右邊 */
   .mode-switch.reserve .mode-bg {
-    transform: translateX(calc(100% - 3px)); /* 微調位置 */
+    transform: translateX(100%);
   }
   /* 底部固定結帳區 */
   .checkout-bar {
