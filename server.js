@@ -29,7 +29,7 @@ const LINEPAY_SITE = 'https://sandbox-api-pay.line.me';
 const LINEPAY_VERSION = '/v3/payments/request'; // Request API URI
 
 // ★★★ 請務必更新您的 ngrok 網址 ★★★
-const MY_DOMAIN = 'https://print-writer-restrict-jenny.trycloudflare.com'; 
+const MY_DOMAIN = 'https://careers-proven-comfort-speaking.trycloudflare.com';
 
 const ordersCache = {};
 
