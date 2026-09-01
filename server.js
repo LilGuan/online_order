@@ -3,13 +3,17 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const axios = require('axios');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
 const app = express();
+const ORDERS_FILE = path.join(__dirname, 'orders.json');
 
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static(__dirname));
 
 // ==========================================
 // 🟢 LINE Pay 設定區
@@ -20,9 +24,104 @@ const LINEPAY_SITE = 'https://sandbox-api-pay.line.me';
 const LINEPAY_VERSION = '/v3/payments/request'; // Request API URI
 
 // ★★★ 請務必更新您的 ngrok 網址 ★★★
-const MY_DOMAIN = 'https://35e4107acd64.ngrok-free.app'; 
+const MY_DOMAIN = 'https://print-writer-restrict-jenny.trycloudflare.com'; 
 
 const ordersCache = {};
+
+function readOrders() {
+    try {
+        if (!fs.existsSync(ORDERS_FILE)) return [];
+        const data = fs.readFileSync(ORDERS_FILE, 'utf8');
+        return data ? JSON.parse(data) : [];
+    } catch (error) {
+        console.error('[Orders] 讀取失敗:', error.message);
+        return [];
+    }
+}
+
+function writeOrders(orders) {
+    fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2));
+}
+
+function normalizeOrder(body) {
+    const now = new Date().toISOString();
+    const items = Array.isArray(body.items) ? body.items : [];
+    const totalAmount = Number(body.totalAmount || 0);
+
+    return {
+        id: body.orderNumber || uuidv4(),
+        orderNumber: body.orderNumber || uuidv4().slice(0, 8).toUpperCase(),
+        name: String(body.name || '').trim(),
+        phone: String(body.phone || '').trim(),
+        pickupTime: String(body.pickupTime || '').trim(),
+        paymentMethod: String(body.paymentMethod || 'cash').trim(),
+        notes: String(body.notes || '').trim(),
+        items,
+        totalAmount,
+        status: 'pending',
+        createdAt: now,
+        updatedAt: now
+    };
+}
+
+app.post('/api/orders', (req, res) => {
+    const order = normalizeOrder(req.body);
+
+    if (!order.name || !order.phone || order.items.length === 0 || order.totalAmount <= 0) {
+        return res.status(400).json({ message: '訂單資料不完整' });
+    }
+
+    const orders = readOrders();
+    const existingIndex = orders.findIndex(item => item.orderNumber === order.orderNumber);
+
+    if (existingIndex >= 0) {
+        orders[existingIndex] = {
+            ...orders[existingIndex],
+            ...order,
+            status: orders[existingIndex].status || 'pending',
+            createdAt: orders[existingIndex].createdAt,
+            updatedAt: new Date().toISOString()
+        };
+        writeOrders(orders);
+        return res.json({ ok: true, order: orders[existingIndex] });
+    }
+
+    orders.unshift(order);
+    writeOrders(orders);
+    res.status(201).json({ ok: true, order });
+});
+
+app.get('/api/orders', (req, res) => {
+    const status = req.query.status;
+    let orders = readOrders();
+
+    if (status && status !== 'all') {
+        orders = orders.filter(order => order.status === status);
+    }
+
+    res.json({ orders });
+});
+
+app.patch('/api/orders/:orderNumber/status', (req, res) => {
+    const allowedStatuses = ['pending', 'accepted', 'completed', 'cancelled'];
+    const status = String(req.body.status || '').trim();
+
+    if (!allowedStatuses.includes(status)) {
+        return res.status(400).json({ message: '狀態不正確' });
+    }
+
+    const orders = readOrders();
+    const order = orders.find(item => item.orderNumber === req.params.orderNumber);
+
+    if (!order) {
+        return res.status(404).json({ message: '找不到訂單' });
+    }
+
+    order.status = status;
+    order.updatedAt = new Date().toISOString();
+    writeOrders(orders);
+    res.json({ ok: true, order });
+});
 
 // ★★★ 修正後的簽章產生函式 ★★★
 function createSignature(uri, body, nonce) {

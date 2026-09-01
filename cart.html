@@ -421,6 +421,9 @@
   const STORE_ADDRESS    = "桃園市大園區皇家六街12號";
   const MAPS_URL         = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(STORE_ADDRESS);
   const HERO_IMAGE_URL   = "https://images.unsplash.com/photo-1604908554007-0880a8a94571?q=80&w=1600&auto=format&fit=crop";
+  const BACKEND_BASE_URL = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+    ? location.origin
+    : "https://print-writer-restrict-jenny.trycloudflare.com";
 
   // ====== 新版菜單資料 (不含加蝦，含雙蛋) ======
   const menuItems = [
@@ -756,7 +759,11 @@
   initMode(); 
 
   // ====== 表單驗證與送出 ======
-  submitBtn.addEventListener('click', () => {
+  let isSubmitting = false;
+
+  submitBtn.addEventListener('click', async () => {
+    if (isSubmitting) return;
+
     const cart = loadCart();
     const nameInput = document.getElementById('name');
     const phoneInput = document.getElementById('phone');
@@ -852,7 +859,7 @@
         itemsForLinePay.forEach(i => totalAmount += (i.price * i.qty));
 
         // 您的 ngrok 網址
-        const backendUrl = 'https://35e4107acd64.ngrok-free.app/api/linepay/request';
+        const backendUrl = `${BACKEND_BASE_URL}/api/linepay/request`;
 
         // 呼叫後端建立 LINE Pay 訂單
         fetch(backendUrl, {
@@ -898,7 +905,7 @@
         }
 
         // 您的 ngrok 網址 (請換成您實際運作中的網址)
-        const backendUrl = 'https://35e4107acd64.ngrok-free.app/api/createOrder'; 
+        const backendUrl = `${BACKEND_BASE_URL}/api/createOrder`; 
 
         // 呼叫後端 API
         fetch(backendUrl, {
@@ -926,9 +933,74 @@
     }
     // ★★★★★★ 綠界金流串接邏輯結束 ★★★★★★
 
+    isSubmitting = true;
+    submitBtn.textContent = '送出中...';
+    submitBtn.style.opacity = '0.6';
+    submitBtn.style.pointerEvents = 'none';
+
+    try {
+      await saveOrderToBackend(orderData);
+    } catch (error) {
+      console.error('訂單儲存失敗:', error);
+      alert('訂單送出失敗，請稍後再試或直接電話聯絡店家。');
+      isSubmitting = false;
+      submitBtn.textContent = '送出訂單';
+      submitBtn.style.opacity = '1';
+      submitBtn.style.pointerEvents = 'auto';
+      return;
+    }
+
     const flexMessage = createOrderFlexMessage(orderData, menuItems);
     sendOrderMessage(flexMessage);
   });
+
+  function getOrderItemsAndTotal(cart) {
+    const items = [];
+    let totalAmount = 0;
+
+    for (const key in cart) {
+      const qty = cart[key];
+      const info = parseCartItem(key);
+      if (!info) continue;
+
+      const subtotal = info.unitPrice * qty;
+      totalAmount += subtotal;
+      items.push({
+        key,
+        name: info.displayName,
+        qty,
+        price: info.unitPrice,
+        subtotal
+      });
+    }
+
+    return { items, totalAmount };
+  }
+
+  async function saveOrderToBackend(orderData) {
+    const { items, totalAmount } = getOrderItemsAndTotal(orderData.cart);
+
+    const response = await fetch(`${BACKEND_BASE_URL}/api/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        orderNumber: orderData.orderNumber,
+        name: orderData.name,
+        phone: orderData.phone,
+        pickupTime: orderData.pickupTime,
+        paymentMethod: orderData.paymentMethod,
+        notes: orderData.notes,
+        items,
+        totalAmount
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    return response.json();
+  }
 
   function generateOrderNumber() {
     const chars = 'ABCDEF0123456789';
@@ -1169,6 +1241,12 @@
   }
 
   function sendOrderMessage(flexMessage) {
+    if (!liff.isInClient()) {
+      alert('訂單已送出，店家接單後台會響鈴提醒。電腦版不會另外送 LINE 聊天訊息。');
+      window.location.href = 'order-detail.html?method=cash';
+      return;
+    }
+
     if (!liff.isLoggedIn()) {
       liff.login();
       return;
@@ -1179,7 +1257,8 @@
       })
       .catch((err) => {
         console.error('Error sending message:', err);
-        alert('訊息發送失敗，請確認是否使用手機版Line官方訂購。');
+        alert('訂單已送到店家接單後台，但 LINE 訊息發送失敗。');
+        window.location.href = 'order-detail.html?method=cash';
       });
   }
 

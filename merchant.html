@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>店家接單 - 邱媽媽美食</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: 'Noto Sans TC', sans-serif;
+    background: #f5f7fa;
+    color: #202124;
+  }
+
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 16px 20px;
+  }
+
+  .header-inner {
+    max-width: 980px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 900;
+  }
+
+  .status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #5f6368;
+    font-size: 0.95rem;
+    white-space: nowrap;
+  }
+
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #9aa0a6;
+  }
+
+  .status-dot.online { background: #16a34a; }
+  .status-dot.alert { background: #dc2626; animation: pulse 1s infinite; }
+
+  main {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .summary {
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  button {
+    border: none;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .primary-btn { background: #ff6b6b; color: #ffffff; }
+  .secondary-btn { background: #e8f0fe; color: #174ea6; }
+  .success-btn { background: #16a34a; color: #ffffff; }
+  .danger-btn { background: #fee2e2; color: #b91c1c; }
+
+  button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .orders {
+    display: grid;
+    gap: 12px;
+  }
+
+  .order-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-left: 6px solid #ff6b6b;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 4px 14px rgba(32, 33, 36, 0.06);
+  }
+
+  .order-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .order-no {
+    font-size: 1.1rem;
+    font-weight: 900;
+  }
+
+  .order-time {
+    color: #5f6368;
+    font-size: 0.9rem;
+    margin-top: 3px;
+  }
+
+  .badge {
+    border-radius: 999px;
+    background: #fff7ed;
+    color: #c2410c;
+    padding: 5px 10px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .customer {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+    margin-bottom: 12px;
+  }
+
+  .label {
+    color: #6b7280;
+    font-size: 0.8rem;
+    margin-bottom: 2px;
+  }
+
+  .value {
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+
+  .items {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid #edf0f3;
+    border-bottom: 1px solid #edf0f3;
+  }
+
+  .items li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 54px 78px;
+    gap: 8px;
+    padding: 10px 0;
+    border-bottom: 1px solid #edf0f3;
+  }
+
+  .items li:last-child { border-bottom: none; }
+  .qty { text-align: center; color: #5f6368; }
+  .price { text-align: right; font-weight: 700; }
+
+  .notes {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: #fff8e1;
+    color: #7a4d00;
+  }
+
+  .order-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 14px;
+  }
+
+  .total {
+    color: #d93025;
+    font-size: 1.2rem;
+    font-weight: 900;
+  }
+
+  .empty {
+    min-height: 42vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #6b7280;
+    font-size: 1.05rem;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.45); opacity: 0.55; }
+  }
+
+  @media (max-width: 720px) {
+    .header-inner,
+    .toolbar,
+    .order-top,
+    .order-bottom {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .status,
+    .actions {
+      justify-content: flex-start;
+    }
+
+    .customer {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <h1>邱媽媽美食接單</h1>
+    <div class="status">
+      <span class="status-dot" id="status-dot"></span>
+      <span id="status-text">尚未連線</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="toolbar">
+    <div class="summary" id="summary">待接單 0 筆</div>
+    <div class="actions">
+      <button class="secondary-btn" id="sound-btn">啟用提醒聲</button>
+      <button class="secondary-btn" id="refresh-btn">重新整理</button>
+    </div>
+  </div>
+
+  <div class="orders" id="orders"></div>
+  <div class="empty" id="empty">目前沒有新訂單</div>
+</main>
+
+<script>
+  const BACKEND_BASE_URL = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+    ? location.origin
+    : 'https://print-writer-restrict-jenny.trycloudflare.com';
+  const POLL_INTERVAL_MS = 3000;
+
+  const ordersEl = document.getElementById('orders');
+  const emptyEl = document.getElementById('empty');
+  const summaryEl = document.getElementById('summary');
+  const statusDotEl = document.getElementById('status-dot');
+  const statusTextEl = document.getElementById('status-text');
+  const soundBtn = document.getElementById('sound-btn');
+  const refreshBtn = document.getElementById('refresh-btn');
+
+  let audioContext = null;
+  let alarmTimer = null;
+  let soundEnabled = false;
+  let knownOrderNumbers = new Set();
+
+  function formatTime(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    return date.toLocaleString('zh-TW', {
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  function escapeHtml(value) {
+    return String(value || '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
+
+  function playBeep() {
+    if (!soundEnabled || !audioContext) return;
+
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+
+    oscillator.type = 'square';
+    oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
+    gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.28, audioContext.currentTime + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.28);
+
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.3);
+  }
+
+  function startAlarm() {
+    if (!soundEnabled || alarmTimer) return;
+    playBeep();
+    alarmTimer = setInterval(playBeep, 900);
+  }
+
+  function stopAlarm() {
+    if (!alarmTimer) return;
+    clearInterval(alarmTimer);
+    alarmTimer = null;
+  }
+
+  function updateConnectionState(state, count) {
+    statusDotEl.className = 'status-dot';
+
+    if (state === 'alert') {
+      statusDotEl.classList.add('alert');
+      statusTextEl.textContent = `有 ${count} 筆新訂單`;
+      return;
+    }
+
+    if (state === 'online') {
+      statusDotEl.classList.add('online');
+      statusTextEl.textContent = '已連線';
+      return;
+    }
+
+    statusTextEl.textContent = '連線失敗';
+  }
+
+  function notifyNewOrders(orders) {
+    const newOrders = orders.filter(order => !knownOrderNumbers.has(order.orderNumber));
+    knownOrderNumbers = new Set(orders.map(order => order.orderNumber));
+
+    if (newOrders.length === 0 || document.visibilityState === 'visible') return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+    new Notification('邱媽媽美食有新訂單', {
+      body: `${newOrders[0].name}，共 $${newOrders[0].totalAmount}`
+    });
+  }
+
+  function renderOrders(orders) {
+    summaryEl.textContent = `待接單 ${orders.length} 筆`;
+    ordersEl.innerHTML = '';
+    emptyEl.style.display = orders.length ? 'none' : 'flex';
+
+    orders.forEach(order => {
+      const itemRows = (order.items || []).map(item => `
+        <li>
+          <span>${escapeHtml(item.name)}</span>
+          <span class="qty">x${Number(item.qty || 0)}</span>
+          <span class="price">$${Number(item.subtotal || 0)}</span>
+        </li>
+      `).join('');
+
+      const notes = order.notes ? `
+        <div class="notes">
+          <div class="label">備註</div>
+          <div class="value">${escapeHtml(order.notes)}</div>
+        </div>
+      ` : '';
+
+      const card = document.createElement('article');
+      card.className = 'order-card';
+      card.innerHTML = `
+        <div class="order-top">
+          <div>
+            <div class="order-no">#${escapeHtml(order.orderNumber)}</div>
+            <div class="order-time">${formatTime(order.createdAt)}</div>
+          </div>
+          <span class="badge">待接單</span>
+        </div>
+
+        <div class="customer">
+          <div>
+            <div class="label">姓名</div>
+            <div class="value">${escapeHtml(order.name)}</div>
+          </div>
+          <div>
+            <div class="label">電話</div>
+            <div class="value">${escapeHtml(order.phone)}</div>
+          </div>
+          <div>
+            <div class="label">取餐時間</div>
+            <div class="value">${escapeHtml(order.pickupTime)}</div>
+          </div>
+        </div>
+
+        <ul class="items">${itemRows}</ul>
+        ${notes}
+
+        <div class="order-bottom">
+          <div class="total">總計 $${Number(order.totalAmount || 0)}</div>
+          <div class="actions">
+            <button class="success-btn" data-action="accepted" data-order="${escapeHtml(order.orderNumber)}">接單</button>
+            <button class="danger-btn" data-action="cancelled" data-order="${escapeHtml(order.orderNumber)}">取消</button>
+          </div>
+        </div>
+      `;
+
+      ordersEl.appendChild(card);
+    });
+
+    if (orders.length > 0) {
+      updateConnectionState('alert', orders.length);
+      startAlarm();
+    } else {
+      updateConnectionState('online');
+      stopAlarm();
+    }
+  }
+
+  async function fetchOrders() {
+    try {
+      const response = await fetch(`${BACKEND_BASE_URL}/api/orders?status=pending`, {
+        cache: 'no-store'
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const data = await response.json();
+      const orders = data.orders || [];
+      notifyNewOrders(orders);
+      renderOrders(orders);
+    } catch (error) {
+      console.error('讀取訂單失敗:', error);
+      updateConnectionState('offline');
+      stopAlarm();
+    }
+  }
+
+  async function updateOrderStatus(orderNumber, status) {
+    const response = await fetch(`${BACKEND_BASE_URL}/api/orders/${encodeURIComponent(orderNumber)}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    await fetchOrders();
+  }
+
+  soundBtn.addEventListener('click', async () => {
+    audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+    await audioContext.resume();
+    soundEnabled = true;
+    soundBtn.textContent = '提醒聲已啟用';
+    soundBtn.disabled = true;
+
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
+    playBeep();
+    fetchOrders();
+  });
+
+  refreshBtn.addEventListener('click', fetchOrders);
+
+  ordersEl.addEventListener('click', async event => {
+    const button = event.target.closest('button[data-order]');
+    if (!button) return;
+
+    button.disabled = true;
+    const orderNumber = button.dataset.order;
+    const status = button.dataset.action;
+
+    try {
+      await updateOrderStatus(orderNumber, status);
+    } catch (error) {
+      console.error('更新訂單失敗:', error);
+      alert('更新訂單失敗，請稍後再試。');
+      button.disabled = false;
+    }
+  });
+
+  fetchOrders();
+  setInterval(fetchOrders, POLL_INTERVAL_MS);
+</script>
+</body>
+</html>
