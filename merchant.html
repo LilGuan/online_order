@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>店家接單 - 邱媽媽美食</title>
+<title>Admin 接單 - 邱媽媽美食</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; }
@@ -13,6 +13,49 @@
     font-family: 'Noto Sans TC', sans-serif;
     background: #f5f7fa;
     color: #202124;
+  }
+
+  body.locked main,
+  body.locked header { display: none; }
+
+  .login-view {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: #f5f7fa;
+  }
+
+  .login-card {
+    width: min(420px, 100%);
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 12px 30px rgba(32, 33, 36, 0.08);
+  }
+
+  .login-card h1 {
+    margin: 0 0 18px;
+    font-size: 1.45rem;
+    font-weight: 900;
+  }
+
+  label {
+    display: block;
+    color: #5f6368;
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin: 14px 0 6px;
+  }
+
+  input {
+    width: 100%;
+    border: 1px solid #d7dce2;
+    border-radius: 8px;
+    padding: 12px;
+    font: inherit;
+    background: #ffffff;
   }
 
   header {
@@ -25,58 +68,43 @@
   }
 
   .header-inner {
-    max-width: 980px;
+    max-width: 1180px;
     margin: 0 auto;
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    justify-content: space-between;
     gap: 16px;
   }
 
-  h1 {
+  h1, h2, h3, p { margin-top: 0; }
+
+  .title h1 {
     margin: 0;
-    font-size: 1.35rem;
+    font-size: 1.45rem;
     font-weight: 900;
   }
 
-  .status {
+  .status-line {
     display: flex;
     align-items: center;
     gap: 10px;
     color: #5f6368;
+    margin-top: 8px;
     font-size: 0.95rem;
-    white-space: nowrap;
   }
 
   .status-dot {
-    width: 10px;
-    height: 10px;
+    width: 11px;
+    height: 11px;
     border-radius: 50%;
     background: #9aa0a6;
   }
 
   .status-dot.online { background: #16a34a; }
+  .status-dot.closed { background: #6b7280; }
   .status-dot.alert { background: #dc2626; animation: pulse 1s infinite; }
 
-  main {
-    max-width: 980px;
-    margin: 0 auto;
-    padding: 20px;
-  }
-
-  .toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-
-  .summary {
-    font-size: 1rem;
-    font-weight: 700;
-  }
-
+  .header-actions,
   .actions {
     display: flex;
     gap: 8px;
@@ -84,23 +112,77 @@
     justify-content: flex-end;
   }
 
+  main {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 18px;
+  }
+
   button {
     border: none;
     border-radius: 8px;
     padding: 10px 14px;
     font-size: 0.95rem;
-    font-weight: 700;
+    font-weight: 800;
     cursor: pointer;
+  }
+
+  button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
   }
 
   .primary-btn { background: #ff6b6b; color: #ffffff; }
   .secondary-btn { background: #e8f0fe; color: #174ea6; }
   .success-btn { background: #16a34a; color: #ffffff; }
   .danger-btn { background: #fee2e2; color: #b91c1c; }
+  .dark-btn { background: #202124; color: #ffffff; }
+  .muted-btn { background: #eef2f7; color: #4b5563; }
 
-  button:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .stat {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 14px;
+  }
+
+  .stat-label {
+    color: #6b7280;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .stat-value {
+    font-size: 1.35rem;
+    font-weight: 900;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 6px 0 14px;
+  }
+
+  .tab {
+    background: #ffffff;
+    color: #4b5563;
+    border: 1px solid #d7dce2;
+    white-space: nowrap;
+  }
+
+  .tab.active {
+    background: #202124;
+    border-color: #202124;
+    color: #ffffff;
   }
 
   .orders {
@@ -117,16 +199,20 @@
     box-shadow: 0 4px 14px rgba(32, 33, 36, 0.06);
   }
 
-  .order-top {
+  .order-card.preparing { border-left-color: #2563eb; }
+  .order-card.completed { border-left-color: #16a34a; }
+  .order-card.cancelled { border-left-color: #9ca3af; }
+
+  .order-top,
+  .order-bottom {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 12px;
   }
 
   .order-no {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     font-weight: 900;
   }
 
@@ -138,22 +224,25 @@
 
   .badge {
     border-radius: 999px;
-    background: #fff7ed;
-    color: #c2410c;
     padding: 5px 10px;
     font-size: 0.85rem;
-    font-weight: 700;
+    font-weight: 800;
     white-space: nowrap;
   }
 
+  .badge.pending { background: #fff7ed; color: #c2410c; }
+  .badge.preparing { background: #dbeafe; color: #1d4ed8; }
+  .badge.completed { background: #dcfce7; color: #15803d; }
+  .badge.cancelled { background: #f3f4f6; color: #4b5563; }
+
   .customer {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 10px;
     padding: 12px;
     background: #f8fafc;
     border-radius: 8px;
-    margin-bottom: 12px;
+    margin: 12px 0;
   }
 
   .label {
@@ -163,7 +252,7 @@
   }
 
   .value {
-    font-weight: 700;
+    font-weight: 800;
     overflow-wrap: anywhere;
   }
 
@@ -177,7 +266,7 @@
 
   .items li {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 54px 78px;
+    grid-template-columns: minmax(0, 1fr) 54px 84px;
     gap: 8px;
     padding: 10px 0;
     border-bottom: 1px solid #edf0f3;
@@ -185,21 +274,27 @@
 
   .items li:last-child { border-bottom: none; }
   .qty { text-align: center; color: #5f6368; }
-  .price { text-align: right; font-weight: 700; }
+  .price { text-align: right; font-weight: 800; }
 
-  .notes {
+  .notes,
+  .notification {
     margin-top: 12px;
     padding: 10px 12px;
     border-radius: 8px;
+  }
+
+  .notes {
     background: #fff8e1;
     color: #7a4d00;
   }
 
+  .notification {
+    background: #f8fafc;
+    color: #4b5563;
+  }
+
   .order-bottom {
-    display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
     margin-top: 14px;
   }
 
@@ -210,7 +305,7 @@
   }
 
   .empty {
-    min-height: 42vh;
+    min-height: 34vh;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -219,23 +314,34 @@
     font-size: 1.05rem;
   }
 
+  .error-text {
+    color: #b91c1c;
+    min-height: 20px;
+    margin-top: 10px;
+    font-weight: 700;
+  }
+
   @keyframes pulse {
     0%, 100% { transform: scale(1); opacity: 1; }
     50% { transform: scale(1.45); opacity: 0.55; }
   }
 
-  @media (max-width: 720px) {
+  @media (max-width: 760px) {
     .header-inner,
-    .toolbar,
     .order-top,
     .order-bottom {
-      align-items: stretch;
+      grid-template-columns: 1fr;
       flex-direction: column;
+      align-items: stretch;
     }
 
-    .status,
+    .header-actions,
     .actions {
       justify-content: flex-start;
+    }
+
+    .stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .customer {
@@ -244,28 +350,67 @@
   }
 </style>
 </head>
-<body>
+<body class="locked">
+<section class="login-view" id="login-view">
+  <form class="login-card" id="login-form">
+    <h1>Admin 登入</h1>
+    <label for="username">帳號</label>
+    <input id="username" name="username" autocomplete="username" value="admin" />
+    <label for="password">密碼</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" placeholder="請輸入密碼" />
+    <button class="primary-btn" type="submit" style="width:100%; margin-top:18px;">登入</button>
+    <div class="error-text" id="login-error"></div>
+  </form>
+</section>
+
 <header>
   <div class="header-inner">
-    <h1>邱媽媽美食接單</h1>
-    <div class="status">
-      <span class="status-dot" id="status-dot"></span>
-      <span id="status-text">尚未連線</span>
+    <div class="title">
+      <h1>邱媽媽美食接單</h1>
+      <div class="status-line">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-text">連線中</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="success-btn" id="store-toggle">上線</button>
+      <button class="secondary-btn" id="sound-btn">啟用提醒聲</button>
+      <button class="secondary-btn" id="refresh-btn">重新整理</button>
+      <button class="muted-btn" id="logout-btn">登出</button>
     </div>
   </div>
 </header>
 
 <main>
-  <div class="toolbar">
-    <div class="summary" id="summary">待接單 0 筆</div>
-    <div class="actions">
-      <button class="secondary-btn" id="sound-btn">啟用提醒聲</button>
-      <button class="secondary-btn" id="refresh-btn">重新整理</button>
+  <section class="stats">
+    <div class="stat">
+      <div class="stat-label">今日營業額</div>
+      <div class="stat-value" id="today-revenue">$0</div>
     </div>
-  </div>
+    <div class="stat">
+      <div class="stat-label">本週營業額</div>
+      <div class="stat-value" id="week-revenue">$0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">本月營業額</div>
+      <div class="stat-value" id="month-revenue">$0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">全部訂單</div>
+      <div class="stat-value" id="total-orders">0</div>
+    </div>
+  </section>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-status="pending">接單區 0</button>
+    <button class="tab" data-status="preparing">製作中 0</button>
+    <button class="tab" data-status="completed">已完成 0</button>
+    <button class="tab" data-status="cancelled">已取消 0</button>
+    <button class="tab" data-status="all">全部紀錄 0</button>
+  </nav>
 
   <div class="orders" id="orders"></div>
-  <div class="empty" id="empty">目前沒有新訂單</div>
+  <div class="empty" id="empty">目前沒有訂單</div>
 </main>
 
 <script>
@@ -273,19 +418,42 @@
     ? location.origin
     : 'https://print-writer-restrict-jenny.trycloudflare.com';
   const POLL_INTERVAL_MS = 3000;
+  const STATUS_LABELS = {
+    pending: '待接單',
+    preparing: '製作中',
+    completed: '已完成',
+    cancelled: '已取消'
+  };
 
+  const loginView = document.getElementById('login-view');
+  const loginForm = document.getElementById('login-form');
+  const loginError = document.getElementById('login-error');
   const ordersEl = document.getElementById('orders');
   const emptyEl = document.getElementById('empty');
-  const summaryEl = document.getElementById('summary');
   const statusDotEl = document.getElementById('status-dot');
   const statusTextEl = document.getElementById('status-text');
+  const storeToggle = document.getElementById('store-toggle');
   const soundBtn = document.getElementById('sound-btn');
   const refreshBtn = document.getElementById('refresh-btn');
+  const logoutBtn = document.getElementById('logout-btn');
+  const tabsEl = document.getElementById('tabs');
 
+  let token = localStorage.getItem('adminToken') || '';
+  let orders = [];
+  let activeStatus = 'pending';
+  let storeIsOpen = true;
   let audioContext = null;
   let alarmTimer = null;
   let soundEnabled = false;
-  let knownOrderNumbers = new Set();
+  let knownPendingOrders = new Set();
+
+  function authHeaders() {
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
+  function money(value) {
+    return `$${Number(value || 0).toLocaleString('zh-TW')}`;
+  }
 
   function formatTime(value) {
     if (!value) return '';
@@ -307,77 +475,151 @@
       .replaceAll("'", '&#039;');
   }
 
+  function setLoggedIn(isLoggedIn) {
+    document.body.classList.toggle('locked', !isLoggedIn);
+    loginView.style.display = isLoggedIn ? 'none' : 'grid';
+  }
+
   function playBeep() {
     if (!soundEnabled || !audioContext) return;
 
     const oscillator = audioContext.createOscillator();
     const gain = audioContext.createGain();
-
     oscillator.type = 'square';
     oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
     gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.28, audioContext.currentTime + 0.03);
-    gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.28);
-
+    gain.gain.exponentialRampToValueAtTime(0.22, audioContext.currentTime + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.25);
     oscillator.connect(gain);
     gain.connect(audioContext.destination);
     oscillator.start();
-    oscillator.stop(audioContext.currentTime + 0.3);
+    oscillator.stop(audioContext.currentTime + 0.28);
+  }
+
+  function speakNewOrder() {
+    if (!soundEnabled || !('speechSynthesis' in window)) {
+      playBeep();
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance('您有新訂單');
+    utterance.lang = 'zh-TW';
+    utterance.rate = 0.95;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    window.speechSynthesis.speak(utterance);
+    playBeep();
   }
 
   function startAlarm() {
     if (!soundEnabled || alarmTimer) return;
-    playBeep();
-    alarmTimer = setInterval(playBeep, 900);
+    speakNewOrder();
+    alarmTimer = setInterval(speakNewOrder, 2200);
   }
 
   function stopAlarm() {
-    if (!alarmTimer) return;
-    clearInterval(alarmTimer);
+    if (alarmTimer) clearInterval(alarmTimer);
     alarmTimer = null;
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
   }
 
-  function updateConnectionState(state, count) {
+  function updateConnectionState(state, pendingCount) {
     statusDotEl.className = 'status-dot';
 
-    if (state === 'alert') {
+    if (pendingCount > 0) {
       statusDotEl.classList.add('alert');
-      statusTextEl.textContent = `有 ${count} 筆新訂單`;
+      statusTextEl.textContent = `您有 ${pendingCount} 筆新訂單`;
+      return;
+    }
+
+    if (!storeIsOpen) {
+      statusDotEl.classList.add('closed');
+      statusTextEl.textContent = '店家下線中';
       return;
     }
 
     if (state === 'online') {
       statusDotEl.classList.add('online');
-      statusTextEl.textContent = '已連線';
+      statusTextEl.textContent = '店家上線中';
       return;
     }
 
     statusTextEl.textContent = '連線失敗';
   }
 
-  function notifyNewOrders(orders) {
-    const newOrders = orders.filter(order => !knownOrderNumbers.has(order.orderNumber));
-    knownOrderNumbers = new Set(orders.map(order => order.orderNumber));
+  function renderStats(summary) {
+    document.getElementById('today-revenue').textContent = money(summary.today.revenue);
+    document.getElementById('week-revenue').textContent = money(summary.week.revenue);
+    document.getElementById('month-revenue').textContent = money(summary.month.revenue);
+    document.getElementById('total-orders').textContent = Number(summary.totalOrders || 0);
+  }
 
-    if (newOrders.length === 0 || document.visibilityState === 'visible') return;
-    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  function renderTabs() {
+    const counts = orders.reduce((result, order) => {
+      result[order.status] = (result[order.status] || 0) + 1;
+      return result;
+    }, {});
 
-    new Notification('邱媽媽美食有新訂單', {
-      body: `${newOrders[0].name}，共 $${newOrders[0].totalAmount}`
+    tabsEl.querySelectorAll('.tab').forEach(tab => {
+      const status = tab.dataset.status;
+      const baseText = status === 'pending'
+        ? '接單區'
+        : status === 'all'
+          ? '全部紀錄'
+          : STATUS_LABELS[status];
+      const count = status === 'all' ? orders.length : Number(counts[status] || 0);
+
+      tab.textContent = `${baseText} ${count}`;
+      tab.classList.toggle('active', status === activeStatus);
     });
   }
 
-  function renderOrders(orders) {
-    summaryEl.textContent = `待接單 ${orders.length} 筆`;
-    ordersEl.innerHTML = '';
-    emptyEl.style.display = orders.length ? 'none' : 'flex';
+  function renderStoreToggle() {
+    storeToggle.textContent = storeIsOpen ? '目前上線' : '目前下線';
+    storeToggle.className = storeIsOpen ? 'success-btn' : 'dark-btn';
+  }
 
-    orders.forEach(order => {
+  function latestNotification(order) {
+    const list = Array.isArray(order.customerNotifications) ? order.customerNotifications : [];
+    if (list.length === 0) return '';
+    const item = list[list.length - 1];
+    if (item.sent) return `已通知客人：${item.message}`;
+    return `尚未推播：${item.reason || '未完成設定'}`;
+  }
+
+  function actionButtons(order) {
+    if (order.status === 'pending') {
+      return `
+        <button class="success-btn" data-action="preparing" data-order="${escapeHtml(order.orderNumber)}">接單</button>
+        <button class="danger-btn" data-action="cancelled" data-order="${escapeHtml(order.orderNumber)}">拒絕</button>
+      `;
+    }
+
+    if (order.status === 'preparing') {
+      return `
+        <button class="primary-btn" data-action="completed" data-order="${escapeHtml(order.orderNumber)}">訂單已備妥</button>
+        <button class="danger-btn" data-action="cancelled" data-order="${escapeHtml(order.orderNumber)}">取消</button>
+      `;
+    }
+
+    return '';
+  }
+
+  function renderOrders() {
+    const visibleOrders = activeStatus === 'all'
+      ? orders
+      : orders.filter(order => order.status === activeStatus);
+
+    ordersEl.innerHTML = '';
+    emptyEl.style.display = visibleOrders.length ? 'none' : 'flex';
+
+    visibleOrders.forEach(order => {
       const itemRows = (order.items || []).map(item => `
         <li>
           <span>${escapeHtml(item.name)}</span>
           <span class="qty">x${Number(item.qty || 0)}</span>
-          <span class="price">$${Number(item.subtotal || 0)}</span>
+          <span class="price">${money(item.subtotal)}</span>
         </li>
       `).join('');
 
@@ -388,15 +630,19 @@
         </div>
       ` : '';
 
+      const notificationText = latestNotification(order);
+      const notification = notificationText ? `<div class="notification">${escapeHtml(notificationText)}</div>` : '';
+      const buttons = actionButtons(order);
+
       const card = document.createElement('article');
-      card.className = 'order-card';
+      card.className = `order-card ${order.status}`;
       card.innerHTML = `
         <div class="order-top">
           <div>
             <div class="order-no">#${escapeHtml(order.orderNumber)}</div>
             <div class="order-time">${formatTime(order.createdAt)}</div>
           </div>
-          <span class="badge">待接單</span>
+          <span class="badge ${order.status}">${STATUS_LABELS[order.status] || order.status}</span>
         </div>
 
         <div class="customer">
@@ -412,63 +658,101 @@
             <div class="label">取餐時間</div>
             <div class="value">${escapeHtml(order.pickupTime)}</div>
           </div>
+          <div>
+            <div class="label">付款</div>
+            <div class="value">${order.paymentMethod === 'cash' ? '現金' : escapeHtml(order.paymentMethod)}</div>
+          </div>
         </div>
 
         <ul class="items">${itemRows}</ul>
         ${notes}
+        ${notification}
 
         <div class="order-bottom">
-          <div class="total">總計 $${Number(order.totalAmount || 0)}</div>
-          <div class="actions">
-            <button class="success-btn" data-action="accepted" data-order="${escapeHtml(order.orderNumber)}">接單</button>
-            <button class="danger-btn" data-action="cancelled" data-order="${escapeHtml(order.orderNumber)}">取消</button>
-          </div>
+          <div class="total">總計 ${money(order.totalAmount)}</div>
+          <div class="actions">${buttons}</div>
         </div>
       `;
 
       ordersEl.appendChild(card);
     });
+  }
 
-    if (orders.length > 0) {
-      updateConnectionState('alert', orders.length);
-      startAlarm();
-    } else {
-      updateConnectionState('online');
-      stopAlarm();
+  function renderAll() {
+    const pendingCount = orders.filter(order => order.status === 'pending').length;
+    renderStoreToggle();
+    renderTabs();
+    renderOrders();
+    updateConnectionState('online', pendingCount);
+
+    if (pendingCount > 0) startAlarm();
+    else stopAlarm();
+  }
+
+  async function requestJson(url, options = {}) {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        ...(options.headers || {}),
+        ...authHeaders()
+      }
+    });
+
+    if (response.status === 401) {
+      token = '';
+      localStorage.removeItem('adminToken');
+      setLoggedIn(false);
+      throw new Error('請重新登入');
     }
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
+  }
+
+  async function fetchStoreStatus() {
+    const status = await requestJson(`${BACKEND_BASE_URL}/api/store/status`, { cache: 'no-store' });
+    storeIsOpen = Boolean(status.isOpen);
   }
 
   async function fetchOrders() {
-    try {
-      const response = await fetch(`${BACKEND_BASE_URL}/api/orders?status=pending`, {
-        cache: 'no-store'
+    const data = await requestJson(`${BACKEND_BASE_URL}/api/orders?status=all`, { cache: 'no-store' });
+    const pending = (data.orders || []).filter(order => order.status === 'pending');
+    const newPending = pending.filter(order => !knownPendingOrders.has(order.orderNumber));
+    knownPendingOrders = new Set(pending.map(order => order.orderNumber));
+    orders = data.orders || [];
+
+    if (newPending.length > 0 && 'Notification' in window && Notification.permission === 'granted') {
+      new Notification('您有新訂單', {
+        body: `${newPending[0].name}，共 ${money(newPending[0].totalAmount)}`
       });
+    }
+  }
 
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  async function fetchSummary() {
+    const data = await requestJson(`${BACKEND_BASE_URL}/api/admin/summary`, { cache: 'no-store' });
+    renderStats(data.summary);
+  }
 
-      const data = await response.json();
-      const orders = data.orders || [];
-      notifyNewOrders(orders);
-      renderOrders(orders);
+  async function refreshAll() {
+    try {
+      await Promise.all([fetchStoreStatus(), fetchOrders(), fetchSummary()]);
+      renderAll();
     } catch (error) {
-      console.error('讀取訂單失敗:', error);
-      updateConnectionState('offline');
-      stopAlarm();
+      console.error('更新資料失敗:', error);
+      updateConnectionState('offline', 0);
     }
   }
 
   async function updateOrderStatus(orderNumber, status) {
-    const response = await fetch(`${BACKEND_BASE_URL}/api/orders/${encodeURIComponent(orderNumber)}/status`, {
+    await requestJson(`${BACKEND_BASE_URL}/api/orders/${encodeURIComponent(orderNumber)}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status })
     });
-
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    await fetchOrders();
+    await refreshAll();
   }
 
-  soundBtn.addEventListener('click', async () => {
+  async function enableSound() {
     audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
     await audioContext.resume();
     soundEnabled = true;
@@ -478,12 +762,81 @@
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
+  }
 
-    playBeep();
-    fetchOrders();
+  loginForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    loginError.textContent = '';
+
+    try {
+      const data = await fetch(`${BACKEND_BASE_URL}/api/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: document.getElementById('username').value,
+          password: document.getElementById('password').value
+        })
+      }).then(response => {
+        if (!response.ok) throw new Error('帳號或密碼錯誤');
+        return response.json();
+      });
+
+      token = data.token;
+      localStorage.setItem('adminToken', token);
+      setLoggedIn(true);
+      enableSound().catch(() => {});
+      refreshAll();
+    } catch (error) {
+      loginError.textContent = error.message;
+    }
   });
 
-  refreshBtn.addEventListener('click', fetchOrders);
+  storeToggle.addEventListener('click', async () => {
+    storeToggle.disabled = true;
+
+    try {
+      await requestJson(`${BACKEND_BASE_URL}/api/store/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isOpen: !storeIsOpen })
+      });
+      await refreshAll();
+    } catch (error) {
+      alert('切換上線狀態失敗，請稍後再試。');
+    } finally {
+      storeToggle.disabled = false;
+    }
+  });
+
+  soundBtn.addEventListener('click', () => {
+    enableSound()
+      .then(() => {
+        if (orders.some(order => order.status === 'pending')) startAlarm();
+      })
+      .catch(() => alert('提醒聲啟用失敗，請確認瀏覽器允許播放聲音。'));
+  });
+
+  refreshBtn.addEventListener('click', refreshAll);
+
+  logoutBtn.addEventListener('click', async () => {
+    try {
+      await requestJson(`${BACKEND_BASE_URL}/api/admin/logout`, { method: 'POST' });
+    } catch (error) {
+      console.warn(error);
+    }
+
+    token = '';
+    localStorage.removeItem('adminToken');
+    stopAlarm();
+    setLoggedIn(false);
+  });
+
+  tabsEl.addEventListener('click', event => {
+    const tab = event.target.closest('.tab');
+    if (!tab) return;
+    activeStatus = tab.dataset.status;
+    renderAll();
+  });
 
   ordersEl.addEventListener('click', async event => {
     const button = event.target.closest('button[data-order]');
@@ -502,8 +855,16 @@
     }
   });
 
-  fetchOrders();
-  setInterval(fetchOrders, POLL_INTERVAL_MS);
+  if (token) {
+    setLoggedIn(true);
+    refreshAll();
+  } else {
+    setLoggedIn(false);
+  }
+
+  setInterval(() => {
+    if (token) refreshAll();
+  }, POLL_INTERVAL_MS);
 </script>
 </body>
 </html>

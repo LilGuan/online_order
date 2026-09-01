@@ -9,6 +9,11 @@ const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const ORDERS_FILE = path.join(__dirname, 'orders.json');
+const STORE_FILE = path.join(__dirname, 'store-status.json');
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+const LINE_CHANNEL_ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN || '';
+const adminSessions = new Set();
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -28,19 +33,155 @@ const MY_DOMAIN = 'https://print-writer-restrict-jenny.trycloudflare.com';
 
 const ordersCache = {};
 
-function readOrders() {
+function readJsonFile(filePath, fallback) {
     try {
-        if (!fs.existsSync(ORDERS_FILE)) return [];
-        const data = fs.readFileSync(ORDERS_FILE, 'utf8');
-        return data ? JSON.parse(data) : [];
+        if (!fs.existsSync(filePath)) return fallback;
+        const data = fs.readFileSync(filePath, 'utf8');
+        return data ? JSON.parse(data) : fallback;
     } catch (error) {
-        console.error('[Orders] 讀取失敗:', error.message);
-        return [];
+        console.error(`[File] 讀取失敗 ${filePath}:`, error.message);
+        return fallback;
     }
 }
 
+function writeJsonFile(filePath, data) {
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+}
+
+function readOrders() {
+    return readJsonFile(ORDERS_FILE, []);
+}
+
 function writeOrders(orders) {
-    fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2));
+    writeJsonFile(ORDERS_FILE, orders);
+}
+
+function readStoreStatus() {
+    return readJsonFile(STORE_FILE, {
+        isOpen: true,
+        updatedAt: new Date().toISOString()
+    });
+}
+
+function writeStoreStatus(status) {
+    writeJsonFile(STORE_FILE, status);
+}
+
+function requireAdmin(req, res, next) {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+
+    if (!adminSessions.has(token)) {
+        return res.status(401).json({ message: '請先登入 admin' });
+    }
+
+    next();
+}
+
+function addStatusHistory(order, status, note) {
+    order.statusHistory = Array.isArray(order.statusHistory) ? order.statusHistory : [];
+    order.statusHistory.push({
+        status,
+        note,
+        at: new Date().toISOString()
+    });
+}
+
+function getStatusMessage(status) {
+    if (status === 'preparing') return '店家已接單，正在製作您的餐點。';
+    if (status === 'completed') return '您的訂單已備妥，可以來取餐了。';
+    if (status === 'cancelled') return '店家已拒絕訂單，如有疑問請直接聯絡店家。';
+    return '';
+}
+
+async function notifyCustomer(order, message) {
+    const result = {
+        at: new Date().toISOString(),
+        message,
+        sent: false,
+        reason: ''
+    };
+
+    if (!message) {
+        result.reason = '沒有通知內容';
+        return result;
+    }
+
+    if (!order.lineUserId) {
+        result.reason = '訂單沒有 LINE userId';
+        return result;
+    }
+
+    if (!LINE_CHANNEL_ACCESS_TOKEN) {
+        result.reason = '尚未設定 LINE_CHANNEL_ACCESS_TOKEN';
+        return result;
+    }
+
+    try {
+        await axios.post('https://api.line.me/v2/bot/message/push', {
+            to: order.lineUserId,
+            messages: [{ type: 'text', text: `邱媽媽美食通知\n訂單 #${order.orderNumber}\n${message}` }]
+        }, {
+            headers: {
+                Authorization: `Bearer ${LINE_CHANNEL_ACCESS_TOKEN}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        result.sent = true;
+    } catch (error) {
+        result.reason = error.response ? JSON.stringify(error.response.data) : error.message;
+        console.error('[LINE Push] 發送失敗:', result.reason);
+    }
+
+    return result;
+}
+
+function getOrderDate(order) {
+    return new Date(order.completedAt || order.createdAt || order.updatedAt);
+}
+
+function startOfDay(date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function startOfWeek(date) {
+    const result = startOfDay(date);
+    const day = result.getDay();
+    const diff = day === 0 ? 6 : day - 1;
+    result.setDate(result.getDate() - diff);
+    return result;
+}
+
+function startOfMonth(date) {
+    return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function summarizeRevenue(orders) {
+    const now = new Date();
+    const today = startOfDay(now);
+    const week = startOfWeek(now);
+    const month = startOfMonth(now);
+
+    const completed = orders.filter(order => order.status === 'completed');
+
+    function sumSince(startDate) {
+        const filtered = completed.filter(order => getOrderDate(order) >= startDate);
+        return {
+            count: filtered.length,
+            revenue: filtered.reduce((sum, order) => sum + Number(order.totalAmount || 0), 0)
+        };
+    }
+
+    return {
+        today: sumSince(today),
+        week: sumSince(week),
+        month: sumSince(month),
+        all: {
+            count: completed.length,
+            revenue: completed.reduce((sum, order) => sum + Number(order.totalAmount || 0), 0)
+        },
+        totalOrders: orders.length
+    };
 }
 
 function normalizeOrder(body) {
@@ -56,15 +197,57 @@ function normalizeOrder(body) {
         pickupTime: String(body.pickupTime || '').trim(),
         paymentMethod: String(body.paymentMethod || 'cash').trim(),
         notes: String(body.notes || '').trim(),
+        lineUserId: String(body.lineUserId || '').trim(),
         items,
         totalAmount,
         status: 'pending',
+        statusHistory: [{ status: 'pending', note: '訂單建立', at: now }],
+        customerNotifications: [],
         createdAt: now,
         updatedAt: now
     };
 }
 
+app.post('/api/admin/login', (req, res) => {
+    const username = String(req.body.username || '').trim();
+    const password = String(req.body.password || '').trim();
+
+    if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
+        return res.status(401).json({ message: '帳號或密碼錯誤' });
+    }
+
+    const token = crypto.randomBytes(24).toString('hex');
+    adminSessions.add(token);
+    res.json({ ok: true, token, username: ADMIN_USERNAME });
+});
+
+app.post('/api/admin/logout', requireAdmin, (req, res) => {
+    const token = req.headers.authorization.slice(7);
+    adminSessions.delete(token);
+    res.json({ ok: true });
+});
+
+app.get('/api/store/status', (req, res) => {
+    res.json(readStoreStatus());
+});
+
+app.patch('/api/store/status', requireAdmin, (req, res) => {
+    const status = {
+        isOpen: Boolean(req.body.isOpen),
+        updatedAt: new Date().toISOString()
+    };
+
+    writeStoreStatus(status);
+    res.json({ ok: true, status });
+});
+
 app.post('/api/orders', (req, res) => {
+    const storeStatus = readStoreStatus();
+
+    if (!storeStatus.isOpen) {
+        return res.status(403).json({ message: '店家目前未開放點餐' });
+    }
+
     const order = normalizeOrder(req.body);
 
     if (!order.name || !order.phone || order.items.length === 0 || order.totalAmount <= 0) {
@@ -96,15 +279,21 @@ app.get('/api/orders', (req, res) => {
     let orders = readOrders();
 
     if (status && status !== 'all') {
-        orders = orders.filter(order => order.status === status);
+        const statuses = String(status).split(',').map(item => item.trim());
+        orders = orders.filter(order => statuses.includes(order.status));
     }
 
     res.json({ orders });
 });
 
-app.patch('/api/orders/:orderNumber/status', (req, res) => {
-    const allowedStatuses = ['pending', 'accepted', 'completed', 'cancelled'];
-    const status = String(req.body.status || '').trim();
+app.get('/api/admin/summary', requireAdmin, (req, res) => {
+    res.json({ summary: summarizeRevenue(readOrders()) });
+});
+
+app.patch('/api/orders/:orderNumber/status', requireAdmin, async (req, res) => {
+    const allowedStatuses = ['pending', 'preparing', 'accepted', 'completed', 'cancelled'];
+    let status = String(req.body.status || '').trim();
+    if (status === 'accepted') status = 'preparing';
 
     if (!allowedStatuses.includes(status)) {
         return res.status(400).json({ message: '狀態不正確' });
@@ -118,9 +307,17 @@ app.patch('/api/orders/:orderNumber/status', (req, res) => {
     }
 
     order.status = status;
+    if (status === 'completed') order.completedAt = new Date().toISOString();
+    if (status === 'cancelled') order.cancelledAt = new Date().toISOString();
     order.updatedAt = new Date().toISOString();
+    addStatusHistory(order, status, String(req.body.note || ''));
+
+    const notification = await notifyCustomer(order, getStatusMessage(status));
+    order.customerNotifications = Array.isArray(order.customerNotifications) ? order.customerNotifications : [];
+    order.customerNotifications.push(notification);
+
     writeOrders(orders);
-    res.json({ ok: true, order });
+    res.json({ ok: true, order, notification });
 });
 
 // ★★★ 修正後的簽章產生函式 ★★★

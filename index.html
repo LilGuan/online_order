@@ -180,6 +180,23 @@
       transition: background-color 0.2s;
     }
     button.add-to-cart:active { background-color: #fa5252; }
+    button.add-to-cart:disabled {
+      background: #adb5bd;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .store-closed-banner {
+      display: none;
+      max-width: 800px;
+      margin: 12px auto 0;
+      background: #fff1f0;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-weight: 700;
+    }
 
     /* 購物車懸浮按鈕 */
     #cart-fab {
@@ -226,6 +243,8 @@
   <button class="tab-btn" onclick="filterMenu('alacarte')">單點</button>
   <button class="tab-btn" onclick="filterMenu('soup')">湯品</button>
 </div>
+
+<div class="store-closed-banner" id="store-closed-banner">店家目前未開放點餐，請稍後再試。</div>
 
 <div class="menu" id="menu">
   <!-- 餐點由 JS 動態生成 -->
@@ -306,7 +325,12 @@
 
   const menuQuantities = {};
   const menuDiv = document.getElementById('menu');
+  const storeClosedBanner = document.getElementById('store-closed-banner');
+  const BACKEND_BASE_URL = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+    ? location.origin
+    : "https://print-writer-restrict-jenny.trycloudflare.com";
   let currentCategory = 'all';
+  let isStoreOpen = true;
 
   async function initLiff() {
     try {
@@ -391,11 +415,25 @@
             <button onclick="changeMenuQty(${item.id}, 1)">＋</button>
           </div>
           
-          <button class="add-to-cart" onclick="addToCart(${item.id})">加入購物車</button>
+          <button class="add-to-cart" onclick="addToCart(${item.id})" ${isStoreOpen ? '' : 'disabled'}>${isStoreOpen ? '加入購物車' : '暫停點餐'}</button>
         </div>
       `;
       menuDiv.appendChild(div);
     });
+  }
+
+  async function initStoreStatus() {
+    try {
+      const response = await fetch(`${BACKEND_BASE_URL}/api/store/status`, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const status = await response.json();
+      isStoreOpen = Boolean(status.isOpen);
+      storeClosedBanner.style.display = isStoreOpen ? 'none' : 'block';
+      renderMenu();
+    } catch (error) {
+      console.error('讀取店鋪狀態失敗:', error);
+    }
   }
 
   // ★★★ 新增：即時更新單品價格 ★★★
@@ -442,6 +480,11 @@
   };
 
   window.addToCart = function(id) {
+    if (!isStoreOpen) {
+      showToast('店家目前未開放點餐');
+      return;
+    }
+
     const qty = menuQuantities[id] || 1;
     const isLarge = document.getElementById(`large-${id}`)?.checked || false;
     const isDoubleEgg = document.getElementById(`egg-${id}`)?.checked || false;
@@ -512,6 +555,11 @@
   }
 
   document.getElementById('cart-fab').addEventListener('click', () => {
+    if (!isStoreOpen) {
+      showToast('店家目前未開放點餐');
+      return;
+    }
+
     const cart = JSON.parse(localStorage.getItem('cart') || '{}');
     if (Object.keys(cart).length === 0) {
       showToast('購物車是空的喔！');
@@ -523,6 +571,7 @@
   (async function() {
     renderMenu();
     updateCartBadge();
+    await initStoreStatus();
     await initLiff();
   })();
 </script>

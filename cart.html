@@ -273,6 +273,16 @@
   /* 錯誤提示樣式 */
   .is-invalid { border-color: #dc3545 !important; }
   .error-text { color: #dc3545; font-size: 0.8rem; margin-top: 4px; display: none; }
+  .closed-banner {
+    display: none;
+    background: #fff1f0;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    font-weight: 700;
+  }
 
 </style>
 </head>
@@ -285,6 +295,7 @@
 </header>
 
 <div class="container">
+  <div class="closed-banner" id="closed-banner">店家目前未開放點餐，請稍後再試。</div>
   
   <div id="cart-items">
     <!-- 購物車項目將由 JS 渲染 -->
@@ -445,6 +456,7 @@
   const totalPriceEl = document.getElementById('total-price');
   const emptyMsg = document.getElementById('empty-msg');
   const submitBtn = document.getElementById('submit-order');
+  const closedBanner = document.getElementById('closed-banner');
   const emptyCartModal = new bootstrap.Modal(document.getElementById('emptyCartModal'));
   const pickupTimeSelect = document.getElementById('pickup-time');
   const pickupDateSelect = document.getElementById('pickup-date');
@@ -458,6 +470,8 @@
   let currentMode = 'instant'; // 'instant' 或 'reserve'
   let isBusinessHours = false;
   let isClosedForToday = false; // 是否已過今日營業時間 (打烊)
+  let isStoreOpen = true;
+  let lineUserId = '';
 
   // 載入購物車資料
   function loadCart() {
@@ -516,14 +530,12 @@
       emptyMsg.style.display = 'block';
       totalPriceEl.innerText = '$0';
       // 禁用送出按鈕
-      submitBtn.style.opacity = '0.5';
-      submitBtn.style.pointerEvents = 'none';
+      updateSubmitButtonState(false);
       return;
     }
 
     emptyMsg.style.display = 'none';
-    submitBtn.style.opacity = '1';
-    submitBtn.style.pointerEvents = 'auto';
+    updateSubmitButtonState(isStoreOpen);
 
     let total = 0;
 
@@ -555,6 +567,26 @@
     });
 
     totalPriceEl.innerText = `$${total}`;
+  }
+
+  function updateSubmitButtonState(canSubmit) {
+    submitBtn.disabled = !canSubmit;
+    submitBtn.style.opacity = canSubmit ? '1' : '0.5';
+    submitBtn.style.pointerEvents = canSubmit ? 'auto' : 'none';
+  }
+
+  async function initStoreStatus() {
+    try {
+      const response = await fetch(`${BACKEND_BASE_URL}/api/store/status`, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const status = await response.json();
+      isStoreOpen = Boolean(status.isOpen);
+      closedBanner.style.display = isStoreOpen ? 'none' : 'block';
+      renderCart();
+    } catch (error) {
+      console.error('讀取店鋪狀態失敗:', error);
+    }
   }
 
   // 修改數量
@@ -598,6 +630,7 @@
       await liff.init({ liffId: LIFF_ID });
       if (liff.isLoggedIn()) {
         const profile = await liff.getProfile();
+        lineUserId = profile.userId || '';
         
         // 1. 自動填入姓名
         const nameInput = document.getElementById('name');
@@ -756,6 +789,7 @@
   // 頁面載入執行
   renderCart();
   initLiff();
+  initStoreStatus();
   initMode(); 
 
   // ====== 表單驗證與送出 ======
@@ -763,6 +797,10 @@
 
   submitBtn.addEventListener('click', async () => {
     if (isSubmitting) return;
+    if (!isStoreOpen) {
+      alert('店家目前未開放點餐，請稍後再試。');
+      return;
+    }
 
     const cart = loadCart();
     const nameInput = document.getElementById('name');
@@ -832,7 +870,7 @@
     // 取得付款方式
     const paymentMethod = document.getElementById('payment-method').value;
 
-    const orderData = { name, phone, cart, notes, paymentMethod, orderNumber, pickupTime: finalPickupTime };
+    const orderData = { name, phone, cart, notes, paymentMethod, orderNumber, pickupTime: finalPickupTime, lineUserId };
     localStorage.setItem('orderData', JSON.stringify(orderData));
     localStorage.setItem('userPhone', phone); 
 
@@ -990,6 +1028,7 @@
         pickupTime: orderData.pickupTime,
         paymentMethod: orderData.paymentMethod,
         notes: orderData.notes,
+        lineUserId: orderData.lineUserId,
         items,
         totalAmount
       })
