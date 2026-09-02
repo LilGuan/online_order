@@ -1,0 +1,162 @@
+[
+  {
+    "id": "3cf9a59e-5717-49fa-aa44-024561ddaf2a",
+    "at": "2026-09-02T03:43:14.387Z",
+    "user": "admin",
+    "action": "settings.updated",
+    "target": "門店設定",
+    "detail": "調整加購價格"
+  },
+  {
+    "id": "dc5ae4be-9e12-495a-82b8-7a77703e8a3a",
+    "at": "2026-09-02T03:42:45.120Z",
+    "user": "admin",
+    "action": "settings.updated",
+    "target": "門店設定",
+    "detail": "調整加購價格"
+  },
+  {
+    "id": "f9f1e3f6-8e2d-4850-90dc-344cad5535a7",
+    "at": "2026-09-02T03:40:56.831Z",
+    "user": "admin",
+    "action": "stock.updated",
+    "target": "荷包蛋",
+    "detail": "恢復供應"
+  },
+  {
+    "id": "4867a2e2-9ed5-40f4-bce4-28e5a798312b",
+    "at": "2026-09-02T03:40:37.088Z",
+    "user": "admin",
+    "action": "menu.updated",
+    "target": "荷包蛋",
+    "detail": "狀態 hidden → available"
+  },
+  {
+    "id": "fc450cd1-e16d-4445-a518-8ef537a90e75",
+    "at": "2026-09-02T03:40:37.067Z",
+    "user": "admin",
+    "action": "stock.updated",
+    "target": "肉絲炒飯",
+    "detail": "恢復供應"
+  },
+  {
+    "id": "0dd095b0-8e7e-4f60-86c9-f9c038be9d35",
+    "at": "2026-09-02T03:40:37.049Z",
+    "user": "admin",
+    "action": "settings.updated",
+    "target": "門店設定",
+    "detail": "調整加購價格"
+  },
+  {
+    "id": "48cdb1a8-9691-4eaa-85f9-d65ad2cfe71f",
+    "at": "2026-09-02T03:40:37.028Z",
+    "user": "admin",
+    "action": "menu.updated",
+    "target": "蛋炒飯",
+    "detail": "價格 $88 → $80"
+  },
+  {
+    "id": "fbe604e1-33ce-4e28-9b7c-209e6acb3de1",
+    "at": "2026-09-02T03:40:26.982Z",
+    "user": "admin",
+    "action": "menu.updated",
+    "target": "荷包蛋",
+    "detail": "狀態 available → hidden"
+  },
+  {
+    "id": "a36e0f43-e0aa-4226-b6e1-5efe6daae0a4",
+    "at": "2026-09-02T03:40:26.850Z",
+    "user": "admin",
+    "action": "stock.updated",
+    "target": "肉絲炒飯",
+    "detail": "標示為賣完"
+  },
+  {
+    "id": "a6f03fd7-a1bc-4cc6-8be9-d0ab48191128",
+    "at": "2026-09-02T03:40:26.724Z",
+    "user": "admin",
+    "action": "settings.updated",
+    "target": "門店設定",
+    "detail": "調整加購價格"
+  },
+  {
+    "id": "ce00da0a-695f-4a0b-bbfe-6244fdecc7b2",
+    "at": "2026-09-02T03:40:26.629Z",
+    "user": "admin",
+    "action": "menu.updated",
+    "target": "蛋炒飯",
+    "detail": "價格 $80 → $88"
+  },
+  {
+    "id": "9c0b65f9-9bf8-4f63-b7a2-b2381d3a8805",
+    "at": "2026-09-02T03:35:01.179Z",
+    "user": "admin",
+    "action": "order.status_changed",
+    "target": "#E0DF39",
+    "detail": "狀態改為 製作中，已通知客人"
+  },
+  {
+    "id": "b06b1123-41ea-47db-a8a9-5d1a7fee92f0",
+    "at": "2026-09-02T03:34:03.852Z",
+    "user": "admin",
+    "action": "stock.updated",
+    "target": "荷包蛋",
+    "detail": "標示為賣完"
+  },
+  {
+    "id": "e11e1e1f-358d-4781-a058-74761936938d",
+    "at": "2026-09-02T03:30:42.239Z",
+    "user": "admin",
+    "action": "stock.updated",
+    "target": "荷包蛋",
+    "detail": "恢復供應"
+  },
+  {
+    "id": "f6f93f1c-3174-46f5-a131-a564b81b77d5",
+    "at": "2026-09-02T03:30:41.017Z",
+    "user": "admin",
+    "action": "stock.updated",
+    "target": "荷包蛋",
+    "detail": "標示為賣完"
+  },
+  {
+    "id": "fe6a840b-3e4a-49c3-9caf-ed055d575f6f",
+    "at": "2026-09-02T03:30:36.742Z",
+    "user": "admin",
+    "action": "stock.updated",
+    "target": "蛋炒飯",
+    "detail": "重設當日已售數量"
+  },
+  {
+    "id": "763945da-97eb-484b-812d-f4eecc32d2e7",
+    "at": "2026-09-02T03:30:35.213Z",
+    "user": "admin",
+    "action": "stock.updated",
+    "target": "蛋炒飯",
+    "detail": "重設當日已售數量"
+  },
+  {
+    "id": "63a95b29-ee23-4f40-8946-e94abe145384",
+    "at": "2026-09-02T03:22:59.149Z",
+    "user": "admin",
+    "action": "stock.updated",
+    "target": "蛋炒飯",
+    "detail": "取消每日限量、重設當日已售數量"
+  },
+  {
+    "id": "f0f6de72-4e78-446e-98e4-24c8bd9c1a2d",
+    "at": "2026-09-02T03:22:59.037Z",
+    "user": "admin",
+    "action": "stock.auto_sold_out",
+    "target": "蛋炒飯",
+    "detail": "達每日限量，訂單 #STOCKTEST1 後自動標示賣完"
+  },
+  {
+    "id": "efb1630b-03ae-423d-8e23-68e95fc93ce7",
+    "at": "2026-09-02T03:22:44.763Z",
+    "user": "admin",
+    "action": "stock.updated",
+    "target": "蛋炒飯",
+    "detail": "每日限量設為 2"
+  }
+]

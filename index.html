@@ -186,6 +186,21 @@
       box-shadow: none;
     }
 
+    /* 已售完標記 */
+    .sold-out-badge {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, .52);
+      color: #fff;
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: .06em;
+      backdrop-filter: blur(1px);
+    }
+
     .store-closed-banner {
       display: none;
       max-width: 800px;
@@ -235,13 +250,9 @@
   <h2>邱媽媽美食</h2>
 </header>
 
-<!-- 分類導覽列 -->
-<div class="category-tabs">
+<!-- 分類導覽列（由後台菜單設定動態產生） -->
+<div class="category-tabs" id="category-tabs">
   <button class="tab-btn active" onclick="filterMenu('all')">全部</button>
-  <button class="tab-btn" onclick="filterMenu('rice')">飯類</button>
-  <button class="tab-btn" onclick="filterMenu('noodle')">麵類</button>
-  <button class="tab-btn" onclick="filterMenu('alacarte')">單點</button>
-  <button class="tab-btn" onclick="filterMenu('soup')">湯品</button>
 </div>
 
 <div class="store-closed-banner" id="store-closed-banner">店家目前未開放點餐，請稍後再試。</div>
@@ -258,18 +269,42 @@
 <div id="toast">已加入購物車</div>
 
 <script>
-  // 營業時間檢查 (維持不變)
-  function checkBusinessHours() {
+  // 營業時段由後台「門店設定」提供，讀不到時退回預設時段
+  const DEFAULT_BUSINESS_WINDOWS = [{ start: 630, end: 840 }, { start: 960, end: 1200 }];
+
+  function timeToMinutes(value) {
+    const [hour, minute] = String(value || '').split(':').map(Number);
+    return (Number.isFinite(hour) ? hour : 0) * 60 + (Number.isFinite(minute) ? minute : 0);
+  }
+
+  function minutesToTime(value) {
+    return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`;
+  }
+
+  function businessWindowsFromSettings(settings) {
+    const hours = settings && settings.businessHours;
+    if (!hours) return DEFAULT_BUSINESS_WINDOWS;
+
+    const windows = ['lunch', 'dinner']
+      .map(slot => hours[slot])
+      .filter(slot => slot && slot.enabled)
+      .map(slot => ({ start: timeToMinutes(slot.start), end: timeToMinutes(slot.end) }));
+
+    return windows.length ? windows : DEFAULT_BUSINESS_WINDOWS;
+  }
+
+  function checkBusinessHours(windows) {
     const now = new Date();
     const currentTime = now.getHours() * 60 + now.getMinutes();
-    // 10:30 (630) - 14:00 (840), 16:00 (960) - 20:00 (1200)
-    const isOpen = (currentTime >= 630 && currentTime < 840) || (currentTime >= 960 && currentTime < 1200);
-    // return true; // 測試用
-    return isOpen;
+    return (windows || DEFAULT_BUSINESS_WINDOWS).some(window => currentTime >= window.start && currentTime < window.end);
   }
 
   // 顯示非營業時間遮罩
-  function showClosedModal() {
+  function showClosedModal(windows) {
+    const hoursText = (windows || DEFAULT_BUSINESS_WINDOWS)
+      .map(window => `<strong>${minutesToTime(window.start)} - ${minutesToTime(window.end)}</strong>`)
+      .join('<br>');
+
     const modalId = 'closed-modal';
     if (document.getElementById(modalId)) return; // 避免重複建立
 
@@ -284,7 +319,7 @@
     modal.innerHTML = `
       <h2 style="margin-bottom: 10px; color: #fff;">目前非營業時間</h2>
       <p style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 20px;">
-        營業時間：<br><strong>10:30 - 14:00</strong><br><strong>16:00 - 20:00</strong>
+        營業時間：<br>${hoursText}
       </p>
       <!-- 新增：前往預訂按鈕 -->
       <button id="preorder-btn" style="
@@ -303,25 +338,49 @@
     });
   }
 
-  if (!checkBusinessHours()) {
-    showClosedModal();
-  }
+  // 實際判斷移到主程式，等門店設定載入後才執行（見下方 init）
 
   // ====== 菜單資料 (已移除加蝦選項) ======
   // category: rice(飯), noodle(麵), alacarte(單點), soup(湯)
-  const menuItems = [
-    { id: 1, name: '蛋炒飯', price: 80, image: 'images/egg_rice.jpg', hasLarge: true, hasDoubleEgg: true, category: 'rice' },
-    { id: 2, name: '肉絲炒飯', price: 100, image: 'images/beef_rice.png', hasLarge: true, hasDoubleEgg: true, category: 'rice' },
-    { id: 3, name: '肉絲炒麵', price: 100, image: 'images/beef_noodle.jpg', hasLarge: true, hasDoubleEgg: false, category: 'noodle' },
-    { id: 4, name: '香腸炒飯', price: 110, image: 'images/sausage_rice.png', hasLarge: true, hasDoubleEgg: true, category: 'rice' },
-    { id: 5, name: '蝦仁炒飯', price: 110, image: 'images/shrimp_rice.png', hasLarge: true, hasDoubleEgg: true, hasDoubleShrimp: true, category: 'rice' },
-    { id: 6, name: '蝦仁炒麵', price: 110, image: 'images/shrimp_noodle.png', hasLarge: true, hasDoubleEgg: false, hasDoubleShrimp: true, category: 'noodle' },
-    { id: 7, name: '蝦仁米苔目', price: 110, image: 'images/shrimp_rice_noodle.png', hasLarge: true, hasDoubleEgg: false, hasDoubleShrimp: true, category: 'noodle' },
-    { id: 8, name: '鹹豬肉蓋飯', price: 130, image: 'images/salted_pork_rice.png', hasLarge: true, hasDoubleEgg: true, category: 'rice' },
-    { id: 9, name: '鹹豬肉', price: 230, image: 'images/salted_pork.png', hasLarge: false, hasDoubleEgg: false, category: 'alacarte' },
-    { id: 10, name: '海帶芽蛋花湯', price: 25, image: 'images/soup.png', hasLarge: false, hasDoubleEgg: false, category: 'soup' },
-    { id: 11, name: '荷包蛋', price: 15, image: 'images/egg.png', hasLarge: false, hasDoubleEgg: false, category: 'alacarte' },
-  ];
+  // 菜單、分類、加購價格都改由後台 API 提供，店家在後台改完前台立即生效。
+  let menuItems = [];
+  let menuCategories = [];
+  let optionPrices = { large: 20, doubleEgg: 15, doubleShrimp: 35 };
+
+  async function fetchMenu() {
+    try {
+      const response = await fetch(`${BACKEND_BASE_URL}/api/menu`, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const data = await response.json();
+      optionPrices = data.optionPrices || optionPrices;
+      menuCategories = data.categories || [];
+      menuItems = (data.items || []).map(item => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        image: item.image,
+        category: item.category,
+        soldOut: Boolean(item.soldOut),
+        hasLarge: Boolean(item.options && item.options.large),
+        hasDoubleEgg: Boolean(item.options && item.options.doubleEgg),
+        hasDoubleShrimp: Boolean(item.options && item.options.doubleShrimp)
+      }));
+
+      renderCategories();
+    } catch (error) {
+      console.error('讀取菜單失敗:', error);
+      menuDiv.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:#888;">菜單載入失敗，請重新整理頁面</div>';
+    }
+  }
+
+  function renderCategories() {
+    const tabs = document.getElementById('category-tabs');
+    tabs.innerHTML = `<button class="tab-btn ${currentCategory === 'all' ? 'active' : ''}" onclick="filterMenu('all')">全部</button>`
+      + menuCategories.map(category => `
+          <button class="tab-btn ${currentCategory === category.key ? 'active' : ''}" onclick="filterMenu('${category.key}')">${category.name}</button>
+        `).join('');
+  }
 
   const menuQuantities = {};
   const menuDiv = document.getElementById('menu');
@@ -342,18 +401,7 @@
   // 切換分類
   window.filterMenu = function(category) {
     currentCategory = category;
-    
-    // 更新按鈕樣式
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.classList.remove('active');
-      // 簡單判斷按鈕文字或onclick參數來加 active (這裡偷懶用 DOM 順序或文字對應較好，以下用文字判斷)
-      if (category === 'all' && btn.innerText === '全部') btn.classList.add('active');
-      else if (category === 'rice' && btn.innerText === '飯類') btn.classList.add('active');
-      else if (category === 'noodle' && btn.innerText === '麵類') btn.classList.add('active');
-      else if (category === 'alacarte' && btn.innerText === '單點') btn.classList.add('active');
-      else if (category === 'soup' && btn.innerText === '湯品') btn.classList.add('active');
-    });
-
+    renderCategories();
     renderMenu();
   };
 
@@ -365,14 +413,23 @@
       ? menuItems 
       : menuItems.filter(item => item.category === currentCategory);
 
+    if (!filteredItems.length) {
+      menuDiv.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:#888;">這個分類目前沒有商品</div>';
+      return;
+    }
+
     filteredItems.forEach(item => {
       menuQuantities[item.id] = 1;
+
+      const canOrder = isStoreOpen && !item.soldOut;
+      const buttonLabel = item.soldOut ? '已售完' : (isStoreOpen ? '加入購物車' : '暫停點餐');
 
       const div = document.createElement('div');
       div.className = 'item';
       div.innerHTML = `
         <div class="item-image-wrapper">
           <img src="${item.image}" alt="${item.name}" loading="lazy" />
+          ${item.soldOut ? '<div class="sold-out-badge">已售完</div>' : ''}
         </div>
         <div class="item-content">
           <div class="item-name">${item.name}</div>
@@ -384,16 +441,16 @@
               <div class="options">
                 <label>
                   <input type="checkbox" id="large-${item.id}" onchange="updateItemPrice(${item.id})"/>
-                  <span>加大 (+$20)</span>
+                  <span>加大 (+$${optionPrices.large})</span>
                 </label>
               </div>
             ` : ''}
-            
+
             ${item.hasDoubleEgg ? `
               <div class="options">
                 <label>
                   <input type="checkbox" id="egg-${item.id}" onchange="updateItemPrice(${item.id})" />
-                  <span>雙蛋 (+$15)</span>
+                  <span>雙蛋 (+$${optionPrices.doubleEgg})</span>
                 </label>
               </div>
             ` : ''}
@@ -401,12 +458,12 @@
               <div class="options">
                 <label>
                   <input type="checkbox" id="shrimp-${item.id}" onchange="updateItemPrice(${item.id})" />
-                  <span>加蝦 (+$35)</span>
+                  <span>加蝦 (+$${optionPrices.doubleShrimp})</span>
                 </label>
               </div>
             ` : ''}
           </div>
-          
+
           <div style="flex-grow:1;"></div>
 
           <div class="controls">
@@ -414,8 +471,8 @@
             <span id="menu-qty-${item.id}">1</span>
             <button onclick="changeMenuQty(${item.id}, 1)">＋</button>
           </div>
-          
-          <button class="add-to-cart" onclick="addToCart(${item.id})" ${isStoreOpen ? '' : 'disabled'}>${isStoreOpen ? '加入購物車' : '暫停點餐'}</button>
+
+          <button class="add-to-cart" onclick="addToCart(${item.id})" ${canOrder ? '' : 'disabled'}>${buttonLabel}</button>
         </div>
       `;
       menuDiv.appendChild(div);
@@ -430,9 +487,11 @@
       const status = await response.json();
       isStoreOpen = Boolean(status.isOpen);
       storeClosedBanner.style.display = isStoreOpen ? 'none' : 'block';
-      renderMenu();
     } catch (error) {
       console.error('讀取店鋪狀態失敗:', error);
+    } finally {
+      // 不論店鋪狀態讀取成功與否都要把菜單畫出來，避免整頁空白
+      renderMenu();
     }
   }
 
@@ -448,9 +507,9 @@
     const isDoubleEgg = document.getElementById(`egg-${id}`)?.checked;
     const isDoubleShrimp = document.getElementById(`shrimp-${id}`)?.checked;
 
-    if (isLarge) currentPrice += 20;
-    if (isDoubleEgg) currentPrice += 15;
-    if (isDoubleShrimp) currentPrice += 35;
+    if (isLarge) currentPrice += optionPrices.large;
+    if (isDoubleEgg) currentPrice += optionPrices.doubleEgg;
+    if (isDoubleShrimp) currentPrice += optionPrices.doubleShrimp;
 
     // 更新介面上的價格文字
     const priceEl = document.getElementById(`price-${id}`);
@@ -482,6 +541,12 @@
   window.addToCart = function(id) {
     if (!isStoreOpen) {
       showToast('店家目前未開放點餐');
+      return;
+    }
+
+    const menuItem = menuItems.find(i => i.id === id);
+    if (menuItem && menuItem.soldOut) {
+      showToast(`${menuItem.name} 今日已售完`);
       return;
     }
 
@@ -568,9 +633,25 @@
     window.location.href = 'cart.html';
   });
 
+  async function fetchPublicSettings() {
+    try {
+      const response = await fetch(`${BACKEND_BASE_URL}/api/settings/public`, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.json();
+    } catch (error) {
+      console.error('讀取門店設定失敗:', error);
+      return null;
+    }
+  }
+
   (async function() {
-    renderMenu();
     updateCartBadge();
+
+    const [, publicSettings] = await Promise.all([fetchMenu(), fetchPublicSettings()]);
+
+    const windows = businessWindowsFromSettings(publicSettings);
+    if (!checkBusinessHours(windows)) showClosedModal(windows);
+
     await initStoreStatus();
     await initLiff();
   })();

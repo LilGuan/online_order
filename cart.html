@@ -436,20 +436,58 @@
     ? location.origin
     : "https://person-solid-resolution-unified.trycloudflare.com";
 
-  // ====== 新版菜單資料 (不含加蝦，含雙蛋) ======
-  const menuItems = [
-    { id: 1, name: '蛋炒飯', price: 80 },
-    { id: 2, name: '肉絲炒飯', price: 100 },
-    { id: 3, name: '肉絲炒麵', price: 100 },
-    { id: 4, name: '香腸炒飯', price: 110 },
-    { id: 5, name: '蝦仁炒飯', price: 110 },
-    { id: 6, name: '蝦仁炒麵', price: 110 },
-    { id: 7, name: '蝦仁米苔目', price: 110 },
-    { id: 8, name: '鹹豬肉蓋飯', price: 130 },
-    { id: 9, name: '鹹豬肉', price: 230 },
-    { id: 10, name: '海帶芽蛋花湯', price: 25 },
-    { id: 11, name: '荷包蛋', price: 15 },
-  ];
+  // ====== 菜單、加購價格、營業時間都改由後台 API 提供 ======
+  let menuItems = [];
+  let optionPrices = { large: 20, doubleEgg: 15, doubleShrimp: 35 };
+  let storeSettings = null;
+
+  async function fetchMenuAndSettings() {
+    try {
+      const [menuResponse, settingsResponse] = await Promise.all([
+        fetch(`${BACKEND_BASE_URL}/api/menu`, { cache: 'no-store' }),
+        fetch(`${BACKEND_BASE_URL}/api/settings/public`, { cache: 'no-store' })
+      ]);
+
+      if (menuResponse.ok) {
+        const data = await menuResponse.json();
+        menuItems = (data.items || []).map(item => ({ id: item.id, name: item.name, price: item.price }));
+        optionPrices = data.optionPrices || optionPrices;
+      }
+
+      if (settingsResponse.ok) {
+        storeSettings = await settingsResponse.json();
+        if (storeSettings.optionPrices) optionPrices = storeSettings.optionPrices;
+      }
+    } catch (error) {
+      console.error('讀取菜單或門店設定失敗:', error);
+    }
+  }
+
+  // "10:30" -> 630（一天中的第幾分鐘）
+  function timeToMinutes(value) {
+    const [hour, minute] = String(value || '').split(':').map(Number);
+    return (Number.isFinite(hour) ? hour : 0) * 60 + (Number.isFinite(minute) ? minute : 0);
+  }
+
+  // 依後台設定計算營業時段，讀不到設定時退回原本寫死的時段
+  function getBusinessWindows() {
+    const hours = storeSettings && storeSettings.businessHours;
+    if (!hours) return [{ start: 630, end: 840 }, { start: 960, end: 1200 }];
+
+    return ['lunch', 'dinner']
+      .map(slot => hours[slot])
+      .filter(slot => slot && slot.enabled)
+      .map(slot => ({ start: timeToMinutes(slot.start), end: timeToMinutes(slot.end) }));
+  }
+
+  function isWithinBusinessHours(minutes) {
+    return getBusinessWindows().some(window => minutes >= window.start && minutes < window.end);
+  }
+
+  function lastClosingMinutes() {
+    const windows = getBusinessWindows();
+    return windows.length ? Math.max(...windows.map(window => window.end)) : 1200;
+  }
 
   // 元素選取
   const cartContainer = document.getElementById('cart-items');
@@ -497,15 +535,15 @@
     let nameSuffix = [];
 
     if (options.includes('large')) {
-      finalPrice += 20;
+      finalPrice += optionPrices.large;
       nameSuffix.push('加大');
     }
     if (options.includes('egg')) {
-      finalPrice += 15;
+      finalPrice += optionPrices.doubleEgg;
       nameSuffix.push('雙蛋');
     }
     if (options.includes('shrimp')) {
-      finalPrice += 35;
+      finalPrice += optionPrices.doubleShrimp;
       nameSuffix.push('加蝦');
     }
 
@@ -655,13 +693,11 @@
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-    // 營業時間判斷
-    // 午餐: 10:30 (630) - 14:00 (840)
-    // 晚餐: 16:00 (960) - 20:00 (1200)
-    isBusinessHours = (currentMinutes >= 630 && currentMinutes < 840) || (currentMinutes >= 960 && currentMinutes < 1200);
-    
-    // 判斷是否已打烊 (超過 20:00)
-    isClosedForToday = currentMinutes >= 1200;
+    // 營業時間依後台「門店設定」的午餐 / 晚餐時段判斷
+    isBusinessHours = isWithinBusinessHours(currentMinutes);
+
+    // 超過最後一個時段的結束時間就是今日已打烊
+    isClosedForToday = currentMinutes >= lastClosingMinutes();
 
     if (!isBusinessHours) {
       // 非營業時間，強制切換到預約模式並鎖定
@@ -786,11 +822,14 @@
         pickupTimeSelect.appendChild(option);
     });
   }
-  // 頁面載入執行
-  renderCart();
-  initLiff();
-  initStoreStatus();
-  initMode(); 
+  // 頁面載入執行：菜單與門店設定要先載入，價格計算與營業時段才會正確
+  (async function init() {
+    await fetchMenuAndSettings();
+    renderCart();
+    initMode();
+    initLiff();
+    initStoreStatus();
+  })();
 
   // ====== 表單驗證與送出 ======
   let isSubmitting = false;
@@ -870,7 +909,8 @@
     // 取得付款方式
     const paymentMethod = document.getElementById('payment-method').value;
 
-    const orderData = { name, phone, cart, notes, paymentMethod, orderNumber, pickupTime: finalPickupTime, lineUserId };
+    const isInClient = liff.isInClient();
+    const orderData = { name, phone, cart, notes, paymentMethod, orderNumber, pickupTime: finalPickupTime, lineUserId, isInClient };
     localStorage.setItem('orderData', JSON.stringify(orderData));
     localStorage.setItem('userPhone', phone); 
 
@@ -1029,6 +1069,7 @@
         paymentMethod: orderData.paymentMethod,
         notes: orderData.notes,
         lineUserId: orderData.lineUserId,
+        isInClient: orderData.isInClient,
         items,
         totalAmount
       })
@@ -1062,22 +1103,22 @@
 
     for (const key in cart) {
       const qty = cart[key];
-      
+
       // ★★★ 在此處直接實作解析邏輯，產生卡片內容 ★★★
       const parts = key.split('-');
       const id = parseInt(parts[0]);
       const options = parts.slice(1);
-      
+
       const item = menuItems.find(i => i.id === id);
       if (!item) continue;
 
       let price = item.price;
       let nameSuffix = [];
 
-      if (options.includes('large')) { price += 20; nameSuffix.push('加大'); }
-      if (options.includes('egg')) { price += 15; nameSuffix.push('雙蛋'); }
-      if (options.includes('shrimp')) { price += 35; nameSuffix.push('加蝦'); }
-      
+      if (options.includes('large')) { price += optionPrices.large; nameSuffix.push('加大'); }
+      if (options.includes('egg')) { price += optionPrices.doubleEgg; nameSuffix.push('雙蛋'); }
+      if (options.includes('shrimp')) { price += optionPrices.doubleShrimp; nameSuffix.push('加蝦'); }
+
 
       const name = item.name + (nameSuffix.length > 0 ? ` (${nameSuffix.join('、')})` : '');
       const subtotal = price * qty;
@@ -1120,7 +1161,7 @@
           type: "box",
           layout: "vertical",
           paddingAll: "12px",
-          backgroundColor: "#F6F8FF", 
+          backgroundColor: "#F6F8FF",
           spacing: "sm",
           contents: [
             // ★★★ 狀態提示 ★★★
@@ -1281,7 +1322,8 @@
 
   function sendOrderMessage(flexMessage) {
     if (!liff.isInClient()) {
-      alert('訂單已送出，店家接單後台會響鈴提醒。電腦版不會另外送 LINE 聊天訊息。');
+      // 網頁版（非 LINE App 內建瀏覽器）無法用 liff.sendMessages() 以使用者身份發送，
+      // 改由後端在儲存訂單後透過官方帳號主動推播訂單卡片給客人（見 saveOrderToBackend 的 isInClient 參數）。
       window.location.href = 'order-detail.html?method=cash';
       return;
     }

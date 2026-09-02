@@ -261,20 +261,26 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  // 餐點資料 (需與 index.html 一致)
-  const menuItems = [
-    { id: 1, name: '蛋炒飯', price: 80 },
-    { id: 2, name: '肉絲炒飯', price: 100 },
-    { id: 3, name: '肉絲炒麵', price: 100 },
-    { id: 4, name: '香腸炒飯', price: 110 },
-    { id: 5, name: '蝦仁炒飯', price: 110 },
-    { id: 6, name: '蝦仁炒麵', price: 110 },
-    { id: 7, name: '蝦仁米苔目', price: 110 },
-    { id: 8, name: '鹹豬肉蓋飯', price: 130 },
-    { id: 9, name: '鹹豬肉', price: 230 },
-    { id: 10, name: '海帶芽蛋花湯', price: 25 },
-    { id: 11, name: '荷包蛋', price: 15 },
-  ];
+  const BACKEND_BASE_URL = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+    ? location.origin
+    : "https://person-solid-resolution-unified.trycloudflare.com";
+
+  // 餐點資料由後台菜單 API 提供
+  let menuItems = [];
+  let optionPrices = { large: 20, doubleEgg: 15, doubleShrimp: 35 };
+
+  async function fetchMenu() {
+    try {
+      const response = await fetch(`${BACKEND_BASE_URL}/api/menu`, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const data = await response.json();
+      menuItems = (data.items || []).map(item => ({ id: item.id, name: item.name, price: item.price }));
+      optionPrices = data.optionPrices || optionPrices;
+    } catch (error) {
+      console.error('讀取菜單失敗:', error);
+    }
+  }
 
   // 解析 Key 邏輯 (整合雙蛋選項)
   function parseCartItem(key) {
@@ -289,15 +295,15 @@
     let nameSuffix = [];
 
     if (options.includes('large')) {
-      finalPrice += 20;
+      finalPrice += optionPrices.large;
       nameSuffix.push('加大');
     }
     if (options.includes('egg')) {
-      finalPrice += 15;
+      finalPrice += optionPrices.doubleEgg;
       nameSuffix.push('雙蛋');
     }
     if (options.includes('shrimp')) {
-      finalPrice += 35;
+      finalPrice += optionPrices.doubleShrimp;
       nameSuffix.push('加蝦');
     }
     const displayName = item.name + (nameSuffix.length > 0 ? ` (${nameSuffix.join('、')})` : '');
@@ -540,9 +546,12 @@
     }
   }
 
-  // 頁面載入執行
-  renderOrder();
-  checkPaymentStatus();
+  // 頁面載入執行：先載入菜單，品名與價格才算得出來
+  (async function init() {
+    await fetchMenu();
+    renderOrder();
+    checkPaymentStatus();
+  })();
 </script>
 
 </body>

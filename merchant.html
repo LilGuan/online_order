@@ -3,483 +3,1986 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Admin 接單 - 邱媽媽美食</title>
+<title>邱媽媽美食 後台管理</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
+  /* ==========================================================
+     Design tokens
+     ========================================================== */
+  :root {
+    --brand: #ff6b6b;
+    --brand-dark: #e85555;
+    --brand-soft: #fff1f1;
+    --ink: #1a1d21;
+    --ink-2: #4b5563;
+    --ink-3: #8b95a3;
+    --line: #e8ecf1;
+    --surface: #ffffff;
+    --bg: #f5f7fa;
+    --ok: #16a34a;
+    --ok-soft: #dcfce7;
+    --warn: #d97706;
+    --warn-soft: #fff7ed;
+    --info: #2563eb;
+    --info-soft: #dbeafe;
+    --danger: #dc2626;
+    --danger-soft: #fee2e2;
+    --radius: 14px;
+    --radius-sm: 10px;
+    --shadow-sm: 0 1px 2px rgba(16, 24, 40, .05);
+    --shadow: 0 4px 16px rgba(16, 24, 40, .07);
+    --shadow-lg: 0 18px 48px rgba(16, 24, 40, .16);
+    --sidebar-w: 232px;
+    --ease-spring: cubic-bezier(.34, 1.4, .64, 1);
+    --ease-out: cubic-bezier(.22, 1, .36, 1);
+  }
+
   * { box-sizing: border-box; }
 
   body {
     margin: 0;
-    font-family: 'Noto Sans TC', sans-serif;
-    background: #f5f7fa;
-    color: #202124;
+    font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
   }
 
-  body.locked main,
-  body.locked header { display: none; }
+  h1, h2, h3, p { margin: 0; }
+  button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+  input, select, textarea { font: inherit; color: inherit; }
 
+  /* ==========================================================
+     Animations
+     ========================================================== */
+  @keyframes fadeUp   { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  @keyframes fadeIn   { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes scaleIn  { from { opacity: 0; transform: scale(.92) translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes slideInR { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+  @keyframes shimmer  { 100% { transform: translateX(100%); } }
+  @keyframes spin     { to { transform: rotate(360deg); } }
+  @keyframes alertPulse {
+    0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(220, 38, 38, .5); }
+    50%      { transform: scale(1.25); opacity: .8; box-shadow: 0 0 0 8px rgba(220, 38, 38, 0); }
+  }
+  @keyframes floatBlob {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33%      { transform: translate(28px, -22px) scale(1.08); }
+    66%      { transform: translate(-20px, 18px) scale(.95); }
+  }
+  @keyframes drawLine { to { stroke-dashoffset: 0; } }
+  @keyframes popIn    { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
+
+  .stagger > * { opacity: 0; animation: fadeUp .5s var(--ease-out) forwards; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .01ms !important;
+    }
+  }
+
+  /* ==========================================================
+     Login
+     ========================================================== */
   .login-view {
-    min-height: 100vh;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
     display: grid;
     place-items: center;
     padding: 24px;
-    background: #f5f7fa;
+    background: linear-gradient(135deg, #fff5f5 0%, #f5f7fa 55%, #eef2ff 100%);
+    overflow: hidden;
   }
+
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(70px);
+    opacity: .5;
+    pointer-events: none;
+  }
+  .blob.b1 { width: 380px; height: 380px; background: #ffc9c9; top: -90px; left: -70px; animation: floatBlob 17s ease-in-out infinite; }
+  .blob.b2 { width: 320px; height: 320px; background: #bfdbfe; bottom: -80px; right: -60px; animation: floatBlob 21s ease-in-out infinite reverse; }
 
   .login-card {
-    width: min(420px, 100%);
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 24px;
-    box-shadow: 0 12px 30px rgba(32, 33, 36, 0.08);
+    position: relative;
+    width: min(400px, 100%);
+    background: rgba(255, 255, 255, .88);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, .85);
+    border-radius: 22px;
+    padding: 34px 30px;
+    box-shadow: var(--shadow-lg);
+    animation: scaleIn .55s var(--ease-spring) both;
   }
 
-  .login-card h1 {
-    margin: 0 0 18px;
-    font-size: 1.45rem;
-    font-weight: 900;
+  .login-logo {
+    width: 54px; height: 54px;
+    border-radius: 16px;
+    display: grid; place-items: center;
+    font-size: 27px;
+    background: linear-gradient(135deg, var(--brand), #ff9a6b);
+    box-shadow: 0 8px 20px rgba(255, 107, 107, .38);
+    margin-bottom: 16px;
   }
 
-  label {
-    display: block;
-    color: #5f6368;
-    font-size: 0.9rem;
-    font-weight: 700;
-    margin: 14px 0 6px;
-  }
+  .login-card h1 { font-size: 1.42rem; font-weight: 900; letter-spacing: -.02em; }
+  .login-card .sub { color: var(--ink-3); font-size: .9rem; margin-top: 5px; }
 
-  input {
+  label { display: block; font-size: .84rem; font-weight: 700; color: var(--ink-2); margin: 16px 0 6px; }
+
+  .field {
     width: 100%;
-    border: 1px solid #d7dce2;
-    border-radius: 8px;
-    padding: 12px;
-    font: inherit;
-    background: #ffffff;
+    border: 1.5px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 11px 13px;
+    background: #fff;
+    transition: border-color .18s, box-shadow .18s;
+  }
+  .field:focus {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 4px rgba(255, 107, 107, .13);
   }
 
-  header {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border-radius: var(--radius-sm);
+    padding: 10px 16px;
+    font-size: .92rem;
+    font-weight: 700;
+    white-space: nowrap;
+    transition: transform .14s var(--ease-spring), box-shadow .18s, background .18s, opacity .18s;
+  }
+  .btn:hover:not(:disabled) { transform: translateY(-1.5px); }
+  .btn:active:not(:disabled) { transform: translateY(0) scale(.97); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  .btn-primary { background: var(--brand); color: #fff; box-shadow: 0 4px 14px rgba(255, 107, 107, .32); }
+  .btn-primary:hover:not(:disabled) { background: var(--brand-dark); box-shadow: 0 8px 22px rgba(255, 107, 107, .4); }
+  .btn-ok      { background: var(--ok); color: #fff; box-shadow: 0 4px 14px rgba(22, 163, 74, .28); }
+  .btn-soft    { background: #eef2f7; color: var(--ink-2); }
+  .btn-soft:hover:not(:disabled) { background: #e4eaf2; }
+  .btn-danger  { background: var(--danger-soft); color: #b91c1c; }
+  .btn-dark    { background: var(--ink); color: #fff; }
+  .btn-ghost   { border: 1.5px solid var(--line); background: #fff; color: var(--ink-2); }
+  .btn-ghost:hover:not(:disabled) { border-color: var(--ink-3); }
+  .btn-sm      { padding: 7px 11px; font-size: .82rem; border-radius: 9px; }
+  .btn-block   { width: 100%; }
+
+  .error-text { color: #b91c1c; font-size: .86rem; font-weight: 700; min-height: 19px; margin-top: 11px; }
+
+  /* ==========================================================
+     App shell
+     ========================================================== */
+  body.locked .app { display: none; }
+  body:not(.locked) .login-view { display: none; }
+
+  .app { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: var(--sidebar-w);
+    flex-shrink: 0;
+    background: #fff;
+    border-right: 1px solid var(--line);
+    padding: 18px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
     position: sticky;
     top: 0;
-    z-index: 10;
-    background: #ffffff;
-    border-bottom: 1px solid #e5e7eb;
-    padding: 16px 20px;
+    height: 100vh;
+    z-index: 40;
   }
 
-  .header-inner {
-    max-width: 1180px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 16px;
+  .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 16px; }
+  .brand-mark {
+    width: 36px; height: 36px; border-radius: 11px;
+    display: grid; place-items: center; font-size: 19px;
+    background: linear-gradient(135deg, var(--brand), #ff9a6b);
+    box-shadow: 0 4px 12px rgba(255, 107, 107, .32);
   }
+  .brand-name { font-weight: 900; font-size: .98rem; letter-spacing: -.01em; }
+  .brand-sub  { font-size: .72rem; color: var(--ink-3); margin-top: 1px; }
 
-  h1, h2, h3, p { margin-top: 0; }
+  .nav { display: flex; flex-direction: column; gap: 3px; }
 
-  .title h1 {
-    margin: 0;
-    font-size: 1.45rem;
-    font-weight: 900;
-  }
-
-  .status-line {
+  .nav-item {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 10px;
-    color: #5f6368;
-    margin-top: 8px;
-    font-size: 0.95rem;
-  }
-
-  .status-dot {
-    width: 11px;
-    height: 11px;
-    border-radius: 50%;
-    background: #9aa0a6;
-  }
-
-  .status-dot.online { background: #16a34a; }
-  .status-dot.closed { background: #6b7280; }
-  .status-dot.alert { background: #dc2626; animation: pulse 1s infinite; }
-
-  .header-actions,
-  .actions {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-  }
-
-  main {
-    max-width: 1180px;
-    margin: 0 auto;
-    padding: 18px;
-  }
-
-  button {
-    border: none;
-    border-radius: 8px;
-    padding: 10px 14px;
-    font-size: 0.95rem;
-    font-weight: 800;
-    cursor: pointer;
-  }
-
-  button:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
-  }
-
-  .primary-btn { background: #ff6b6b; color: #ffffff; }
-  .secondary-btn { background: #e8f0fe; color: #174ea6; }
-  .success-btn { background: #16a34a; color: #ffffff; }
-  .danger-btn { background: #fee2e2; color: #b91c1c; }
-  .dark-btn { background: #202124; color: #ffffff; }
-  .muted-btn { background: #eef2f7; color: #4b5563; }
-
-  .stats {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 12px;
-    margin-bottom: 14px;
-  }
-
-  .stat {
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 14px;
-  }
-
-  .stat-label {
-    color: #6b7280;
-    font-size: 0.85rem;
+    gap: 11px;
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    font-size: .91rem;
     font-weight: 700;
-    margin-bottom: 6px;
+    color: var(--ink-2);
+    text-align: left;
+    transition: background .18s, color .18s, transform .16s var(--ease-spring);
   }
+  .nav-item svg { width: 18px; height: 18px; flex-shrink: 0; opacity: .75; transition: opacity .18s, transform .22s var(--ease-spring); }
+  .nav-item:hover { background: #f4f6f9; color: var(--ink); }
+  .nav-item:hover svg { transform: scale(1.12); }
+  .nav-item.active { background: var(--brand-soft); color: var(--brand-dark); }
+  .nav-item.active svg { opacity: 1; }
+  .nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: -12px; top: 50%;
+    width: 3.5px; height: 20px;
+    border-radius: 0 4px 4px 0;
+    background: var(--brand);
+    transform: translateY(-50%) scaleY(0);
+    animation: navBar .32s var(--ease-spring) forwards;
+  }
+  @keyframes navBar { to { transform: translateY(-50%) scaleY(1); } }
 
-  .stat-value {
-    font-size: 1.35rem;
+  .nav-badge {
+    margin-left: auto;
+    min-width: 21px;
+    height: 21px;
+    padding: 0 6px;
+    border-radius: 11px;
+    background: var(--danger);
+    color: #fff;
+    font-size: .72rem;
     font-weight: 900;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    animation: popIn .3s var(--ease-spring);
   }
+  .nav-badge.show { display: flex; }
 
-  .tabs {
+  .sidebar-foot { margin-top: auto; padding: 12px 8px 2px; border-top: 1px solid var(--line); }
+  .sidebar-foot .who { font-size: .78rem; color: var(--ink-3); margin-bottom: 9px; }
+
+  .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
     display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    padding: 6px 0 14px;
+    align-items: center;
+    gap: 14px;
+    padding: 13px 22px;
+    background: rgba(255, 255, 255, .86);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
   }
 
+  .menu-toggle { display: none; font-size: 20px; padding: 4px 8px; border-radius: 8px; }
+  .page-title { font-size: 1.16rem; font-weight: 900; letter-spacing: -.02em; }
+  .topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+  .conn {
+    display: flex; align-items: center; gap: 7px;
+    padding: 6px 11px; border-radius: 999px;
+    background: #f4f6f9; font-size: .82rem; font-weight: 700; color: var(--ink-2);
+  }
+  .conn-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); flex-shrink: 0; }
+  .conn-dot.online  { background: var(--ok); }
+  .conn-dot.closed  { background: var(--ink-3); }
+  .conn-dot.alert   { background: var(--danger); animation: alertPulse 1.1s infinite; }
+
+  .content { padding: 22px; flex: 1; }
+  .view { display: none; }
+  .view.active { display: block; animation: fadeUp .38s var(--ease-out); }
+
+  /* ==========================================================
+     Cards / grid
+     ========================================================== */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+  .card-title { font-size: .98rem; font-weight: 900; }
+  .card-sub { font-size: .8rem; color: var(--ink-3); margin-top: 2px; font-weight: 400; }
+
+  .grid { display: grid; gap: 14px; }
+  .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+  .stat-card {
+    position: relative;
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 17px;
+    box-shadow: var(--shadow-sm);
+    transition: transform .22s var(--ease-spring), box-shadow .22s;
+  }
+  .stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    right: -26px; top: -26px;
+    width: 88px; height: 88px;
+    border-radius: 50%;
+    background: var(--accent, var(--brand-soft));
+    opacity: .5;
+  }
+  .stat-ico {
+    position: relative;
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    font-size: 17px;
+    background: var(--accent, var(--brand-soft));
+    margin-bottom: 11px;
+  }
+  .stat-label { position: relative; font-size: .8rem; font-weight: 700; color: var(--ink-3); }
+  .stat-value { position: relative; font-size: 1.62rem; font-weight: 900; letter-spacing: -.03em; margin-top: 3px; }
+  .stat-foot  { position: relative; font-size: .76rem; color: var(--ink-3); margin-top: 5px; }
+
+  /* ==========================================================
+     Charts
+     ========================================================== */
+  .chart-wrap { position: relative; width: 100%; overflow-x: auto; }
+  .chart-line { display: block; width: 100%; height: 190px; }
+  .chart-line .grid-line { stroke: var(--line); stroke-width: 1; }
+  .chart-line .axis-label { fill: var(--ink-3); font-size: 10px; }
+  .chart-line .line-path {
+    fill: none;
+    stroke: var(--brand);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    animation: drawLine 1.1s var(--ease-out) forwards;
+  }
+  .chart-line .dot { fill: #fff; stroke: var(--brand); stroke-width: 2.5; opacity: 0; animation: popIn .3s var(--ease-spring) forwards; }
+  .chart-line .dot-hit { fill: transparent; cursor: pointer; }
+  .chart-line .dot-hit:hover + .dot { r: 6; }
+
+  .bar-row { display: grid; grid-template-columns: 1fr auto; gap: 6px; margin-bottom: 12px; }
+  .bar-row:last-child { margin-bottom: 0; }
+  .bar-name { font-size: .86rem; font-weight: 700; overflow-wrap: anywhere; }
+  .bar-val  { font-size: .84rem; font-weight: 900; color: var(--ink-2); white-space: nowrap; }
+  .bar-track { grid-column: 1 / -1; height: 8px; border-radius: 999px; background: #f1f4f8; overflow: hidden; }
+  .bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--brand), #ffa07a);
+    width: 0;
+    transition: width .9s var(--ease-out);
+  }
+
+  .donut-wrap { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .donut { width: 132px; height: 132px; flex-shrink: 0; transform: rotate(-90deg); }
+  .donut circle { fill: none; stroke-width: 15; stroke-linecap: round; transition: stroke-dashoffset 1s var(--ease-out); }
+  .legend { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 130px; }
+  .legend-row { display: flex; align-items: center; gap: 8px; font-size: .85rem; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .legend-name { font-weight: 700; }
+  .legend-val { margin-left: auto; font-weight: 900; color: var(--ink-2); }
+
+  /* ==========================================================
+     Tabs / filters
+     ========================================================== */
+  .tabs { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
   .tab {
-    background: #ffffff;
-    color: #4b5563;
-    border: 1px solid #d7dce2;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1.5px solid var(--line);
+    background: #fff;
+    font-size: .87rem;
+    font-weight: 700;
+    color: var(--ink-2);
     white-space: nowrap;
+    transition: all .2s var(--ease-spring);
   }
+  .tab:hover { border-color: var(--ink-3); transform: translateY(-1px); }
+  .tab.active { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .tab-count { opacity: .65; margin-left: 4px; font-weight: 900; }
 
-  .tab.active {
-    background: #202124;
-    border-color: #202124;
-    color: #ffffff;
-  }
+  .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+  .search-box { position: relative; flex: 1; min-width: 200px; max-width: 340px; }
+  .search-box svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--ink-3); }
+  .search-box .field { padding-left: 36px; }
 
-  .orders {
-    display: grid;
-    gap: 12px;
-  }
+  /* ==========================================================
+     Order cards
+     ========================================================== */
+  .orders { display: grid; gap: 13px; }
 
   .order-card {
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-left: 6px solid #ff6b6b;
-    border-radius: 8px;
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 5px solid var(--brand);
+    border-radius: var(--radius);
     padding: 16px;
-    box-shadow: 0 4px 14px rgba(32, 33, 36, 0.06);
+    box-shadow: var(--shadow-sm);
+    transition: transform .22s var(--ease-spring), box-shadow .22s;
   }
-
-  .order-card.preparing { border-left-color: #2563eb; }
-  .order-card.completed { border-left-color: #16a34a; }
-  .order-card.cancelled { border-left-color: #9ca3af; }
-
-  .order-top,
-  .order-bottom {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
+  .order-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+  .order-card.preparing { border-left-color: var(--info); }
+  .order-card.completed { border-left-color: var(--ok); }
+  .order-card.cancelled { border-left-color: #9ca3af; opacity: .82; }
+  .order-card.is-new::after {
+    content: '';
+    position: absolute; inset: -1px;
+    border-radius: var(--radius);
+    border: 2px solid var(--brand);
+    animation: newGlow 1.5s ease-out 3;
+    pointer-events: none;
   }
+  @keyframes newGlow { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
 
-  .order-no {
-    font-size: 1.15rem;
-    font-weight: 900;
-  }
-
-  .order-time {
-    color: #5f6368;
-    font-size: 0.9rem;
-    margin-top: 3px;
-  }
+  .order-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .order-no { font-size: 1.08rem; font-weight: 900; letter-spacing: -.01em; }
+  .order-time { color: var(--ink-3); font-size: .82rem; margin-top: 2px; }
 
   .badge {
     border-radius: 999px;
-    padding: 5px 10px;
-    font-size: 0.85rem;
+    padding: 4px 10px;
+    font-size: .78rem;
     font-weight: 800;
     white-space: nowrap;
   }
-
-  .badge.pending { background: #fff7ed; color: #c2410c; }
-  .badge.preparing { background: #dbeafe; color: #1d4ed8; }
-  .badge.completed { background: #dcfce7; color: #15803d; }
+  .badge.pending   { background: var(--warn-soft); color: #c2410c; }
+  .badge.preparing { background: var(--info-soft); color: #1d4ed8; }
+  .badge.completed { background: var(--ok-soft); color: #15803d; }
   .badge.cancelled { background: #f3f4f6; color: #4b5563; }
 
   .customer {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 10px;
-    padding: 12px;
+    padding: 11px;
     background: #f8fafc;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     margin: 12px 0;
   }
+  .kv-label { color: var(--ink-3); font-size: .76rem; margin-bottom: 2px; }
+  .kv-value { font-weight: 800; font-size: .89rem; overflow-wrap: anywhere; }
 
-  .label {
-    color: #6b7280;
-    font-size: 0.8rem;
-    margin-bottom: 2px;
-  }
-
-  .value {
-    font-weight: 800;
-    overflow-wrap: anywhere;
-  }
-
-  .items {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    border-top: 1px solid #edf0f3;
-    border-bottom: 1px solid #edf0f3;
-  }
-
+  .items { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
   .items li {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 54px 84px;
+    grid-template-columns: minmax(0, 1fr) 50px 80px;
     gap: 8px;
-    padding: 10px 0;
-    border-bottom: 1px solid #edf0f3;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: .89rem;
   }
+  .items .qty { text-align: center; color: var(--ink-3); }
+  .items .price { text-align: right; font-weight: 800; }
 
-  .items li:last-child { border-bottom: none; }
-  .qty { text-align: center; color: #5f6368; }
-  .price { text-align: right; font-weight: 800; }
+  .note-box { margin-top: 11px; padding: 9px 12px; border-radius: var(--radius-sm); font-size: .85rem; }
+  .note-box.customer-note { background: #fff8e1; color: #7a4d00; }
+  .note-box.push-note { background: #f8fafc; color: var(--ink-2); }
+  .note-box.admin-note { background: var(--info-soft); color: #1d4ed8; }
 
-  .notes,
-  .notification {
-    margin-top: 12px;
-    padding: 10px 12px;
-    border-radius: 8px;
+  .order-bottom { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 13px; flex-wrap: wrap; }
+  .total { color: var(--danger); font-size: 1.14rem; font-weight: 900; }
+  .actions { display: flex; gap: 7px; flex-wrap: wrap; }
+
+  /* ==========================================================
+     Table
+     ========================================================== */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  th {
+    text-align: left;
+    font-size: .78rem;
+    font-weight: 800;
+    color: var(--ink-3);
+    padding: 9px 11px;
+    border-bottom: 1.5px solid var(--line);
+    white-space: nowrap;
   }
+  td { padding: 11px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  tbody tr { transition: background .16s; }
+  tbody tr:hover { background: #fafbfd; }
+  tbody tr:last-child td { border-bottom: none; }
 
-  .notes {
-    background: #fff8e1;
-    color: #7a4d00;
+  .thumb {
+    width: 42px; height: 42px;
+    border-radius: 9px;
+    object-fit: cover;
+    background: #f1f4f8;
+    flex-shrink: 0;
   }
+  .cell-item { display: flex; align-items: center; gap: 11px; }
+  .cell-name { font-weight: 800; }
+  .cell-meta { font-size: .77rem; color: var(--ink-3); margin-top: 1px; }
 
-  .notification {
-    background: #f8fafc;
-    color: #4b5563;
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px; border-radius: 999px;
+    font-size: .75rem; font-weight: 800;
   }
+  .pill.on  { background: var(--ok-soft); color: #15803d; }
+  .pill.off { background: #f3f4f6; color: #6b7280; }
+  .pill.out { background: var(--danger-soft); color: #b91c1c; }
+  .pill.warn{ background: var(--warn-soft); color: #c2410c; }
 
-  .order-bottom {
-    align-items: center;
-    margin-top: 14px;
+  /* ==========================================================
+     Switch
+     ========================================================== */
+  .switch { position: relative; display: inline-block; width: 44px; height: 25px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch .slider {
+    position: absolute; inset: 0;
+    background: #cbd5e1;
+    border-radius: 999px;
+    transition: background .25s var(--ease-out);
   }
+  .switch .slider::before {
+    content: '';
+    position: absolute;
+    height: 19px; width: 19px;
+    left: 3px; bottom: 3px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .22);
+    transition: transform .25s var(--ease-spring);
+  }
+  .switch input:checked + .slider { background: var(--ok); }
+  .switch input:checked + .slider::before { transform: translateX(19px); }
 
-  .total {
-    color: #d93025;
-    font-size: 1.2rem;
-    font-weight: 900;
+  /* ==========================================================
+     Progress
+     ========================================================== */
+  .progress { height: 7px; border-radius: 999px; background: #eef2f7; overflow: hidden; min-width: 90px; }
+  .progress-fill { height: 100%; border-radius: 999px; background: var(--ok); width: 0; transition: width .8s var(--ease-out); }
+  .progress-fill.warn { background: var(--warn); }
+  .progress-fill.full { background: var(--danger); }
+
+  /* ==========================================================
+     Timeline
+     ========================================================== */
+  .timeline { position: relative; padding-left: 22px; }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 5px; top: 5px; bottom: 5px;
+    width: 2px;
+    background: var(--line);
   }
+  .tl-item { position: relative; padding-bottom: 15px; opacity: 0; animation: fadeUp .4s var(--ease-out) forwards; }
+  .tl-item:last-child { padding-bottom: 0; }
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: -21px; top: 4px;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--brand);
+    box-shadow: 0 0 0 3px var(--brand-soft);
+  }
+  .tl-title { font-size: .88rem; font-weight: 800; }
+  .tl-meta  { font-size: .77rem; color: var(--ink-3); margin-top: 2px; }
+  .tl-detail{ font-size: .83rem; color: var(--ink-2); margin-top: 3px; }
+
+  /* ==========================================================
+     Modal
+     ========================================================== */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: none;
+    place-items: center;
+    padding: 20px;
+    background: rgba(15, 23, 42, .45);
+    backdrop-filter: blur(4px);
+  }
+  .modal-backdrop.open { display: grid; animation: fadeIn .22s ease; }
+
+  .modal {
+    width: min(560px, 100%);
+    max-height: 88vh;
+    overflow-y: auto;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: var(--shadow-lg);
+    animation: scaleIn .34s var(--ease-spring);
+  }
+  .modal-head {
+    position: sticky; top: 0;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 18px 20px;
+    background: #fff;
+    border-bottom: 1px solid var(--line);
+    border-radius: 18px 18px 0 0;
+    z-index: 1;
+  }
+  .modal-title { font-size: 1.06rem; font-weight: 900; }
+  .modal-body { padding: 20px; }
+  .modal-foot {
+    position: sticky; bottom: 0;
+    display: flex; gap: 9px; justify-content: flex-end;
+    padding: 15px 20px;
+    background: #fff;
+    border-top: 1px solid var(--line);
+    border-radius: 0 0 18px 18px;
+  }
+  .close-btn { font-size: 22px; line-height: 1; color: var(--ink-3); padding: 2px 7px; border-radius: 8px; transition: background .16s, color .16s; }
+  .close-btn:hover { background: #f1f4f8; color: var(--ink); }
+
+  .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; }
+  .form-grid .full { grid-column: 1 / -1; }
+  .check-row { display: flex; align-items: center; gap: 9px; padding: 9px 0; font-size: .89rem; font-weight: 700; }
+  .check-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--brand); cursor: pointer; }
+
+  /* ==========================================================
+     Toast
+     ========================================================== */
+  .toasts { position: fixed; top: 16px; right: 16px; z-index: 300; display: flex; flex-direction: column; gap: 9px; pointer-events: none; }
+  .toast {
+    display: flex; align-items: center; gap: 9px;
+    min-width: 220px;
+    padding: 12px 15px;
+    border-radius: var(--radius-sm);
+    background: var(--ink);
+    color: #fff;
+    font-size: .88rem;
+    font-weight: 700;
+    box-shadow: var(--shadow-lg);
+    animation: slideInR .34s var(--ease-spring);
+  }
+  .toast.out { animation: fadeIn .25s ease reverse forwards; }
+  .toast.ok    { background: #15803d; }
+  .toast.error { background: #b91c1c; }
+
+  /* ==========================================================
+     Skeleton / empty
+     ========================================================== */
+  .skeleton { position: relative; overflow: hidden; background: #eef2f7; border-radius: 8px; }
+  .skeleton::after {
+    content: '';
+    position: absolute; inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .65), transparent);
+    animation: shimmer 1.4s infinite;
+  }
+  .sk-card { height: 108px; border-radius: var(--radius); }
+  .sk-row  { height: 58px; margin-bottom: 9px; }
 
   .empty {
-    min-height: 34vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+    min-height: 200px;
+    color: var(--ink-3);
     text-align: center;
-    color: #6b7280;
-    font-size: 1.05rem;
+  }
+  .empty .ico { font-size: 34px; opacity: .55; }
+
+  .spinner {
+    width: 15px; height: 15px;
+    border: 2px solid rgba(255, 255, 255, .4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
   }
 
-  .error-text {
-    color: #b91c1c;
-    min-height: 20px;
-    margin-top: 10px;
-    font-weight: 700;
+  .hint { font-size: .8rem; color: var(--ink-3); margin-top: 5px; }
+  .section-gap { margin-top: 14px; }
+
+  /* ==========================================================
+     Responsive
+     ========================================================== */
+  @media (max-width: 1080px) {
+    .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 
-  @keyframes pulse {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.45); opacity: 0.55; }
+  @media (max-width: 860px) {
+    .menu-toggle { display: block; }
+    .sidebar {
+      position: fixed;
+      left: 0; top: 0; bottom: 0;
+      transform: translateX(-100%);
+      transition: transform .3s var(--ease-out);
+      box-shadow: var(--shadow-lg);
+    }
+    .sidebar.open { transform: none; }
+    .content { padding: 15px; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .customer { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .form-grid { grid-template-columns: 1fr; }
+    .topbar { padding: 11px 14px; }
+    .page-title { font-size: 1.04rem; }
   }
 
-  @media (max-width: 760px) {
-    .header-inner,
-    .order-top,
-    .order-bottom {
-      grid-template-columns: 1fr;
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    .header-actions,
-    .actions {
-      justify-content: flex-start;
-    }
-
-    .stats {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .customer {
-      grid-template-columns: 1fr;
-    }
+  @media (max-width: 520px) {
+    .grid-4 { grid-template-columns: 1fr; }
+    .customer { grid-template-columns: 1fr; }
+    .topbar-actions .label-text { display: none; }
   }
 </style>
 </head>
 <body class="locked">
+
+<!-- ============================ 登入 ============================ -->
 <section class="login-view" id="login-view">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
   <form class="login-card" id="login-form">
-    <h1>邱媽媽美食 登入</h1>
+    <div class="login-logo">🍳</div>
+    <h1>邱媽媽美食</h1>
+    <div class="sub">後台管理系統</div>
+
     <label for="username">帳號</label>
-    <input id="username" name="username" autocomplete="username" value="admin" />
+    <input class="field" id="username" name="username" autocomplete="username" value="admin" />
+
     <label for="password">密碼</label>
-    <input id="password" name="password" type="password" autocomplete="current-password" placeholder="請輸入密碼" />
-    <button class="primary-btn" type="submit" style="width:100%; margin-top:18px;">登入</button>
+    <input class="field" id="password" name="password" type="password" autocomplete="current-password" placeholder="請輸入密碼" />
+
+    <button class="btn btn-primary btn-block" type="submit" style="margin-top:20px;" id="login-btn">登入</button>
     <div class="error-text" id="login-error"></div>
   </form>
 </section>
 
-<header>
-  <div class="header-inner">
-    <div class="title">
-      <h1>邱媽媽美食接單</h1>
-      <div class="status-line">
-        <span class="status-dot" id="status-dot"></span>
-        <span id="status-text">連線中</span>
+<!-- ============================ 後台 ============================ -->
+<div class="app" id="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">🍳</div>
+      <div>
+        <div class="brand-name">邱媽媽美食</div>
+        <div class="brand-sub">後台管理</div>
       </div>
     </div>
-    <div class="header-actions">
-      <button class="success-btn" id="store-toggle">上線</button>
-      <button class="secondary-btn" id="sound-btn">啟用提醒聲</button>
-      <button class="secondary-btn" id="refresh-btn">重新整理</button>
-      <button class="muted-btn" id="logout-btn">登出</button>
+
+    <nav class="nav" id="nav"></nav>
+
+    <div class="sidebar-foot">
+      <div class="who">已登入：<strong id="who-name">admin</strong></div>
+      <button class="btn btn-soft btn-sm btn-block" id="logout-btn">登出</button>
     </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="menu-toggle" id="menu-toggle">☰</button>
+      <div class="page-title" id="page-title">儀表板</div>
+
+      <div class="topbar-actions">
+        <div class="conn">
+          <span class="conn-dot" id="conn-dot"></span>
+          <span id="conn-text">連線中</span>
+        </div>
+        <button class="btn btn-ok btn-sm" id="store-toggle">上線</button>
+        <button class="btn btn-soft btn-sm" id="sound-btn">🔔 <span class="label-text">啟用提醒聲</span></button>
+        <button class="btn btn-soft btn-sm" id="refresh-btn">↻ <span class="label-text">重新整理</span></button>
+      </div>
+    </header>
+
+    <main class="content">
+      <!-- ---------------- 儀表板 ---------------- -->
+      <section class="view active" id="view-dashboard">
+        <div class="grid grid-4 stagger" id="dash-stats"></div>
+
+        <div class="grid grid-2 section-gap">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">近 7 日營業額</div>
+                <div class="card-sub">只計算已完成的訂單</div>
+              </div>
+            </div>
+            <div class="chart-wrap" id="trend-chart"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">訂單狀態分佈</div>
+                <div class="card-sub">全部歷史訂單</div>
+              </div>
+            </div>
+            <div class="donut-wrap" id="status-donut"></div>
+          </div>
+        </div>
+
+        <div class="grid grid-2 section-gap">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">熱門商品 Top 5</div>
+                <div class="card-sub">近 30 日已完成訂單</div>
+              </div>
+            </div>
+            <div id="top-products"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">庫存警示</div>
+                <div class="card-sub">賣完或即將售罄的品項</div>
+              </div>
+              <button class="btn btn-ghost btn-sm" data-goto="stock">前往庫存</button>
+            </div>
+            <div id="stock-alerts"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------------- 訂單 ---------------- -->
+      <section class="view" id="view-orders">
+        <div class="toolbar">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input class="field" id="order-search" placeholder="搜尋訂單號 / 姓名 / 電話" />
+          </div>
+          <input class="field" type="date" id="order-from" style="width:auto;" />
+          <span style="color:var(--ink-3);">→</span>
+          <input class="field" type="date" id="order-to" style="width:auto;" />
+          <button class="btn btn-soft btn-sm" id="order-clear">清除篩選</button>
+        </div>
+
+        <nav class="tabs" id="order-tabs">
+          <button class="tab active" data-status="pending">接單區<span class="tab-count">0</span></button>
+          <button class="tab" data-status="preparing">製作中<span class="tab-count">0</span></button>
+          <button class="tab" data-status="completed">已完成<span class="tab-count">0</span></button>
+          <button class="tab" data-status="cancelled">已取消<span class="tab-count">0</span></button>
+          <button class="tab" data-status="all">全部<span class="tab-count">0</span></button>
+        </nav>
+
+        <div class="orders section-gap" id="orders"></div>
+      </section>
+
+      <!-- ---------------- 菜單 ---------------- -->
+      <section class="view" id="view-menu">
+        <div class="toolbar">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input class="field" id="menu-search" placeholder="搜尋品名" />
+          </div>
+          <select class="field" id="menu-category" style="width:auto;">
+            <option value="all">全部分類</option>
+          </select>
+          <button class="btn btn-primary btn-sm" id="menu-add" style="margin-left:auto;">＋ 新增商品</button>
+        </div>
+
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>商品</th>
+                  <th>分類</th>
+                  <th>售價</th>
+                  <th>可選加購</th>
+                  <th>狀態</th>
+                  <th style="text-align:right;">操作</th>
+                </tr>
+              </thead>
+              <tbody id="menu-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="menu-empty" style="display:none;">
+            <div class="ico">🍽️</div>
+            <div>沒有符合條件的商品</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------------- 庫存 ---------------- -->
+      <section class="view" id="view-stock">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">今日庫存</div>
+              <div class="card-sub">每日限量會在隔天自動歸零並恢復供應</div>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>商品</th>
+                  <th>供應中</th>
+                  <th>每日限量</th>
+                  <th>今日已售</th>
+                  <th style="text-align:right;">操作</th>
+                </tr>
+              </thead>
+              <tbody id="stock-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------------- 報表 ---------------- -->
+      <section class="view" id="view-reports">
+        <div class="toolbar">
+          <label style="margin:0; font-size:.84rem;">起</label>
+          <input class="field" type="date" id="report-from" style="width:auto;" />
+          <label style="margin:0; font-size:.84rem;">迄</label>
+          <input class="field" type="date" id="report-to" style="width:auto;" />
+          <button class="btn btn-primary btn-sm" id="report-apply">查詢</button>
+          <div style="margin-left:auto; display:flex; gap:8px;">
+            <button class="btn btn-ghost btn-sm" data-export="daily">⭳ 匯出日報 CSV</button>
+            <button class="btn btn-ghost btn-sm" data-export="products">⭳ 匯出商品 CSV</button>
+          </div>
+        </div>
+
+        <div class="grid grid-4 stagger" id="report-stats"></div>
+
+        <div class="card section-gap">
+          <div class="card-head"><div class="card-title">每日營業額</div></div>
+          <div class="chart-wrap" id="report-chart"></div>
+        </div>
+
+        <div class="card section-gap">
+          <div class="card-head"><div class="card-title">商品銷售排行</div></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th style="width:52px;">#</th><th>商品</th><th>數量</th><th>銷售額</th></tr>
+              </thead>
+              <tbody id="report-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------------- 設定 ---------------- -->
+      <section class="view" id="view-settings">
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="card-head"><div class="card-title">店家資訊</div></div>
+            <label for="set-name">店名</label>
+            <input class="field" id="set-name" />
+            <label for="set-phone">電話</label>
+            <input class="field" id="set-phone" />
+            <label for="set-address">地址</label>
+            <input class="field" id="set-address" />
+          </div>
+
+          <div class="card">
+            <div class="card-head"><div class="card-title">接單設定</div></div>
+            <label for="set-prep">備餐時間（分鐘）</label>
+            <input class="field" type="number" id="set-prep" min="0" />
+            <div class="hint">客人下單後顯示的預估取餐時間會用這個數字計算</div>
+            <label for="set-min">最低消費金額</label>
+            <input class="field" type="number" id="set-min" min="0" />
+            <div class="hint">設 0 表示不限制</div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><div class="card-title">營業時間</div></div>
+
+            <div class="check-row">
+              <label class="switch"><input type="checkbox" id="set-lunch-on"><span class="slider"></span></label>
+              <span>午餐時段</span>
+            </div>
+            <div class="form-grid">
+              <div><label for="set-lunch-start">開始</label><input class="field" type="time" id="set-lunch-start" /></div>
+              <div><label for="set-lunch-end">結束</label><input class="field" type="time" id="set-lunch-end" /></div>
+            </div>
+
+            <div class="check-row" style="margin-top:14px;">
+              <label class="switch"><input type="checkbox" id="set-dinner-on"><span class="slider"></span></label>
+              <span>晚餐時段</span>
+            </div>
+            <div class="form-grid">
+              <div><label for="set-dinner-start">開始</label><input class="field" type="time" id="set-dinner-start" /></div>
+              <div><label for="set-dinner-end">結束</label><input class="field" type="time" id="set-dinner-end" /></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">加購價格</div>
+                <div class="card-sub">前台加購選項的加價金額</div>
+              </div>
+            </div>
+            <label for="set-opt-large">加大</label>
+            <input class="field" type="number" id="set-opt-large" min="0" />
+            <label for="set-opt-egg">雙蛋</label>
+            <input class="field" type="number" id="set-opt-egg" min="0" />
+            <label for="set-opt-shrimp">加蝦</label>
+            <input class="field" type="number" id="set-opt-shrimp" min="0" />
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+          <button class="btn btn-primary" id="settings-save">儲存設定</button>
+        </div>
+      </section>
+
+      <!-- ---------------- 操作紀錄 ---------------- -->
+      <section class="view" id="view-audit">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">操作紀錄</div>
+              <div class="card-sub">最近 100 筆後台操作</div>
+            </div>
+          </div>
+          <div class="timeline" id="audit-list"></div>
+        </div>
+      </section>
+    </main>
   </div>
-</header>
+</div>
 
-<main>
-  <section class="stats">
-    <div class="stat">
-      <div class="stat-label">今日營業額</div>
-      <div class="stat-value" id="today-revenue">$0</div>
+<!-- ============================ Modal / Toast ============================ -->
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal" id="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-title"></div>
+      <button class="close-btn" id="modal-close">×</button>
     </div>
-    <div class="stat">
-      <div class="stat-label">本週營業額</div>
-      <div class="stat-value" id="week-revenue">$0</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">本月營業額</div>
-      <div class="stat-value" id="month-revenue">$0</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">全部訂單</div>
-      <div class="stat-value" id="total-orders">0</div>
-    </div>
-  </section>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot" id="modal-foot"></div>
+  </div>
+</div>
 
-  <nav class="tabs" id="tabs">
-    <button class="tab active" data-status="pending">接單區 0</button>
-    <button class="tab" data-status="preparing">製作中 0</button>
-    <button class="tab" data-status="completed">已完成 0</button>
-    <button class="tab" data-status="cancelled">已取消 0</button>
-    <button class="tab" data-status="all">全部紀錄 0</button>
-  </nav>
-
-  <div class="orders" id="orders"></div>
-  <div class="empty" id="empty">目前沒有訂單</div>
-</main>
+<div class="toasts" id="toasts"></div>
 
 <script>
   const BACKEND_BASE_URL = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
     ? location.origin
     : 'https://person-solid-resolution-unified.trycloudflare.com';
+
   const POLL_INTERVAL_MS = 3000;
-  const STATUS_LABELS = {
-    pending: '待接單',
-    preparing: '製作中',
-    completed: '已完成',
-    cancelled: '已取消'
+  const STATUS_LABELS = { pending: '待接單', preparing: '製作中', completed: '已完成', cancelled: '已取消' };
+  const STATUS_COLORS = { pending: '#f59e0b', preparing: '#2563eb', completed: '#16a34a', cancelled: '#9ca3af' };
+  const OPTION_KEYS = [
+    { key: 'large', label: '加大' },
+    { key: 'doubleEgg', label: '雙蛋' },
+    { key: 'doubleShrimp', label: '加蝦' }
+  ];
+
+  const ICONS = {
+    dashboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>',
+    orders: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12l1.5 4.5H4.5z"/><path d="M5 6.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6.5"/><path d="M9 11h6"/></svg>',
+    menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v16"/><path d="M8 4v6a2 2 0 0 1-4 0"/><path d="M17 4c-1.7 0-3 2.2-3 5s1 3 1.5 3H17"/><path d="M17 4v16"/></svg>',
+    stock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7 12 3 4 7v10l8 4 8-4z"/><path d="m4 7 8 4 8-4"/><path d="M12 21V11"/></svg>',
+    reports: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><rect x="5" y="11" width="3.5" height="7" rx="1"/><rect x="10.5" y="6" width="3.5" height="12" rx="1"/><rect x="16" y="14" width="3.5" height="4" rx="1"/></svg>',
+    settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3 15a2 2 0 1 1 0-4 1.7 1.7 0 0 0 1.5-2.6l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 10 4.6a2 2 0 1 1 4 0 1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.7 1.7 0 0 0 21 11a2 2 0 1 1 0 4z"/></svg>',
+    audit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>'
   };
 
-  const loginView = document.getElementById('login-view');
-  const loginForm = document.getElementById('login-form');
-  const loginError = document.getElementById('login-error');
-  const ordersEl = document.getElementById('orders');
-  const emptyEl = document.getElementById('empty');
-  const statusDotEl = document.getElementById('status-dot');
-  const statusTextEl = document.getElementById('status-text');
-  const storeToggle = document.getElementById('store-toggle');
-  const soundBtn = document.getElementById('sound-btn');
-  const refreshBtn = document.getElementById('refresh-btn');
-  const logoutBtn = document.getElementById('logout-btn');
-  const tabsEl = document.getElementById('tabs');
+  const VIEWS = [
+    { id: 'dashboard', name: '儀表板', icon: 'dashboard' },
+    { id: 'orders', name: '訂單管理', icon: 'orders', badge: true },
+    { id: 'menu', name: '菜單管理', icon: 'menu' },
+    { id: 'stock', name: '庫存', icon: 'stock' },
+    { id: 'reports', name: '報表', icon: 'reports' },
+    { id: 'settings', name: '門店設定', icon: 'settings' },
+    { id: 'audit', name: '操作紀錄', icon: 'audit' }
+  ];
 
+  const $ = id => document.getElementById(id);
+
+  /* ---------------- state ---------------- */
   let token = localStorage.getItem('adminToken') || '';
+  let currentView = 'dashboard';
   let orders = [];
+  let menuItems = [];
+  let menuCategories = [];
+  let settings = null;
   let activeStatus = 'pending';
+  let orderSearch = '';
+  let orderFrom = '';
+  let orderTo = '';
   let storeIsOpen = true;
   let audioContext = null;
   let alarmTimer = null;
   let soundEnabled = false;
   let knownPendingOrders = new Set();
+  let freshOrderNumbers = new Set();
+  let lastOrdersSignature = '';
+  let lastDashSignature = '';
 
-  function authHeaders() {
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  }
-
-  function money(value) {
-    return `$${Number(value || 0).toLocaleString('zh-TW')}`;
-  }
+  /* ---------------- helpers ---------------- */
+  const authHeaders = () => (token ? { Authorization: `Bearer ${token}` } : {});
+  const money = value => `$${Number(value || 0).toLocaleString('zh-TW')}`;
 
   function formatTime(value) {
     if (!value) return '';
-    const date = new Date(value);
-    return date.toLocaleString('zh-TW', {
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return new Date(value).toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
   }
 
   function escapeHtml(value) {
-    return String(value || '')
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#039;');
+    return String(value ?? '')
+      .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
   }
 
-  function setLoggedIn(isLoggedIn) {
-    document.body.classList.toggle('locked', !isLoggedIn);
-    loginView.style.display = isLoggedIn ? 'none' : 'grid';
+  function toast(message, type = '') {
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.textContent = message;
+    $('toasts').appendChild(el);
+    setTimeout(() => {
+      el.classList.add('out');
+      setTimeout(() => el.remove(), 260);
+    }, 2600);
   }
 
+  // 數字滾動動畫
+  function countUp(el, target, prefix = '') {
+    const from = Number(el.dataset.value || 0);
+    const to = Number(target || 0);
+    el.dataset.value = to;
+
+    if (from === to) { el.textContent = prefix + to.toLocaleString('zh-TW'); return; }
+
+    const duration = 700;
+    const start = performance.now();
+
+    function frame(now) {
+      const progress = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = prefix + Math.round(from + (to - from) * eased).toLocaleString('zh-TW');
+      if (progress < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function stagger(container, step = 45) {
+    [...container.children].forEach((child, index) => {
+      child.style.animationDelay = `${index * step}ms`;
+    });
+  }
+
+  async function requestJson(url, options = {}) {
+    const response = await fetch(url, {
+      ...options,
+      headers: { ...(options.headers || {}), ...authHeaders() }
+    });
+
+    if (response.status === 401) {
+      token = '';
+      localStorage.removeItem('adminToken');
+      setLoggedIn(false);
+      throw new Error('請重新登入');
+    }
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.message || `HTTP ${response.status}`);
+    }
+    return response.json();
+  }
+
+  /* ---------------- 導覽 ---------------- */
+  function renderNav() {
+    $('nav').innerHTML = VIEWS.map(view => `
+      <button class="nav-item ${view.id === currentView ? 'active' : ''}" data-view="${view.id}">
+        ${ICONS[view.icon]}
+        <span>${view.name}</span>
+        ${view.badge ? '<span class="nav-badge" id="pending-badge">0</span>' : ''}
+      </button>
+    `).join('');
+  }
+
+  function switchView(viewId) {
+    if (!VIEWS.some(view => view.id === viewId)) return;
+    currentView = viewId;
+
+    document.querySelectorAll('.view').forEach(section => {
+      section.classList.toggle('active', section.id === `view-${viewId}`);
+    });
+    $('page-title').textContent = VIEWS.find(view => view.id === viewId).name;
+    renderNav();
+    $('sidebar').classList.remove('open');
+
+    loadViewData(viewId);
+  }
+
+  async function loadViewData(viewId) {
+    try {
+      if (viewId === 'dashboard') await fetchDashboard();
+      if (viewId === 'menu') await fetchMenu();
+      if (viewId === 'stock') await fetchMenu();
+      if (viewId === 'reports') await fetchReport();
+      if (viewId === 'settings') await fetchSettings();
+      if (viewId === 'audit') await fetchAudit();
+    } catch (error) {
+      toast(error.message, 'error');
+    }
+  }
+
+  /* ---------------- 儀表板 ---------------- */
+  async function fetchDashboard() {
+    const data = await requestJson(`${BACKEND_BASE_URL}/api/admin/dashboard`, { cache: 'no-store' });
+    const signature = JSON.stringify(data);
+    if (signature === lastDashSignature) return;
+    lastDashSignature = signature;
+    renderDashboard(data);
+  }
+
+  function renderDashboard(data) {
+    const cards = [
+      { label: '今日營業額', value: data.today.revenue, prefix: '$', icon: '💰', accent: '#fff1f1', foot: `已完成 ${data.today.completed} 筆` },
+      { label: '今日訂單', value: data.today.orders, icon: '🧾', accent: '#dbeafe', foot: `取消 ${data.today.cancelled} 筆` },
+      { label: '平均客單價', value: data.today.avgOrderValue, prefix: '$', icon: '📊', accent: '#dcfce7', foot: '今日已完成訂單平均' },
+      { label: '本月營業額', value: data.summary.month.revenue, prefix: '$', icon: '📅', accent: '#fef3c7', foot: `${data.summary.month.count} 筆完成` }
+    ];
+
+    const container = $('dash-stats');
+    const isFirst = container.children.length === 0;
+
+    if (isFirst) {
+      container.innerHTML = cards.map(card => `
+        <div class="stat-card" style="--accent:${card.accent}">
+          <div class="stat-ico">${card.icon}</div>
+          <div class="stat-label">${card.label}</div>
+          <div class="stat-value" data-value="0">0</div>
+          <div class="stat-foot">${escapeHtml(card.foot)}</div>
+        </div>
+      `).join('');
+      stagger(container, 70);
+    } else {
+      [...container.children].forEach((child, index) => {
+        child.querySelector('.stat-foot').textContent = cards[index].foot;
+      });
+    }
+
+    [...container.children].forEach((child, index) => {
+      countUp(child.querySelector('.stat-value'), cards[index].value, cards[index].prefix || '');
+    });
+
+    renderTrendChart($('trend-chart'), data.trend);
+    renderStatusDonut(data.statusCounts);
+    renderTopProducts(data.topProducts);
+    renderStockAlerts(data.stockAlerts);
+  }
+
+  // SVG 折線圖：路徑用 stroke-dashoffset 畫出來，圓點依序彈出
+  function renderTrendChart(container, trend) {
+    if (!trend || !trend.length) {
+      container.innerHTML = '<div class="empty"><div class="ico">📈</div><div>還沒有資料</div></div>';
+      return;
+    }
+
+    const width = 520;
+    const height = 190;
+    const padX = 34;
+    const padTop = 18;
+    const padBottom = 28;
+    const max = Math.max(...trend.map(point => point.revenue), 100);
+    const stepX = (width - padX * 2) / Math.max(1, trend.length - 1);
+    const scaleY = value => padTop + (1 - value / max) * (height - padTop - padBottom);
+
+    const points = trend.map((point, index) => ({
+      x: padX + index * stepX,
+      y: scaleY(point.revenue),
+      ...point
+    }));
+
+    const linePath = points.map((point, index) => `${index ? 'L' : 'M'}${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
+    const areaPath = `${linePath} L${points[points.length - 1].x.toFixed(1)},${height - padBottom} L${points[0].x.toFixed(1)},${height - padBottom} Z`;
+
+    const gridLines = [0, 0.5, 1].map(ratio => {
+      const y = padTop + ratio * (height - padTop - padBottom);
+      return `<line class="grid-line" x1="${padX}" y1="${y}" x2="${width - padX}" y2="${y}" />
+              <text class="axis-label" x="4" y="${y + 3}">${Math.round(max * (1 - ratio))}</text>`;
+    }).join('');
+
+    container.innerHTML = `
+      <svg class="chart-line" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#ff6b6b" stop-opacity=".26" />
+            <stop offset="100%" stop-color="#ff6b6b" stop-opacity="0" />
+          </linearGradient>
+        </defs>
+        ${gridLines}
+        <path d="${areaPath}" fill="url(#areaFill)" opacity="0" style="animation: fadeIn .8s ease .35s forwards;" />
+        <path class="line-path" d="${linePath}" />
+        ${points.map((point, index) => `
+          <circle class="dot" cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="4"
+                  style="animation-delay:${350 + index * 70}ms"><title>${point.date}　${money(point.revenue)}（${point.count} 筆）</title></circle>
+          <text class="axis-label" x="${point.x.toFixed(1)}" y="${height - 8}" text-anchor="middle">${point.date}</text>
+        `).join('')}
+      </svg>
+    `;
+
+    const path = container.querySelector('.line-path');
+    const length = path.getTotalLength();
+    path.style.strokeDasharray = length;
+    path.style.strokeDashoffset = length;
+  }
+
+  function renderStatusDonut(counts) {
+    const entries = Object.entries(STATUS_LABELS)
+      .map(([key, label]) => ({ key, label, value: Number(counts[key] || 0), color: STATUS_COLORS[key] }))
+      .filter(entry => entry.value > 0);
+
+    const total = entries.reduce((sum, entry) => sum + entry.value, 0);
+    const container = $('status-donut');
+
+    if (!total) {
+      container.innerHTML = '<div class="empty"><div class="ico">🧾</div><div>還沒有訂單</div></div>';
+      return;
+    }
+
+    const radius = 52;
+    const circumference = 2 * Math.PI * radius;
+    let offset = 0;
+
+    const arcs = entries.map(entry => {
+      const portion = entry.value / total;
+      const dash = portion * circumference;
+      const circle = `<circle r="${radius}" cx="66" cy="66" stroke="${entry.color}"
+        stroke-dasharray="${dash} ${circumference - dash}" stroke-dashoffset="${-offset}" />`;
+      offset += dash;
+      return circle;
+    }).join('');
+
+    container.innerHTML = `
+      <svg class="donut" viewBox="0 0 132 132">
+        <circle r="${radius}" cx="66" cy="66" stroke="#f1f4f8" stroke-dasharray="${circumference} 0" />
+        ${arcs}
+      </svg>
+      <div class="legend">
+        ${entries.map(entry => `
+          <div class="legend-row">
+            <span class="legend-dot" style="background:${entry.color}"></span>
+            <span class="legend-name">${entry.label}</span>
+            <span class="legend-val">${entry.value}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function renderTopProducts(products) {
+    const container = $('top-products');
+
+    if (!products || !products.length) {
+      container.innerHTML = '<div class="empty"><div class="ico">🍜</div><div>還沒有銷售資料</div></div>';
+      return;
+    }
+
+    const max = Math.max(...products.map(product => product.qty));
+    container.innerHTML = products.map(product => `
+      <div class="bar-row">
+        <div class="bar-name">${escapeHtml(product.name)}</div>
+        <div class="bar-val">${product.qty} 份 · ${money(product.revenue)}</div>
+        <div class="bar-track"><div class="bar-fill" data-width="${(product.qty / max) * 100}"></div></div>
+      </div>
+    `).join('');
+
+    requestAnimationFrame(() => {
+      container.querySelectorAll('.bar-fill').forEach((bar, index) => {
+        setTimeout(() => { bar.style.width = `${bar.dataset.width}%`; }, index * 80);
+      });
+    });
+  }
+
+  function renderStockAlerts(alerts) {
+    const container = $('stock-alerts');
+
+    if (!alerts || !alerts.length) {
+      container.innerHTML = '<div class="empty"><div class="ico">✅</div><div>目前沒有庫存警示</div></div>';
+      return;
+    }
+
+    container.innerHTML = alerts.map(alert => `
+      <div class="bar-row">
+        <div class="bar-name">${escapeHtml(alert.name)}</div>
+        <div class="bar-val">${alert.soldOut
+          ? '<span class="pill out">賣完</span>'
+          : `<span class="pill warn">剩 ${alert.remaining}</span>`}</div>
+        ${alert.dailyStock ? `<div class="bar-track"><div class="progress-fill ${alert.soldOut ? 'full' : 'warn'}" style="width:${Math.min(100, (alert.soldToday / alert.dailyStock) * 100)}%; height:100%;"></div></div>` : ''}
+      </div>
+    `).join('');
+  }
+
+  /* ---------------- 訂單 ---------------- */
+  async function fetchOrders() {
+    const params = new URLSearchParams({ status: 'all' });
+    if (orderSearch) params.set('search', orderSearch);
+    if (orderFrom) params.set('from', orderFrom);
+    if (orderTo) params.set('to', orderTo);
+
+    const data = await requestJson(`${BACKEND_BASE_URL}/api/orders?${params}`, { cache: 'no-store' });
+    orders = data.orders || [];
+
+    const pending = orders.filter(order => order.status === 'pending');
+    const newPending = pending.filter(order => !knownPendingOrders.has(order.orderNumber));
+    knownPendingOrders = new Set(pending.map(order => order.orderNumber));
+
+    newPending.forEach(order => {
+      freshOrderNumbers.add(order.orderNumber);
+      setTimeout(() => freshOrderNumbers.delete(order.orderNumber), 6000);
+    });
+
+    if (newPending.length && 'Notification' in window && Notification.permission === 'granted') {
+      new Notification('您有新訂單', { body: `${newPending[0].name}，共 ${money(newPending[0].totalAmount)}` });
+    }
+
+    renderOrderTabs();
+    renderOrders();
+    updateConnection('online', pending.length);
+
+    if (pending.length > 0) startAlarm();
+    else stopAlarm();
+  }
+
+  function renderOrderTabs() {
+    const counts = orders.reduce((result, order) => {
+      result[order.status] = (result[order.status] || 0) + 1;
+      return result;
+    }, {});
+
+    $('order-tabs').querySelectorAll('.tab').forEach(tab => {
+      const status = tab.dataset.status;
+      tab.querySelector('.tab-count').textContent = status === 'all' ? orders.length : Number(counts[status] || 0);
+      tab.classList.toggle('active', status === activeStatus);
+    });
+
+    const badge = $('pending-badge');
+    if (badge) {
+      const pendingCount = Number(counts.pending || 0);
+      badge.textContent = pendingCount;
+      badge.classList.toggle('show', pendingCount > 0);
+    }
+  }
+
+  function latestNotification(order) {
+    const list = Array.isArray(order.customerNotifications) ? order.customerNotifications : [];
+    if (!list.length) return '';
+    const item = list[list.length - 1];
+    return item.sent ? `已通知客人：${item.message}` : `尚未推播：${item.reason || '未完成設定'}`;
+  }
+
+  function actionButtons(order) {
+    const detail = `<button class="btn btn-ghost btn-sm" data-detail="${escapeHtml(order.orderNumber)}">詳情</button>`;
+
+    if (order.status === 'pending') {
+      return `${detail}
+        <button class="btn btn-ok btn-sm" data-action="preparing" data-order="${escapeHtml(order.orderNumber)}">接單</button>
+        <button class="btn btn-danger btn-sm" data-action="cancelled" data-order="${escapeHtml(order.orderNumber)}">拒絕</button>`;
+    }
+
+    if (order.status === 'preparing') {
+      return `${detail}
+        <button class="btn btn-primary btn-sm" data-action="completed" data-order="${escapeHtml(order.orderNumber)}">訂單已備妥</button>
+        <button class="btn btn-danger btn-sm" data-action="cancelled" data-order="${escapeHtml(order.orderNumber)}">取消</button>`;
+    }
+
+    return detail;
+  }
+
+  function renderOrders() {
+    const visible = activeStatus === 'all' ? orders : orders.filter(order => order.status === activeStatus);
+    const signature = JSON.stringify(visible.map(order => [order.orderNumber, order.status, order.updatedAt, order.adminNote]));
+
+    // 每 3 秒輪詢一次，資料沒變就不重繪，避免動畫一直重跑
+    if (signature === lastOrdersSignature) return;
+    lastOrdersSignature = signature;
+
+    const container = $('orders');
+
+    if (!visible.length) {
+      container.innerHTML = '<div class="empty"><div class="ico">🧾</div><div>這個分類目前沒有訂單</div></div>';
+      return;
+    }
+
+    container.innerHTML = visible.map((order, index) => {
+      const itemRows = (order.items || []).map(item => `
+        <li>
+          <span>${escapeHtml(item.name)}</span>
+          <span class="qty">x${Number(item.qty || 0)}</span>
+          <span class="price">${money(item.subtotal)}</span>
+        </li>
+      `).join('');
+
+      const notificationText = latestNotification(order);
+
+      return `
+        <article class="order-card ${order.status} ${freshOrderNumbers.has(order.orderNumber) ? 'is-new' : ''}"
+                 style="opacity:0; animation: fadeUp .42s var(--ease-out) ${Math.min(index, 8) * 45}ms forwards;">
+          <div class="order-top">
+            <div>
+              <div class="order-no">#${escapeHtml(order.orderNumber)}</div>
+              <div class="order-time">${formatTime(order.createdAt)}</div>
+            </div>
+            <span class="badge ${order.status}">${STATUS_LABELS[order.status] || order.status}</span>
+          </div>
+
+          <div class="customer">
+            <div><div class="kv-label">姓名</div><div class="kv-value">${escapeHtml(order.name)}</div></div>
+            <div><div class="kv-label">電話</div><div class="kv-value">${escapeHtml(order.phone)}</div></div>
+            <div><div class="kv-label">取餐時間</div><div class="kv-value">${escapeHtml(order.pickupTime)}</div></div>
+            <div><div class="kv-label">付款</div><div class="kv-value">${order.paymentMethod === 'cash' ? '現金' : escapeHtml(order.paymentMethod)}</div></div>
+          </div>
+
+          <ul class="items">${itemRows}</ul>
+          ${order.notes ? `<div class="note-box customer-note"><strong>客人備註：</strong>${escapeHtml(order.notes)}</div>` : ''}
+          ${order.adminNote ? `<div class="note-box admin-note"><strong>店家備註：</strong>${escapeHtml(order.adminNote)}</div>` : ''}
+          ${notificationText ? `<div class="note-box push-note">${escapeHtml(notificationText)}</div>` : ''}
+
+          <div class="order-bottom">
+            <div class="total">總計 ${money(order.totalAmount)}</div>
+            <div class="actions">${actionButtons(order)}</div>
+          </div>
+        </article>
+      `;
+    }).join('');
+  }
+
+  async function updateOrderStatus(orderNumber, status) {
+    await requestJson(`${BACKEND_BASE_URL}/api/orders/${encodeURIComponent(orderNumber)}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    toast(`訂單 #${orderNumber} 已更新為「${STATUS_LABELS[status]}」`, 'ok');
+    await fetchOrders();
+  }
+
+  function openOrderDetail(orderNumber) {
+    const order = orders.find(item => item.orderNumber === orderNumber);
+    if (!order) return;
+
+    const history = (order.statusHistory || []).map((entry, index) => `
+      <div class="tl-item" style="animation-delay:${index * 60}ms">
+        <div class="tl-title">${STATUS_LABELS[entry.status] || entry.status}</div>
+        <div class="tl-meta">${formatTime(entry.at)}</div>
+        ${entry.note ? `<div class="tl-detail">${escapeHtml(entry.note)}</div>` : ''}
+      </div>
+    `).join('');
+
+    const pushes = (order.customerNotifications || []).map((entry, index) => `
+      <div class="tl-item" style="animation-delay:${index * 60}ms">
+        <div class="tl-title">${entry.sent ? '✅ 已推播' : '⚠️ 推播失敗'}：${escapeHtml(entry.message || '')}</div>
+        <div class="tl-meta">${formatTime(entry.at)}</div>
+        ${entry.sent ? '' : `<div class="tl-detail">${escapeHtml(entry.reason || '')}</div>`}
+      </div>
+    `).join('');
+
+    openModal(`訂單 #${order.orderNumber}`, `
+      <div class="customer" style="margin-top:0;">
+        <div><div class="kv-label">姓名</div><div class="kv-value">${escapeHtml(order.name)}</div></div>
+        <div><div class="kv-label">電話</div><div class="kv-value">${escapeHtml(order.phone)}</div></div>
+        <div><div class="kv-label">取餐</div><div class="kv-value">${escapeHtml(order.pickupTime)}</div></div>
+        <div><div class="kv-label">狀態</div><div class="kv-value">${STATUS_LABELS[order.status]}</div></div>
+      </div>
+
+      <ul class="items">
+        ${(order.items || []).map(item => `
+          <li><span>${escapeHtml(item.name)}</span><span class="qty">x${item.qty}</span><span class="price">${money(item.subtotal)}</span></li>
+        `).join('')}
+      </ul>
+      <div style="display:flex; justify-content:flex-end; margin-top:10px;">
+        <div class="total">總計 ${money(order.totalAmount)}</div>
+      </div>
+
+      <label for="detail-note">店家備註</label>
+      <textarea class="field" id="detail-note" rows="2" placeholder="只有後台看得到">${escapeHtml(order.adminNote || '')}</textarea>
+
+      <div class="card-title" style="margin:18px 0 10px;">訂單歷程</div>
+      <div class="timeline">${history || '<div class="tl-item"><div class="tl-meta">沒有紀錄</div></div>'}</div>
+
+      ${pushes ? `<div class="card-title" style="margin:18px 0 10px;">LINE 通知紀錄</div><div class="timeline">${pushes}</div>` : ''}
+    `, [
+      { label: '關閉', className: 'btn-soft', onClick: closeModal },
+      {
+        label: '儲存備註',
+        className: 'btn-primary',
+        onClick: async () => {
+          await requestJson(`${BACKEND_BASE_URL}/api/admin/orders/${encodeURIComponent(order.orderNumber)}/note`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ note: $('detail-note').value })
+          });
+          closeModal();
+          toast('備註已儲存', 'ok');
+          lastOrdersSignature = '';
+          await fetchOrders();
+        }
+      }
+    ]);
+  }
+
+  /* ---------------- 菜單 ---------------- */
+  async function fetchMenu() {
+    const data = await requestJson(`${BACKEND_BASE_URL}/api/admin/menu`, { cache: 'no-store' });
+    menuItems = data.items || [];
+    menuCategories = data.categories || [];
+
+    const select = $('menu-category');
+    if (select.options.length <= 1) {
+      menuCategories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category.key;
+        option.textContent = category.name;
+        select.appendChild(option);
+      });
+    }
+
+    renderMenuTable();
+    renderStockTable();
+  }
+
+  const categoryName = key => (menuCategories.find(category => category.key === key) || {}).name || key;
+
+  function renderMenuTable() {
+    const search = $('menu-search').value.trim().toLowerCase();
+    const category = $('menu-category').value;
+
+    const filtered = menuItems.filter(item => {
+      if (category !== 'all' && item.category !== category) return false;
+      if (search && !item.name.toLowerCase().includes(search)) return false;
+      return true;
+    });
+
+    $('menu-empty').style.display = filtered.length ? 'none' : 'flex';
+
+    $('menu-tbody').innerHTML = filtered.map((item, index) => {
+      const options = OPTION_KEYS.filter(option => item.options && item.options[option.key]);
+      const soldOut = item.soldOut || (item.dailyStock && item.soldToday >= item.dailyStock);
+
+      return `
+        <tr style="opacity:0; animation: fadeUp .35s var(--ease-out) ${Math.min(index, 10) * 35}ms forwards;">
+          <td>
+            <div class="cell-item">
+              ${item.image ? `<img class="thumb" src="${escapeHtml(item.image)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<div class="thumb"></div>'}
+              <div>
+                <div class="cell-name">${escapeHtml(item.name)}</div>
+                ${item.description ? `<div class="cell-meta">${escapeHtml(item.description)}</div>` : ''}
+              </div>
+            </div>
+          </td>
+          <td>${escapeHtml(categoryName(item.category))}</td>
+          <td style="font-weight:800;">${money(item.price)}</td>
+          <td>${options.length ? options.map(option => `<span class="pill off">${option.label}</span>`).join(' ') : '<span style="color:var(--ink-3);">—</span>'}</td>
+          <td>
+            ${item.status === 'hidden'
+              ? '<span class="pill off">已下架</span>'
+              : soldOut ? '<span class="pill out">賣完</span>' : '<span class="pill on">供應中</span>'}
+          </td>
+          <td style="text-align:right; white-space:nowrap;">
+            <button class="btn btn-ghost btn-sm" data-edit="${item.id}">編輯</button>
+            <button class="btn btn-soft btn-sm" data-toggle-status="${item.id}">${item.status === 'hidden' ? '上架' : '下架'}</button>
+            <button class="btn btn-danger btn-sm" data-delete="${item.id}">刪除</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function openMenuEditor(itemId) {
+    const item = itemId ? menuItems.find(entry => entry.id === itemId) : null;
+
+    openModal(item ? `編輯：${item.name}` : '新增商品', `
+      <div class="form-grid">
+        <div class="full">
+          <label for="m-name">品名 *</label>
+          <input class="field" id="m-name" value="${escapeHtml(item?.name || '')}" />
+        </div>
+        <div>
+          <label for="m-price">售價 *</label>
+          <input class="field" type="number" id="m-price" min="0" value="${item?.price ?? ''}" />
+        </div>
+        <div>
+          <label for="m-category">分類</label>
+          <select class="field" id="m-category">
+            ${menuCategories.map(category => `
+              <option value="${category.key}" ${item?.category === category.key ? 'selected' : ''}>${escapeHtml(category.name)}</option>
+            `).join('')}
+          </select>
+        </div>
+        <div class="full">
+          <label for="m-image">圖片路徑</label>
+          <input class="field" id="m-image" placeholder="images/xxx.png" value="${escapeHtml(item?.image || '')}" />
+        </div>
+        <div class="full">
+          <label for="m-desc">商品描述</label>
+          <input class="field" id="m-desc" value="${escapeHtml(item?.description || '')}" />
+        </div>
+        <div class="full">
+          <label>可選加購</label>
+          ${OPTION_KEYS.map(option => `
+            <div class="check-row">
+              <input type="checkbox" id="m-opt-${option.key}" ${item?.options?.[option.key] ? 'checked' : ''} />
+              <label for="m-opt-${option.key}" style="margin:0;">${option.label}</label>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `, [
+      { label: '取消', className: 'btn-soft', onClick: closeModal },
+      {
+        label: item ? '儲存' : '新增',
+        className: 'btn-primary',
+        onClick: async () => {
+          const payload = {
+            name: $('m-name').value.trim(),
+            price: Number($('m-price').value),
+            category: $('m-category').value,
+            image: $('m-image').value.trim(),
+            description: $('m-desc').value.trim(),
+            options: Object.fromEntries(OPTION_KEYS.map(option => [option.key, $(`m-opt-${option.key}`).checked]))
+          };
+
+          if (!payload.name || !Number.isFinite(payload.price)) {
+            toast('請填寫品名與售價', 'error');
+            return;
+          }
+
+          await requestJson(`${BACKEND_BASE_URL}/api/admin/menu${item ? `/${item.id}` : ''}`, {
+            method: item ? 'PATCH' : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          closeModal();
+          toast(item ? '商品已更新' : '商品已新增', 'ok');
+          await fetchMenu();
+        }
+      }
+    ]);
+  }
+
+  /* ---------------- 庫存 ---------------- */
+  function renderStockTable() {
+    $('stock-tbody').innerHTML = menuItems.map((item, index) => {
+      const soldToday = Number(item.soldToday || 0);
+      const stock = item.dailyStock;
+      const ratio = stock ? Math.min(100, (soldToday / stock) * 100) : 0;
+      const orderable = item.status === 'available' && !item.soldOut && (!stock || soldToday < stock);
+
+      return `
+        <tr style="opacity:0; animation: fadeUp .35s var(--ease-out) ${Math.min(index, 10) * 35}ms forwards;">
+          <td>
+            <div class="cell-name">${escapeHtml(item.name)}</div>
+            <div class="cell-meta">${escapeHtml(categoryName(item.category))} · ${money(item.price)}</div>
+          </td>
+          <td>
+            <label class="switch">
+              <input type="checkbox" data-soldout="${item.id}" ${orderable ? 'checked' : ''} ${item.status === 'hidden' ? 'disabled' : ''}>
+              <span class="slider"></span>
+            </label>
+          </td>
+          <td>
+            <input class="field" type="number" min="0" placeholder="不限"
+                   style="width:96px; padding:7px 9px;" data-stock="${item.id}" value="${stock ?? ''}" />
+          </td>
+          <td style="min-width:140px;">
+            <div style="font-weight:800; margin-bottom:5px;">${soldToday}${stock ? ` / ${stock}` : ''}</div>
+            ${stock ? `<div class="progress"><div class="progress-fill ${ratio >= 100 ? 'full' : ratio >= 80 ? 'warn' : ''}" data-width="${ratio}"></div></div>` : '<span class="cell-meta">未設限量</span>'}
+          </td>
+          <td style="text-align:right; white-space:nowrap;">
+            <button class="btn btn-soft btn-sm" data-reset-stock="${item.id}">重設已售</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    requestAnimationFrame(() => {
+      $('stock-tbody').querySelectorAll('.progress-fill').forEach(bar => {
+        bar.style.width = `${bar.dataset.width}%`;
+      });
+    });
+  }
+
+  async function patchStock(itemId, payload, successMessage) {
+    await requestJson(`${BACKEND_BASE_URL}/api/admin/menu/${itemId}/stock`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    toast(successMessage, 'ok');
+    await fetchMenu();
+  }
+
+  /* ---------------- 報表 ---------------- */
+  async function fetchReport() {
+    const params = new URLSearchParams();
+    if ($('report-from').value) params.set('from', $('report-from').value);
+    if ($('report-to').value) params.set('to', $('report-to').value);
+
+    const data = await requestJson(`${BACKEND_BASE_URL}/api/admin/reports?${params}`, { cache: 'no-store' });
+    renderReport(data.report);
+  }
+
+  function renderReport(report) {
+    const cards = [
+      { label: '營業額', value: report.totals.revenue, prefix: '$', icon: '💰', accent: '#fff1f1' },
+      { label: '完成訂單', value: report.totals.completed, icon: '✅', accent: '#dcfce7' },
+      { label: '取消訂單', value: report.totals.cancelled, icon: '🚫', accent: '#fee2e2' },
+      { label: '平均客單價', value: report.totals.avgOrderValue, prefix: '$', icon: '📊', accent: '#dbeafe' }
+    ];
+
+    const container = $('report-stats');
+    container.innerHTML = cards.map(card => `
+      <div class="stat-card" style="--accent:${card.accent}">
+        <div class="stat-ico">${card.icon}</div>
+        <div class="stat-label">${card.label}</div>
+        <div class="stat-value" data-value="0">0</div>
+      </div>
+    `).join('');
+    stagger(container, 60);
+
+    [...container.children].forEach((child, index) => {
+      countUp(child.querySelector('.stat-value'), cards[index].value, cards[index].prefix || '');
+    });
+
+    renderTrendChart($('report-chart'), report.daily.map(row => ({
+      date: row.date.slice(5).replace('-', '/'),
+      revenue: row.revenue,
+      count: row.orders
+    })));
+
+    $('report-tbody').innerHTML = report.products.length
+      ? report.products.map((product, index) => `
+          <tr style="opacity:0; animation: fadeUp .35s var(--ease-out) ${Math.min(index, 12) * 30}ms forwards;">
+            <td style="font-weight:900; color:${index < 3 ? 'var(--brand)' : 'var(--ink-3)'};">${index + 1}</td>
+            <td class="cell-name">${escapeHtml(product.name)}</td>
+            <td>${product.qty}</td>
+            <td style="font-weight:800;">${money(product.revenue)}</td>
+          </tr>
+        `).join('')
+      : '<tr><td colspan="4" style="text-align:center; color:var(--ink-3); padding:28px;">這段期間沒有銷售資料</td></tr>';
+  }
+
+  async function exportCsv(type) {
+    const params = new URLSearchParams({ type });
+    if ($('report-from').value) params.set('from', $('report-from').value);
+    if ($('report-to').value) params.set('to', $('report-to').value);
+
+    try {
+      const response = await fetch(`${BACKEND_BASE_URL}/api/admin/reports/export?${params}`, { headers: authHeaders() });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `report-${type}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast('CSV 已下載', 'ok');
+    } catch (error) {
+      toast(`匯出失敗：${error.message}`, 'error');
+    }
+  }
+
+  /* ---------------- 設定 ---------------- */
+  async function fetchSettings() {
+    const data = await requestJson(`${BACKEND_BASE_URL}/api/admin/settings`, { cache: 'no-store' });
+    settings = data.settings;
+
+    $('set-name').value = settings.storeName || '';
+    $('set-phone').value = settings.phone || '';
+    $('set-address').value = settings.address || '';
+    $('set-prep').value = settings.prepTimeMinutes ?? 15;
+    $('set-min').value = settings.minOrderAmount ?? 0;
+
+    $('set-lunch-on').checked = Boolean(settings.businessHours.lunch.enabled);
+    $('set-lunch-start').value = settings.businessHours.lunch.start;
+    $('set-lunch-end').value = settings.businessHours.lunch.end;
+    $('set-dinner-on').checked = Boolean(settings.businessHours.dinner.enabled);
+    $('set-dinner-start').value = settings.businessHours.dinner.start;
+    $('set-dinner-end').value = settings.businessHours.dinner.end;
+
+    $('set-opt-large').value = settings.optionPrices.large;
+    $('set-opt-egg').value = settings.optionPrices.doubleEgg;
+    $('set-opt-shrimp').value = settings.optionPrices.doubleShrimp;
+  }
+
+  async function saveSettings() {
+    const button = $('settings-save');
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner"></span> 儲存中';
+
+    try {
+      await requestJson(`${BACKEND_BASE_URL}/api/admin/settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          storeName: $('set-name').value.trim(),
+          phone: $('set-phone').value.trim(),
+          address: $('set-address').value.trim(),
+          prepTimeMinutes: Number($('set-prep').value),
+          minOrderAmount: Number($('set-min').value),
+          businessHours: {
+            lunch: { enabled: $('set-lunch-on').checked, start: $('set-lunch-start').value, end: $('set-lunch-end').value },
+            dinner: { enabled: $('set-dinner-on').checked, start: $('set-dinner-start').value, end: $('set-dinner-end').value }
+          },
+          optionPrices: {
+            large: Number($('set-opt-large').value),
+            doubleEgg: Number($('set-opt-egg').value),
+            doubleShrimp: Number($('set-opt-shrimp').value)
+          }
+        })
+      });
+      toast('設定已儲存，前台會立即套用', 'ok');
+    } catch (error) {
+      toast(`儲存失敗：${error.message}`, 'error');
+    } finally {
+      button.disabled = false;
+      button.textContent = '儲存設定';
+    }
+  }
+
+  /* ---------------- 操作紀錄 ---------------- */
+  async function fetchAudit() {
+    const data = await requestJson(`${BACKEND_BASE_URL}/api/admin/audit`, { cache: 'no-store' });
+    const entries = data.entries || [];
+
+    $('audit-list').innerHTML = entries.length
+      ? entries.map((entry, index) => `
+          <div class="tl-item" style="animation-delay:${Math.min(index, 15) * 40}ms">
+            <div class="tl-title">${escapeHtml(entry.action)} · ${escapeHtml(entry.target)}</div>
+            <div class="tl-meta">${formatTime(entry.at)} · ${escapeHtml(entry.user)}</div>
+            <div class="tl-detail">${escapeHtml(entry.detail)}</div>
+          </div>
+        `).join('')
+      : '<div class="empty"><div class="ico">📝</div><div>還沒有操作紀錄</div></div>';
+  }
+
+  /* ---------------- Modal ---------------- */
+  function openModal(title, bodyHtml, buttons = []) {
+    $('modal-title').textContent = title;
+    $('modal-body').innerHTML = bodyHtml;
+    $('modal-foot').innerHTML = '';
+
+    buttons.forEach(config => {
+      const button = document.createElement('button');
+      button.className = `btn ${config.className || 'btn-soft'}`;
+      button.textContent = config.label;
+      button.addEventListener('click', async () => {
+        button.disabled = true;
+        try {
+          await config.onClick();
+        } catch (error) {
+          toast(error.message, 'error');
+        } finally {
+          button.disabled = false;
+        }
+      });
+      $('modal-foot').appendChild(button);
+    });
+
+    $('modal-backdrop').classList.add('open');
+  }
+
+  function closeModal() {
+    $('modal-backdrop').classList.remove('open');
+  }
+
+  /* ---------------- 提醒聲 ---------------- */
   function playBeep() {
     if (!soundEnabled || !audioContext) return;
 
@@ -497,17 +2000,12 @@
   }
 
   function speakNewOrder() {
-    if (!soundEnabled || !('speechSynthesis' in window)) {
-      playBeep();
-      return;
-    }
+    if (!soundEnabled || !('speechSynthesis' in window)) { playBeep(); return; }
 
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance('您有新訂單');
     utterance.lang = 'zh-TW';
     utterance.rate = 0.95;
-    utterance.pitch = 1;
-    utterance.volume = 1;
     window.speechSynthesis.speak(utterance);
     playBeep();
   }
@@ -524,306 +2022,151 @@
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
   }
 
-  function updateConnectionState(state, pendingCount) {
-    statusDotEl.className = 'status-dot';
-
-    if (pendingCount > 0) {
-      statusDotEl.classList.add('alert');
-      statusTextEl.textContent = `您有 ${pendingCount} 筆新訂單`;
-      return;
-    }
-
-    if (!storeIsOpen) {
-      statusDotEl.classList.add('closed');
-      statusTextEl.textContent = '店家下線中';
-      return;
-    }
-
-    if (state === 'online') {
-      statusDotEl.classList.add('online');
-      statusTextEl.textContent = '店家上線中';
-      return;
-    }
-
-    statusTextEl.textContent = '連線失敗';
-  }
-
-  function renderStats(summary) {
-    document.getElementById('today-revenue').textContent = money(summary.today.revenue);
-    document.getElementById('week-revenue').textContent = money(summary.week.revenue);
-    document.getElementById('month-revenue').textContent = money(summary.month.revenue);
-    document.getElementById('total-orders').textContent = Number(summary.totalOrders || 0);
-  }
-
-  function renderTabs() {
-    const counts = orders.reduce((result, order) => {
-      result[order.status] = (result[order.status] || 0) + 1;
-      return result;
-    }, {});
-
-    tabsEl.querySelectorAll('.tab').forEach(tab => {
-      const status = tab.dataset.status;
-      const baseText = status === 'pending'
-        ? '接單區'
-        : status === 'all'
-          ? '全部紀錄'
-          : STATUS_LABELS[status];
-      const count = status === 'all' ? orders.length : Number(counts[status] || 0);
-
-      tab.textContent = `${baseText} ${count}`;
-      tab.classList.toggle('active', status === activeStatus);
-    });
-  }
-
-  function renderStoreToggle() {
-    storeToggle.textContent = storeIsOpen ? '目前上線' : '目前下線';
-    storeToggle.className = storeIsOpen ? 'success-btn' : 'dark-btn';
-  }
-
-  function latestNotification(order) {
-    const list = Array.isArray(order.customerNotifications) ? order.customerNotifications : [];
-    if (list.length === 0) return '';
-    const item = list[list.length - 1];
-    if (item.sent) return `已通知客人：${item.message}`;
-    return `尚未推播：${item.reason || '未完成設定'}`;
-  }
-
-  function actionButtons(order) {
-    if (order.status === 'pending') {
-      return `
-        <button class="success-btn" data-action="preparing" data-order="${escapeHtml(order.orderNumber)}">接單</button>
-        <button class="danger-btn" data-action="cancelled" data-order="${escapeHtml(order.orderNumber)}">拒絕</button>
-      `;
-    }
-
-    if (order.status === 'preparing') {
-      return `
-        <button class="primary-btn" data-action="completed" data-order="${escapeHtml(order.orderNumber)}">訂單已備妥</button>
-        <button class="danger-btn" data-action="cancelled" data-order="${escapeHtml(order.orderNumber)}">取消</button>
-      `;
-    }
-
-    return '';
-  }
-
-  function renderOrders() {
-    const visibleOrders = activeStatus === 'all'
-      ? orders
-      : orders.filter(order => order.status === activeStatus);
-
-    ordersEl.innerHTML = '';
-    emptyEl.style.display = visibleOrders.length ? 'none' : 'flex';
-
-    visibleOrders.forEach(order => {
-      const itemRows = (order.items || []).map(item => `
-        <li>
-          <span>${escapeHtml(item.name)}</span>
-          <span class="qty">x${Number(item.qty || 0)}</span>
-          <span class="price">${money(item.subtotal)}</span>
-        </li>
-      `).join('');
-
-      const notes = order.notes ? `
-        <div class="notes">
-          <div class="label">備註</div>
-          <div class="value">${escapeHtml(order.notes)}</div>
-        </div>
-      ` : '';
-
-      const notificationText = latestNotification(order);
-      const notification = notificationText ? `<div class="notification">${escapeHtml(notificationText)}</div>` : '';
-      const buttons = actionButtons(order);
-
-      const card = document.createElement('article');
-      card.className = `order-card ${order.status}`;
-      card.innerHTML = `
-        <div class="order-top">
-          <div>
-            <div class="order-no">#${escapeHtml(order.orderNumber)}</div>
-            <div class="order-time">${formatTime(order.createdAt)}</div>
-          </div>
-          <span class="badge ${order.status}">${STATUS_LABELS[order.status] || order.status}</span>
-        </div>
-
-        <div class="customer">
-          <div>
-            <div class="label">姓名</div>
-            <div class="value">${escapeHtml(order.name)}</div>
-          </div>
-          <div>
-            <div class="label">電話</div>
-            <div class="value">${escapeHtml(order.phone)}</div>
-          </div>
-          <div>
-            <div class="label">取餐時間</div>
-            <div class="value">${escapeHtml(order.pickupTime)}</div>
-          </div>
-          <div>
-            <div class="label">付款</div>
-            <div class="value">${order.paymentMethod === 'cash' ? '現金' : escapeHtml(order.paymentMethod)}</div>
-          </div>
-        </div>
-
-        <ul class="items">${itemRows}</ul>
-        ${notes}
-        ${notification}
-
-        <div class="order-bottom">
-          <div class="total">總計 ${money(order.totalAmount)}</div>
-          <div class="actions">${buttons}</div>
-        </div>
-      `;
-
-      ordersEl.appendChild(card);
-    });
-  }
-
-  function renderAll() {
-    const pendingCount = orders.filter(order => order.status === 'pending').length;
-    renderStoreToggle();
-    renderTabs();
-    renderOrders();
-    updateConnectionState('online', pendingCount);
-
-    if (pendingCount > 0) startAlarm();
-    else stopAlarm();
-  }
-
-  async function requestJson(url, options = {}) {
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        ...(options.headers || {}),
-        ...authHeaders()
-      }
-    });
-
-    if (response.status === 401) {
-      token = '';
-      localStorage.removeItem('adminToken');
-      setLoggedIn(false);
-      throw new Error('請重新登入');
-    }
-
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return response.json();
-  }
-
-  async function fetchStoreStatus() {
-    const status = await requestJson(`${BACKEND_BASE_URL}/api/store/status`, { cache: 'no-store' });
-    storeIsOpen = Boolean(status.isOpen);
-  }
-
-  async function fetchOrders() {
-    const data = await requestJson(`${BACKEND_BASE_URL}/api/orders?status=all`, { cache: 'no-store' });
-    const pending = (data.orders || []).filter(order => order.status === 'pending');
-    const newPending = pending.filter(order => !knownPendingOrders.has(order.orderNumber));
-    knownPendingOrders = new Set(pending.map(order => order.orderNumber));
-    orders = data.orders || [];
-
-    if (newPending.length > 0 && 'Notification' in window && Notification.permission === 'granted') {
-      new Notification('您有新訂單', {
-        body: `${newPending[0].name}，共 ${money(newPending[0].totalAmount)}`
-      });
-    }
-  }
-
-  async function fetchSummary() {
-    const data = await requestJson(`${BACKEND_BASE_URL}/api/admin/summary`, { cache: 'no-store' });
-    renderStats(data.summary);
-  }
-
-  async function refreshAll() {
-    try {
-      await Promise.all([fetchStoreStatus(), fetchOrders(), fetchSummary()]);
-      renderAll();
-    } catch (error) {
-      console.error('更新資料失敗:', error);
-      updateConnectionState('offline', 0);
-    }
-  }
-
-  async function updateOrderStatus(orderNumber, status) {
-    await requestJson(`${BACKEND_BASE_URL}/api/orders/${encodeURIComponent(orderNumber)}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status })
-    });
-    await refreshAll();
-  }
-
   async function enableSound() {
     audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
     await audioContext.resume();
     soundEnabled = true;
-    soundBtn.textContent = '提醒聲已啟用';
-    soundBtn.disabled = true;
+    $('sound-btn').innerHTML = '🔔 <span class="label-text">提醒聲已啟用</span>';
+    $('sound-btn').disabled = true;
 
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
   }
 
-  loginForm.addEventListener('submit', async event => {
+  /* ---------------- 連線 / 店家狀態 ---------------- */
+  function updateConnection(state, pendingCount) {
+    const dot = $('conn-dot');
+    dot.className = 'conn-dot';
+
+    if (pendingCount > 0) {
+      dot.classList.add('alert');
+      $('conn-text').textContent = `${pendingCount} 筆新訂單`;
+      return;
+    }
+    if (!storeIsOpen) {
+      dot.classList.add('closed');
+      $('conn-text').textContent = '店家下線中';
+      return;
+    }
+    if (state === 'online') {
+      dot.classList.add('online');
+      $('conn-text').textContent = '店家上線中';
+      return;
+    }
+    $('conn-text').textContent = '連線失敗';
+  }
+
+  function renderStoreToggle() {
+    const button = $('store-toggle');
+    button.textContent = storeIsOpen ? '目前上線' : '目前下線';
+    button.className = `btn btn-sm ${storeIsOpen ? 'btn-ok' : 'btn-dark'}`;
+  }
+
+  async function fetchStoreStatus() {
+    const status = await requestJson(`${BACKEND_BASE_URL}/api/store/status`, { cache: 'no-store' });
+    storeIsOpen = Boolean(status.isOpen);
+    renderStoreToggle();
+  }
+
+  function setLoggedIn(isLoggedIn) {
+    document.body.classList.toggle('locked', !isLoggedIn);
+    if (isLoggedIn) {
+      renderNav();
+      switchView(currentView);
+    }
+  }
+
+  /* ---------------- 輪詢 ---------------- */
+  async function pollTick() {
+    if (!token) return;
+    try {
+      await Promise.all([fetchStoreStatus(), fetchOrders()]);
+      if (currentView === 'dashboard') await fetchDashboard();
+    } catch (error) {
+      updateConnection('offline', 0);
+    }
+  }
+
+  /* ---------------- 事件 ---------------- */
+  $('login-form').addEventListener('submit', async event => {
     event.preventDefault();
-    loginError.textContent = '';
+    $('login-error').textContent = '';
+    const button = $('login-btn');
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner"></span> 登入中';
 
     try {
-      const data = await fetch(`${BACKEND_BASE_URL}/api/admin/login`, {
+      const response = await fetch(`${BACKEND_BASE_URL}/api/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: document.getElementById('username').value,
-          password: document.getElementById('password').value
-        })
-      }).then(response => {
-        if (!response.ok) throw new Error('帳號或密碼錯誤');
-        return response.json();
+        body: JSON.stringify({ username: $('username').value, password: $('password').value })
       });
+      if (!response.ok) throw new Error('帳號或密碼錯誤');
 
+      const data = await response.json();
       token = data.token;
       localStorage.setItem('adminToken', token);
+      $('who-name').textContent = data.username || 'admin';
       setLoggedIn(true);
       enableSound().catch(() => {});
-      refreshAll();
+      pollTick();
     } catch (error) {
-      loginError.textContent = error.message;
+      $('login-error').textContent = error.message;
+    } finally {
+      button.disabled = false;
+      button.textContent = '登入';
     }
   });
 
-  storeToggle.addEventListener('click', async () => {
-    storeToggle.disabled = true;
+  $('nav').addEventListener('click', event => {
+    const item = event.target.closest('.nav-item');
+    if (item) switchView(item.dataset.view);
+  });
 
+  document.addEventListener('click', event => {
+    const goto = event.target.closest('[data-goto]');
+    if (goto) switchView(goto.dataset.goto);
+  });
+
+  $('menu-toggle').addEventListener('click', () => $('sidebar').classList.toggle('open'));
+
+  $('store-toggle').addEventListener('click', async () => {
+    const button = $('store-toggle');
+    button.disabled = true;
     try {
       await requestJson(`${BACKEND_BASE_URL}/api/store/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isOpen: !storeIsOpen })
       });
-      await refreshAll();
+      await fetchStoreStatus();
+      toast(storeIsOpen ? '已上線，開始接單' : '已下線，暫停接單', 'ok');
     } catch (error) {
-      alert('切換上線狀態失敗，請稍後再試。');
+      toast('切換失敗，請稍後再試', 'error');
     } finally {
-      storeToggle.disabled = false;
+      button.disabled = false;
     }
   });
 
-  soundBtn.addEventListener('click', () => {
+  $('sound-btn').addEventListener('click', () => {
     enableSound()
-      .then(() => {
-        if (orders.some(order => order.status === 'pending')) startAlarm();
-      })
-      .catch(() => alert('提醒聲啟用失敗，請確認瀏覽器允許播放聲音。'));
+      .then(() => { if (orders.some(order => order.status === 'pending')) startAlarm(); })
+      .catch(() => toast('提醒聲啟用失敗，請確認瀏覽器允許播放聲音', 'error'));
   });
 
-  refreshBtn.addEventListener('click', refreshAll);
+  $('refresh-btn').addEventListener('click', async () => {
+    lastOrdersSignature = '';
+    lastDashSignature = '';
+    await pollTick();
+    await loadViewData(currentView);
+    toast('已重新整理');
+  });
 
-  logoutBtn.addEventListener('click', async () => {
+  $('logout-btn').addEventListener('click', async () => {
     try {
       await requestJson(`${BACKEND_BASE_URL}/api/admin/logout`, { method: 'POST' });
-    } catch (error) {
-      console.warn(error);
-    }
+    } catch (error) { /* 已失效的 token 直接忽略 */ }
 
     token = '';
     localStorage.removeItem('adminToken');
@@ -831,40 +2174,181 @@
     setLoggedIn(false);
   });
 
-  tabsEl.addEventListener('click', event => {
+  /* 訂單 */
+  $('order-tabs').addEventListener('click', event => {
     const tab = event.target.closest('.tab');
     if (!tab) return;
     activeStatus = tab.dataset.status;
-    renderAll();
+    lastOrdersSignature = '';
+    renderOrderTabs();
+    renderOrders();
   });
 
-  ordersEl.addEventListener('click', async event => {
-    const button = event.target.closest('button[data-order]');
-    if (!button) return;
+  let searchTimer = null;
+  $('order-search').addEventListener('input', event => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      orderSearch = event.target.value.trim();
+      lastOrdersSignature = '';
+      fetchOrders().catch(error => toast(error.message, 'error'));
+    }, 300);
+  });
 
-    button.disabled = true;
-    const orderNumber = button.dataset.order;
-    const status = button.dataset.action;
+  ['order-from', 'order-to'].forEach(id => {
+    $(id).addEventListener('change', () => {
+      orderFrom = $('order-from').value;
+      orderTo = $('order-to').value;
+      lastOrdersSignature = '';
+      fetchOrders().catch(error => toast(error.message, 'error'));
+    });
+  });
 
+  $('order-clear').addEventListener('click', () => {
+    $('order-search').value = '';
+    $('order-from').value = '';
+    $('order-to').value = '';
+    orderSearch = orderFrom = orderTo = '';
+    lastOrdersSignature = '';
+    fetchOrders().catch(error => toast(error.message, 'error'));
+  });
+
+  $('orders').addEventListener('click', async event => {
+    const detailButton = event.target.closest('[data-detail]');
+    if (detailButton) { openOrderDetail(detailButton.dataset.detail); return; }
+
+    const actionButton = event.target.closest('button[data-order]');
+    if (!actionButton) return;
+
+    actionButton.disabled = true;
     try {
-      await updateOrderStatus(orderNumber, status);
+      await updateOrderStatus(actionButton.dataset.order, actionButton.dataset.action);
     } catch (error) {
-      console.error('更新訂單失敗:', error);
-      alert('更新訂單失敗，請稍後再試。');
-      button.disabled = false;
+      toast(`更新失敗：${error.message}`, 'error');
+      actionButton.disabled = false;
     }
   });
 
-  if (token) {
-    setLoggedIn(true);
-    refreshAll();
-  } else {
-    setLoggedIn(false);
-  }
+  /* 菜單 */
+  $('menu-add').addEventListener('click', () => openMenuEditor(null));
+  $('menu-search').addEventListener('input', renderMenuTable);
+  $('menu-category').addEventListener('change', renderMenuTable);
 
-  setInterval(() => {
-    if (token) refreshAll();
-  }, POLL_INTERVAL_MS);
+  $('menu-tbody').addEventListener('click', async event => {
+    const editButton = event.target.closest('[data-edit]');
+    if (editButton) { openMenuEditor(Number(editButton.dataset.edit)); return; }
+
+    const toggleButton = event.target.closest('[data-toggle-status]');
+    if (toggleButton) {
+      const item = menuItems.find(entry => entry.id === Number(toggleButton.dataset.toggleStatus));
+      try {
+        await requestJson(`${BACKEND_BASE_URL}/api/admin/menu/${item.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: item.status === 'hidden' ? 'available' : 'hidden' })
+        });
+        toast(item.status === 'hidden' ? `${item.name} 已上架` : `${item.name} 已下架`, 'ok');
+        await fetchMenu();
+      } catch (error) {
+        toast(error.message, 'error');
+      }
+      return;
+    }
+
+    const deleteButton = event.target.closest('[data-delete]');
+    if (deleteButton) {
+      const item = menuItems.find(entry => entry.id === Number(deleteButton.dataset.delete));
+      openModal('刪除商品', `
+        <p>確定要刪除「<strong>${escapeHtml(item.name)}</strong>」嗎？</p>
+        <p class="hint">刪除後前台會立即看不到這個品項，已成立的訂單不受影響。</p>
+      `, [
+        { label: '取消', className: 'btn-soft', onClick: closeModal },
+        {
+          label: '確定刪除',
+          className: 'btn-danger',
+          onClick: async () => {
+            await requestJson(`${BACKEND_BASE_URL}/api/admin/menu/${item.id}`, { method: 'DELETE' });
+            closeModal();
+            toast(`${item.name} 已刪除`, 'ok');
+            await fetchMenu();
+          }
+        }
+      ]);
+    }
+  });
+
+  /* 庫存 */
+  $('stock-tbody').addEventListener('change', async event => {
+    const soldOutToggle = event.target.closest('[data-soldout]');
+    if (soldOutToggle) {
+      const item = menuItems.find(entry => entry.id === Number(soldOutToggle.dataset.soldout));
+      try {
+        await patchStock(item.id, { soldOut: !soldOutToggle.checked }, soldOutToggle.checked ? `${item.name} 恢復供應` : `${item.name} 已標示賣完`);
+      } catch (error) {
+        toast(error.message, 'error');
+      }
+      return;
+    }
+
+    const stockInput = event.target.closest('[data-stock]');
+    if (stockInput) {
+      const item = menuItems.find(entry => entry.id === Number(stockInput.dataset.stock));
+      const value = stockInput.value === '' ? null : Number(stockInput.value);
+      try {
+        await patchStock(item.id, { dailyStock: value }, value ? `${item.name} 每日限量 ${value}` : `${item.name} 取消限量`);
+      } catch (error) {
+        toast(error.message, 'error');
+      }
+    }
+  });
+
+  $('stock-tbody').addEventListener('click', async event => {
+    const resetButton = event.target.closest('[data-reset-stock]');
+    if (!resetButton) return;
+
+    const item = menuItems.find(entry => entry.id === Number(resetButton.dataset.resetStock));
+    try {
+      await patchStock(item.id, { resetSold: true }, `${item.name} 已重設當日已售數量`);
+    } catch (error) {
+      toast(error.message, 'error');
+    }
+  });
+
+  /* 報表 */
+  $('report-apply').addEventListener('click', () => fetchReport().catch(error => toast(error.message, 'error')));
+  document.querySelectorAll('[data-export]').forEach(button => {
+    button.addEventListener('click', () => exportCsv(button.dataset.export));
+  });
+
+  /* 設定 */
+  $('settings-save').addEventListener('click', saveSettings);
+
+  /* Modal */
+  $('modal-close').addEventListener('click', closeModal);
+  $('modal-backdrop').addEventListener('click', event => {
+    if (event.target === $('modal-backdrop')) closeModal();
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') closeModal();
+  });
+
+  /* ---------------- 啟動 ---------------- */
+  (function init() {
+    const today = new Date();
+    const monthAgo = new Date();
+    monthAgo.setDate(monthAgo.getDate() - 29);
+    const iso = date => date.toISOString().slice(0, 10);
+    $('report-from').value = iso(monthAgo);
+    $('report-to').value = iso(today);
+
+    if (token) {
+      setLoggedIn(true);
+      pollTick();
+    } else {
+      setLoggedIn(false);
+    }
+
+    setInterval(pollTick, POLL_INTERVAL_MS);
+  })();
 </script>
 </body>
 </html>

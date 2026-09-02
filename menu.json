@@ -1,0 +1,235 @@
+{
+  "categories": [
+    {
+      "key": "rice",
+      "name": "飯類",
+      "sortOrder": 1
+    },
+    {
+      "key": "noodle",
+      "name": "麵類",
+      "sortOrder": 2
+    },
+    {
+      "key": "alacarte",
+      "name": "單點",
+      "sortOrder": 3
+    },
+    {
+      "key": "soup",
+      "name": "湯品",
+      "sortOrder": 4
+    }
+  ],
+  "items": [
+    {
+      "id": 1,
+      "name": "蛋炒飯",
+      "price": 80,
+      "image": "images/egg_rice.jpg",
+      "description": "",
+      "category": "rice",
+      "options": {
+        "large": true,
+        "doubleEgg": true,
+        "doubleShrimp": false
+      },
+      "status": "available",
+      "soldOut": false,
+      "dailyStock": null,
+      "soldToday": 0,
+      "stockDate": "2026-09-02",
+      "sortOrder": 1
+    },
+    {
+      "id": 2,
+      "name": "肉絲炒飯",
+      "price": 100,
+      "image": "images/beef_rice.png",
+      "description": "",
+      "category": "rice",
+      "options": {
+        "large": true,
+        "doubleEgg": true,
+        "doubleShrimp": false
+      },
+      "status": "available",
+      "soldOut": false,
+      "dailyStock": null,
+      "soldToday": 0,
+      "stockDate": "2026-09-02",
+      "sortOrder": 2
+    },
+    {
+      "id": 3,
+      "name": "肉絲炒麵",
+      "price": 100,
+      "image": "images/beef_noodle.jpg",
+      "description": "",
+      "category": "noodle",
+      "options": {
+        "large": true,
+        "doubleEgg": false,
+        "doubleShrimp": false
+      },
+      "status": "available",
+      "soldOut": false,
+      "dailyStock": null,
+      "soldToday": 0,
+      "stockDate": "2026-09-02",
+      "sortOrder": 3
+    },
+    {
+      "id": 4,
+      "name": "香腸炒飯",
+      "price": 110,
+      "image": "images/sausage_rice.png",
+      "description": "",
+      "category": "rice",
+      "options": {
+        "large": true,
+        "doubleEgg": true,
+        "doubleShrimp": false
+      },
+      "status": "available",
+      "soldOut": false,
+      "dailyStock": null,
+      "soldToday": 0,
+      "stockDate": "2026-09-02",
+      "sortOrder": 4
+    },
+    {
+      "id": 5,
+      "name": "蝦仁炒飯",
+      "price": 110,
+      "image": "images/shrimp_rice.png",
+      "description": "",
+      "category": "rice",
+      "options": {
+        "large": true,
+        "doubleEgg": true,
+        "doubleShrimp": true
+      },
+      "status": "available",
+      "soldOut": false,
+      "dailyStock": null,
+      "soldToday": 0,
+      "stockDate": "2026-09-02",
+      "sortOrder": 5
+    },
+    {
+      "id": 6,
+      "name": "蝦仁炒麵",
+      "price": 110,
+      "image": "images/shrimp_noodle.png",
+      "description": "",
+      "category": "noodle",
+      "options": {
+        "large": true,
+        "doubleEgg": false,
+        "doubleShrimp": true
+      },
+      "status": "available",
+      "soldOut": false,
+      "dailyStock": null,
+      "soldToday": 0,
+      "stockDate": "2026-09-02",
+      "sortOrder": 6
+    },
+    {
+      "id": 7,
+      "name": "蝦仁米苔目",
+      "price": 110,
+      "image": "images/shrimp_rice_noodle.png",
+      "description": "",
+      "category": "noodle",
+      "options": {
+        "large": true,
+        "doubleEgg": false,
+        "doubleShrimp": true
+      },
+      "status": "available",
+      "soldOut": false,
+      "dailyStock": null,
+      "soldToday": 0,
+      "stockDate": "2026-09-02",
+      "sortOrder": 7
+    },
+    {
+      "id": 8,
+      "name": "鹹豬肉蓋飯",
+      "price": 130,
+      "image": "images/salted_pork_rice.png",
+      "description": "",
+      "category": "rice",
+      "options": {
+        "large": true,
+        "doubleEgg": true,
+        "doubleShrimp": false
+      },
+      "status": "available",
+      "soldOut": false,
+      "dailyStock": null,
+      "soldToday": 0,
+      "stockDate": "2026-09-02",
+      "sortOrder": 8
+    },
+    {
+      "id": 9,
+      "name": "鹹豬肉",
+      "price": 230,
+      "image": "images/salted_pork.png",
+      "description": "",
+      "category": "alacarte",
+      "options": {
+        "large": false,
+        "doubleEgg": false,
+        "doubleShrimp": false
+      },
+      "status": "available",
+      "soldOut": false,
+      "dailyStock": null,
+      "soldToday": 0,
+      "stockDate": "2026-09-02",
+      "sortOrder": 9
+    },
+    {
+      "id": 10,
+      "name": "海帶芽蛋花湯",
+      "price": 25,
+      "image": "images/soup.png",
+      "description": "",
+      "category": "soup",
+      "options": {
+        "large": false,
+        "doubleEgg": false,
+        "doubleShrimp": false
+      },
+      "status": "available",
+      "soldOut": false,
+      "dailyStock": null,
+      "soldToday": 0,
+      "stockDate": "2026-09-02",
+      "sortOrder": 10
+    },
+    {
+      "id": 11,
+      "name": "荷包蛋",
+      "price": 15,
+      "image": "images/egg.png",
+      "description": "",
+      "category": "alacarte",
+      "options": {
+        "large": false,
+        "doubleEgg": false,
+        "doubleShrimp": false
+      },
+      "status": "available",
+      "soldOut": false,
+      "dailyStock": null,
+      "soldToday": 1,
+      "stockDate": "2026-09-02",
+      "sortOrder": 11
+    }
+  ]
+}

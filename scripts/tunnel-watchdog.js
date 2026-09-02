@@ -23,7 +23,7 @@ const APP_PORT = 3000;
 const POLL_INTERVAL_MS = 10000;
 const URL_PATTERN = /https:\/\/[a-z0-9-]+\.trycloudflare\.com/g;
 
-const FILES = ['server.js', 'merchant.html', 'index.html', 'cart.html'].map(f => path.join(ROOT, f));
+const FILES = ['server.js', 'merchant.html', 'index.html', 'cart.html', 'order-detail.html'].map(f => path.join(ROOT, f));
 
 function log(msg) {
     console.log(`[${new Date().toISOString()}] ${msg}`);
