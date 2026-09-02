@@ -14,14 +14,17 @@ const MENU_FILE = path.join(__dirname, 'menu.json');
 const SETTINGS_FILE = path.join(__dirname, 'settings.json');
 const AUDIT_FILE = path.join(__dirname, 'audit-log.json');
 const AUDIT_LIMIT = 500;
+const UPLOAD_DIR = path.join(__dirname, 'images', 'uploads');
+const MAX_IMAGE_BYTES = 3 * 1024 * 1024;
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 const LINE_CHANNEL_ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN || 'UOk7R1DiDvRXXUxHwy/nDjspTVgC3ZzAYYRTWMO96rHgOycTbmPXUV/qtLwNa0r5+lCXvBGCcc3WHVHesgHxUd8gxwaoPMwaQuPuOT/PpzyCVMCgQdAboLV8waAZHmIXPRaeq6iMYHuECM+WY2jghQdB04t89/1O/w1cDnyilFU=';
 const adminSessions = new Set();
 
 app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+// 菜單照片是以 base64 夾在 JSON 裡上傳，所以要放寬預設的 100kb 上限
+app.use(bodyParser.json({ limit: '8mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '8mb' }));
 app.use(express.static(__dirname));
 
 // ==========================================
@@ -656,6 +659,38 @@ app.delete('/api/admin/menu/:id', requireAdmin, (req, res) => {
     writeMenu(menu);
     logAudit('menu.deleted', removed.name, `刪除商品，原售價 $${removed.price}`);
     res.json({ ok: true });
+});
+
+// 菜單照片上傳：前端已先用 canvas 裁切成客人端顯示規格，這裡只負責存檔
+app.post('/api/admin/menu/upload', requireAdmin, (req, res) => {
+    const dataUrl = String(req.body.image || '');
+    const match = dataUrl.match(/^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/);
+
+    if (!match) {
+        return res.status(400).json({ message: '圖片格式不支援，請上傳 JPG、PNG 或 WebP' });
+    }
+
+    const buffer = Buffer.from(match[2], 'base64');
+    if (!buffer.length) {
+        return res.status(400).json({ message: '圖片內容是空的' });
+    }
+    if (buffer.length > MAX_IMAGE_BYTES) {
+        return res.status(413).json({ message: '圖片超過 3MB，請換一張' });
+    }
+
+    try {
+        fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+        const extension = match[1] === 'png' ? 'png' : match[1] === 'webp' ? 'webp' : 'jpg';
+        const filename = `${todayKey()}-${uuidv4().slice(0, 8)}.${extension}`;
+        fs.writeFileSync(path.join(UPLOAD_DIR, filename), buffer);
+
+        const relativePath = `images/uploads/${filename}`;
+        logAudit('menu.image_uploaded', relativePath, `上傳菜單照片（${Math.round(buffer.length / 1024)} KB）`);
+        res.status(201).json({ ok: true, path: relativePath });
+    } catch (error) {
+        console.error('[Upload] 儲存失敗:', error.message);
+        res.status(500).json({ message: '圖片儲存失敗' });
+    }
 });
 
 // ==========================================

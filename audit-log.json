@@ -1,5 +1,61 @@
 [
   {
+    "id": "8ebb9c8f-3549-4c65-961c-16614fc65ad0",
+    "at": "2026-09-02T04:12:49.468Z",
+    "user": "admin",
+    "action": "menu.image_uploaded",
+    "target": "images/uploads/2026-09-02-fb9050d3.jpg",
+    "detail": "上傳菜單照片（6 KB）"
+  },
+  {
+    "id": "9455824a-7cc9-4dcf-a9ab-30de0e8dc4cc",
+    "at": "2026-09-02T04:10:13.358Z",
+    "user": "admin",
+    "action": "menu.image_uploaded",
+    "target": "images/uploads/2026-09-02-ed870e18.jpg",
+    "detail": "上傳菜單照片（207 KB）"
+  },
+  {
+    "id": "431fed53-a470-4c54-bdc5-76cd32737a22",
+    "at": "2026-09-02T03:55:39.750Z",
+    "user": "admin",
+    "action": "order.status_changed",
+    "target": "#588FE5",
+    "detail": "狀態改為 製作中，已通知客人"
+  },
+  {
+    "id": "987d96b0-f4b6-4194-a7f9-69557582c577",
+    "at": "2026-09-02T03:55:10.322Z",
+    "user": "admin",
+    "action": "order.status_changed",
+    "target": "#81E1AC",
+    "detail": "狀態改為 已完成"
+  },
+  {
+    "id": "cf66771e-72cd-4f18-926b-30e0ba9da90d",
+    "at": "2026-09-02T03:54:17.684Z",
+    "user": "admin",
+    "action": "order.status_changed",
+    "target": "#81E1AC",
+    "detail": "狀態改為 製作中"
+  },
+  {
+    "id": "8bb5207a-c495-49d4-88ec-51d43a71c118",
+    "at": "2026-09-02T03:49:55.006Z",
+    "user": "admin",
+    "action": "settings.updated",
+    "target": "門店設定",
+    "detail": "phone → 033812828、備餐時間 15 → 30 分鐘、調整營業時間"
+  },
+  {
+    "id": "60eca74a-5db9-4459-8d57-b83247e76f38",
+    "at": "2026-09-02T03:47:06.863Z",
+    "user": "admin",
+    "action": "order.status_changed",
+    "target": "#E0DF39",
+    "detail": "狀態改為 已取消，已通知客人"
+  },
+  {
     "id": "3cf9a59e-5717-49fa-aa44-024561ddaf2a",
     "at": "2026-09-02T03:43:14.387Z",
     "user": "admin",

@@ -122,11 +122,12 @@
     width: 54px; height: 54px;
     border-radius: 16px;
     display: grid; place-items: center;
-    font-size: 27px;
     background: linear-gradient(135deg, var(--brand), #ff9a6b);
     box-shadow: 0 8px 20px rgba(255, 107, 107, .38);
     margin-bottom: 16px;
+    color: #fff;
   }
+  .login-logo svg { width: 28px; height: 28px; }
 
   .login-card h1 { font-size: 1.42rem; font-weight: 900; letter-spacing: -.02em; }
   .login-card .sub { color: var(--ink-3); font-size: .9rem; margin-top: 5px; }
@@ -173,6 +174,13 @@
   .btn-ghost   { border: 1.5px solid var(--line); background: #fff; color: var(--ink-2); }
   .btn-ghost:hover:not(:disabled) { border-color: var(--ink-3); }
   .btn-sm      { padding: 7px 11px; font-size: .82rem; border-radius: 9px; }
+
+  /* 鈴聲還沒開啟時要很明顯，否則店家會漏接單 */
+  .btn.sound-off { animation: soundWarn 1.6s ease-in-out infinite; }
+  @keyframes soundWarn {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, .45); }
+    50%      { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
+  }
   .btn-block   { width: 100%; }
 
   .error-text { color: #b91c1c; font-size: .86rem; font-weight: 700; min-height: 19px; margin-top: 11px; }
@@ -203,10 +211,12 @@
   .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 16px; }
   .brand-mark {
     width: 36px; height: 36px; border-radius: 11px;
-    display: grid; place-items: center; font-size: 19px;
+    display: grid; place-items: center;
     background: linear-gradient(135deg, var(--brand), #ff9a6b);
     box-shadow: 0 4px 12px rgba(255, 107, 107, .32);
+    color: #fff;
   }
+  .brand-mark svg { width: 20px; height: 20px; }
   .brand-name { font-weight: 900; font-size: .98rem; letter-spacing: -.01em; }
   .brand-sub  { font-size: .72rem; color: var(--ink-3); margin-top: 1px; }
 
@@ -341,10 +351,18 @@
     width: 34px; height: 34px;
     border-radius: 10px;
     display: grid; place-items: center;
-    font-size: 17px;
     background: var(--accent, var(--brand-soft));
     margin-bottom: 11px;
+    color: var(--accent-ink, var(--ink-2));
   }
+  .stat-ico svg { width: 18px; height: 18px; }
+
+  /* 通用 icon 尺寸 */
+  .btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .menu-toggle svg { width: 21px; height: 21px; display: block; }
+  .close-btn svg { width: 18px; height: 18px; display: block; }
+  .empty .ico svg { width: 34px; height: 34px; opacity: .5; }
+  .tl-title svg { width: 15px; height: 15px; vertical-align: -2px; margin-right: 3px; }
   .stat-label { position: relative; font-size: .8rem; font-weight: 700; color: var(--ink-3); }
   .stat-value { position: relative; font-size: 1.62rem; font-weight: 900; letter-spacing: -.03em; margin-top: 3px; }
   .stat-foot  { position: relative; font-size: .76rem; color: var(--ink-3); margin-top: 5px; }
@@ -640,6 +658,44 @@
   .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; }
   .form-grid .full { grid-column: 1 / -1; }
   .check-row { display: flex; align-items: center; gap: 9px; padding: 9px 0; font-size: .89rem; font-weight: 700; }
+
+  /* ---------------- 照片上傳 ---------------- */
+  .upload-zone {
+    border: 1.5px dashed var(--line);
+    border-radius: var(--radius-sm);
+    padding: 13px;
+    transition: border-color .2s, background .2s;
+  }
+  .upload-zone.dragging { border-color: var(--brand); background: var(--brand-soft); }
+
+  /* 預覽框刻意跟客人端商品卡一樣是 4:3 + cover，看到的就是客人會看到的 */
+  .upload-preview {
+    position: relative;
+    width: 100%;
+    max-width: 300px;
+    aspect-ratio: 4 / 3;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: #f1f4f8;
+    margin-bottom: 11px;
+  }
+  .upload-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  .upload-placeholder {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;
+    color: var(--ink-3); font-size: .84rem; font-weight: 700;
+  }
+  .upload-placeholder svg { width: 30px; height: 30px; opacity: .55; }
+
+  .upload-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .upload-busy {
+    position: absolute; inset: 0;
+    display: grid; place-items: center;
+    background: rgba(255, 255, 255, .72);
+  }
+  .upload-busy .spinner { width: 22px; height: 22px; border-color: rgba(255, 107, 107, .3); border-top-color: var(--brand); }
   .check-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--brand); cursor: pointer; }
 
   /* ==========================================================
@@ -735,7 +791,7 @@
   <div class="blob b1"></div>
   <div class="blob b2"></div>
   <form class="login-card" id="login-form">
-    <div class="login-logo">🍳</div>
+    <div class="login-logo" data-icon="brand"></div>
     <h1>邱媽媽美食</h1>
     <div class="sub">後台管理系統</div>
 
@@ -754,7 +810,7 @@
 <div class="app" id="app">
   <aside class="sidebar" id="sidebar">
     <div class="brand">
-      <div class="brand-mark">🍳</div>
+      <div class="brand-mark" data-icon="brand"></div>
       <div>
         <div class="brand-name">邱媽媽美食</div>
         <div class="brand-sub">後台管理</div>
@@ -771,7 +827,7 @@
 
   <div class="main">
     <header class="topbar">
-      <button class="menu-toggle" id="menu-toggle">☰</button>
+      <button class="menu-toggle" id="menu-toggle" data-icon="hamburger" aria-label="開啟選單"></button>
       <div class="page-title" id="page-title">儀表板</div>
 
       <div class="topbar-actions">
@@ -780,8 +836,9 @@
           <span id="conn-text">連線中</span>
         </div>
         <button class="btn btn-ok btn-sm" id="store-toggle">上線</button>
-        <button class="btn btn-soft btn-sm" id="sound-btn">🔔 <span class="label-text">啟用提醒聲</span></button>
-        <button class="btn btn-soft btn-sm" id="refresh-btn">↻ <span class="label-text">重新整理</span></button>
+        <button class="btn btn-danger btn-sm sound-off" id="sound-btn"><span data-icon="bellOff"></span> <span class="label-text">開啟接單鈴聲</span></button>
+        <button class="btn btn-soft btn-sm" id="sound-test"><span data-icon="bell"></span> <span class="label-text">試聽</span></button>
+        <button class="btn btn-soft btn-sm" id="refresh-btn"><span data-icon="refresh"></span> <span class="label-text">重新整理</span></button>
       </div>
     </header>
 
@@ -890,7 +947,7 @@
             </table>
           </div>
           <div class="empty" id="menu-empty" style="display:none;">
-            <div class="ico">🍽️</div>
+            <div class="ico" data-icon="utensils"></div>
             <div>沒有符合條件的商品</div>
           </div>
         </div>
@@ -931,8 +988,8 @@
           <input class="field" type="date" id="report-to" style="width:auto;" />
           <button class="btn btn-primary btn-sm" id="report-apply">查詢</button>
           <div style="margin-left:auto; display:flex; gap:8px;">
-            <button class="btn btn-ghost btn-sm" data-export="daily">⭳ 匯出日報 CSV</button>
-            <button class="btn btn-ghost btn-sm" data-export="products">⭳ 匯出商品 CSV</button>
+            <button class="btn btn-ghost btn-sm" data-export="daily"><span data-icon="download"></span> 匯出日報 CSV</button>
+            <button class="btn btn-ghost btn-sm" data-export="products"><span data-icon="download"></span> 匯出商品 CSV</button>
           </div>
         </div>
 
@@ -1043,7 +1100,7 @@
   <div class="modal" id="modal">
     <div class="modal-head">
       <div class="modal-title" id="modal-title"></div>
-      <button class="close-btn" id="modal-close">×</button>
+      <button class="close-btn" id="modal-close" data-icon="close" aria-label="關閉"></button>
     </div>
     <div class="modal-body" id="modal-body"></div>
     <div class="modal-foot" id="modal-foot"></div>
@@ -1058,6 +1115,12 @@
     : 'https://person-solid-resolution-unified.trycloudflare.com';
 
   const POLL_INTERVAL_MS = 3000;
+  // 限幅後的總增益。實測輸出峰值 = 0.749 × 增益，取 1.4 讓峰值落在 1.05，
+  // 也就是硬體滿刻度（最大音量）。再往上調只會被硬切成失真，不會更大聲。
+  const ALARM_MASTER_GAIN = 1.4;
+
+  // 客人端商品卡的圖片規格：4:3、寬 800（給 2 倍螢幕用）
+  const IMAGE_SPEC = { width: 800, height: 600, quality: 0.85 };
   const STATUS_LABELS = { pending: '待接單', preparing: '製作中', completed: '已完成', cancelled: '已取消' };
   const STATUS_COLORS = { pending: '#f59e0b', preparing: '#2563eb', completed: '#16a34a', cancelled: '#9ca3af' };
   const OPTION_KEYS = [
@@ -1066,7 +1129,27 @@
     { key: 'doubleShrimp', label: '加蝦' }
   ];
 
+  // 全站統一使用線條 icon（不用 emoji），24x24 viewBox、跟隨文字顏色
   const ICONS = {
+    brand: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 21h10"/><path d="M5 11a7 7 0 0 1 14 0z"/><path d="M12 4V2"/><path d="M6 15h12a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3z"/></svg>',
+    revenue: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 6.5c0-2-2.2-3-5-3s-5 .9-5 2.8c0 4.7 10 2.3 10 7 0 2-2.2 3.2-5 3.2s-5-1.1-5-3"/></svg>',
+    calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4"/><path d="M16 3v4"/></svg>',
+    avg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg>',
+    checkCircle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/></svg>',
+    xCircle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6"/><path d="m15 9-6 6"/></svg>',
+    alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.9 18a2 2 0 0 0 1.7 3h16.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>',
+    bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>',
+    bellOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.7 3.7A6 6 0 0 1 18 8c0 7 3 9 3 9H7"/><path d="M6 8a6 6 0 0 1 .3-1.8"/><path d="M3 17s3-2 3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/><path d="m2 2 20 20"/></svg>',
+    refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>',
+    download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M4 21h16"/></svg>',
+    hamburger: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg>',
+    utensils: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v6a2 2 0 0 0 4 0V3"/><path d="M6 11v10"/><path d="M17 3c-1.7 0-3 2.2-3 5s1 3 1.5 3H17"/><path d="M17 3v18"/></svg>',
+    trendUp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>',
+    bowl: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11h18a9 9 0 0 1-18 0z"/><path d="M8 7c0-1.5 1-2.5 1-4"/><path d="M13 7c0-1.5 1-2.5 1-4"/></svg>',
+    clipboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="4" width="10" height="4" rx="1"/><path d="M17 6h2a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h2"/><path d="M9 13h6"/><path d="M9 17h4"/></svg>',
+    image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="m4 18 4.5-4.5a2 2 0 0 1 2.8 0L20 20"/></svg>',
+    upload: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17V5"/><path d="m7 10 5-5 5 5"/><path d="M4 21h16"/></svg>',
+    close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 6 12 12"/><path d="m18 6-12 12"/></svg>',
     dashboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>',
     orders: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12l1.5 4.5H4.5z"/><path d="M5 6.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6.5"/><path d="M9 11h6"/></svg>',
     menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v16"/><path d="M8 4v6a2 2 0 0 1-4 0"/><path d="M17 4c-1.7 0-3 2.2-3 5s1 3 1.5 3H17"/><path d="M17 4v16"/></svg>',
@@ -1101,12 +1184,16 @@
   let orderTo = '';
   let storeIsOpen = true;
   let audioContext = null;
+  let masterGain = null;
+  let limiter = null;
   let alarmTimer = null;
   let soundEnabled = false;
   let knownPendingOrders = new Set();
   let freshOrderNumbers = new Set();
   let lastOrdersSignature = '';
   let lastDashSignature = '';
+  let pendingImageDataUrl = ''; // 已裁切、等待儲存時才上傳的照片
+  let imageCleared = false;
 
   /* ---------------- helpers ---------------- */
   const authHeaders = () => (token ? { Authorization: `Bearer ${token}` } : {});
@@ -1229,10 +1316,10 @@
 
   function renderDashboard(data) {
     const cards = [
-      { label: '今日營業額', value: data.today.revenue, prefix: '$', icon: '💰', accent: '#fff1f1', foot: `已完成 ${data.today.completed} 筆` },
-      { label: '今日訂單', value: data.today.orders, icon: '🧾', accent: '#dbeafe', foot: `取消 ${data.today.cancelled} 筆` },
-      { label: '平均客單價', value: data.today.avgOrderValue, prefix: '$', icon: '📊', accent: '#dcfce7', foot: '今日已完成訂單平均' },
-      { label: '本月營業額', value: data.summary.month.revenue, prefix: '$', icon: '📅', accent: '#fef3c7', foot: `${data.summary.month.count} 筆完成` }
+      { label: '今日營業額', value: data.today.revenue, prefix: '$', icon: 'revenue', accent: '#fff1f1', accentInk: '#c2410c', foot: `已完成 ${data.today.completed} 筆` },
+      { label: '今日訂單', value: data.today.orders, icon: 'orders', accent: '#dbeafe', accentInk: '#1d4ed8', foot: `取消 ${data.today.cancelled} 筆` },
+      { label: '平均客單價', value: data.today.avgOrderValue, prefix: '$', icon: 'avg', accent: '#dcfce7', accentInk: '#15803d', foot: '今日已完成訂單平均' },
+      { label: '本月營業額', value: data.summary.month.revenue, prefix: '$', icon: 'calendar', accent: '#fef3c7', accentInk: '#a16207', foot: `${data.summary.month.count} 筆完成` }
     ];
 
     const container = $('dash-stats');
@@ -1240,8 +1327,8 @@
 
     if (isFirst) {
       container.innerHTML = cards.map(card => `
-        <div class="stat-card" style="--accent:${card.accent}">
-          <div class="stat-ico">${card.icon}</div>
+        <div class="stat-card" style="--accent:${card.accent}; --accent-ink:${card.accentInk}">
+          <div class="stat-ico">${ICONS[card.icon]}</div>
           <div class="stat-label">${card.label}</div>
           <div class="stat-value" data-value="0">0</div>
           <div class="stat-foot">${escapeHtml(card.foot)}</div>
@@ -1267,7 +1354,7 @@
   // SVG 折線圖：路徑用 stroke-dashoffset 畫出來，圓點依序彈出
   function renderTrendChart(container, trend) {
     if (!trend || !trend.length) {
-      container.innerHTML = '<div class="empty"><div class="ico">📈</div><div>還沒有資料</div></div>';
+      container.innerHTML = `<div class="empty"><div class="ico">${ICONS.trendUp}</div><div>還沒有資料</div></div>`;
       return;
     }
 
@@ -1329,7 +1416,7 @@
     const container = $('status-donut');
 
     if (!total) {
-      container.innerHTML = '<div class="empty"><div class="ico">🧾</div><div>還沒有訂單</div></div>';
+      container.innerHTML = `<div class="empty"><div class="ico">${ICONS.orders}</div><div>還沒有訂單</div></div>`;
       return;
     }
 
@@ -1367,7 +1454,7 @@
     const container = $('top-products');
 
     if (!products || !products.length) {
-      container.innerHTML = '<div class="empty"><div class="ico">🍜</div><div>還沒有銷售資料</div></div>';
+      container.innerHTML = `<div class="empty"><div class="ico">${ICONS.bowl}</div><div>還沒有銷售資料</div></div>`;
       return;
     }
 
@@ -1391,7 +1478,7 @@
     const container = $('stock-alerts');
 
     if (!alerts || !alerts.length) {
-      container.innerHTML = '<div class="empty"><div class="ico">✅</div><div>目前沒有庫存警示</div></div>';
+      container.innerHTML = `<div class="empty"><div class="ico">${ICONS.checkCircle}</div><div>目前沒有庫存警示</div></div>`;
       return;
     }
 
@@ -1493,7 +1580,7 @@
     const container = $('orders');
 
     if (!visible.length) {
-      container.innerHTML = '<div class="empty"><div class="ico">🧾</div><div>這個分類目前沒有訂單</div></div>';
+      container.innerHTML = `<div class="empty"><div class="ico">${ICONS.orders}</div><div>這個分類目前沒有訂單</div></div>`;
       return;
     }
 
@@ -1564,7 +1651,7 @@
 
     const pushes = (order.customerNotifications || []).map((entry, index) => `
       <div class="tl-item" style="animation-delay:${index * 60}ms">
-        <div class="tl-title">${entry.sent ? '✅ 已推播' : '⚠️ 推播失敗'}：${escapeHtml(entry.message || '')}</div>
+        <div class="tl-title">${entry.sent ? ICONS.checkCircle + ' 已推播' : ICONS.alert + ' 推播失敗'}：${escapeHtml(entry.message || '')}</div>
         <div class="tl-meta">${formatTime(entry.at)}</div>
         ${entry.sent ? '' : `<div class="tl-detail">${escapeHtml(entry.reason || '')}</div>`}
       </div>
@@ -1681,8 +1768,123 @@
     }).join('');
   }
 
+  // 客人端商品卡是 4:3（.item-image-wrapper 的 padding-top:75%）＋ object-fit: cover，
+  // 這裡用同樣的比例與裁切方式先在瀏覽器處理好，上傳的檔案就已經是最終規格。
+  function resizeImageToSpec(file) {
+    return new Promise((resolve, reject) => {
+      if (!file.type.startsWith('image/')) {
+        reject(new Error('請選擇圖片檔'));
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('讀取檔案失敗'));
+      reader.onload = () => {
+        const image = new Image();
+        image.onerror = () => reject(new Error('這個圖片檔無法解析'));
+        image.onload = () => {
+          const { width, height, quality } = IMAGE_SPEC;
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+
+          const context = canvas.getContext('2d');
+          context.fillStyle = '#ffffff'; // 透明 PNG 轉 JPEG 後不要變黑底
+          context.fillRect(0, 0, width, height);
+
+          // 等比放大到足以填滿 4:3，再置中裁掉溢出的部分（等同 object-fit: cover）
+          const scale = Math.max(width / image.width, height / image.height);
+          const drawWidth = image.width * scale;
+          const drawHeight = image.height * scale;
+          context.drawImage(image, (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight);
+
+          resolve({
+            dataUrl: canvas.toDataURL('image/jpeg', quality),
+            original: { width: image.width, height: image.height }
+          });
+        };
+        image.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleImagePick(file) {
+    const preview = $('m-preview');
+    const hint = $('m-upload-hint');
+
+    try {
+      const busy = document.createElement('div');
+      busy.className = 'upload-busy';
+      busy.innerHTML = '<span class="spinner"></span>';
+      preview.appendChild(busy);
+
+      const { dataUrl, original } = await resizeImageToSpec(file);
+      pendingImageDataUrl = dataUrl;
+
+      const kb = Math.round((dataUrl.length * 3 / 4) / 1024);
+      preview.innerHTML = `<img src="${dataUrl}" alt="">`;
+      hint.textContent = `已裁切：${original.width}×${original.height} → ${IMAGE_SPEC.width}×${IMAGE_SPEC.height}（約 ${kb} KB），按下方「儲存」才會正式套用。`;
+      $('m-clear').disabled = false;
+    } catch (error) {
+      preview.querySelector('.upload-busy')?.remove();
+      toast(error.message, 'error');
+    }
+  }
+
+  function bindImageUpload() {
+    const zone = $('m-upload-zone');
+    const fileInput = $('m-file');
+    if (!zone || !fileInput) return;
+
+    $('m-pick').addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files && fileInput.files[0]) handleImagePick(fileInput.files[0]);
+    });
+
+    $('m-clear').addEventListener('click', () => {
+      pendingImageDataUrl = '';
+      imageCleared = true;
+      $('m-preview').innerHTML = `<div class="upload-placeholder">${ICONS.image}<span>尚未設定照片</span></div>`;
+      $('m-clear').disabled = true;
+    });
+
+    ['dragenter', 'dragover'].forEach(type => {
+      zone.addEventListener(type, event => {
+        event.preventDefault();
+        zone.classList.add('dragging');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(type => {
+      zone.addEventListener(type, event => {
+        event.preventDefault();
+        zone.classList.remove('dragging');
+      });
+    });
+
+    zone.addEventListener('drop', event => {
+      const file = event.dataTransfer?.files?.[0];
+      if (file) handleImagePick(file);
+    });
+  }
+
+  async function uploadPendingImage() {
+    if (!pendingImageDataUrl) return null;
+
+    const data = await requestJson(`${BACKEND_BASE_URL}/api/admin/menu/upload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: pendingImageDataUrl })
+    });
+    return data.path;
+  }
+
   function openMenuEditor(itemId) {
     const item = itemId ? menuItems.find(entry => entry.id === itemId) : null;
+    pendingImageDataUrl = '';
+    imageCleared = false;
 
     openModal(item ? `編輯：${item.name}` : '新增商品', `
       <div class="form-grid">
@@ -1703,8 +1905,22 @@
           </select>
         </div>
         <div class="full">
-          <label for="m-image">圖片路徑</label>
-          <input class="field" id="m-image" placeholder="images/xxx.png" value="${escapeHtml(item?.image || '')}" />
+          <label>商品照片</label>
+          <div class="upload-zone" id="m-upload-zone">
+            <div class="upload-preview" id="m-preview">
+              ${item?.image
+                ? `<img src="${escapeHtml(item.image)}" alt="" onerror="this.style.display='none'">`
+                : `<div class="upload-placeholder">${ICONS.image}<span>尚未設定照片</span></div>`}
+            </div>
+            <div class="upload-actions">
+              <button type="button" class="btn btn-ghost btn-sm" id="m-pick">${ICONS.upload} 選擇照片</button>
+              <button type="button" class="btn btn-soft btn-sm" id="m-clear" ${item?.image ? '' : 'disabled'}>移除</button>
+              <input type="file" id="m-file" accept="image/jpeg,image/png,image/webp" hidden />
+            </div>
+            <div class="hint" id="m-upload-hint">
+              上傳後會自動裁切成 ${IMAGE_SPEC.width}×${IMAGE_SPEC.height}（4:3），跟客人端的商品卡完全一致，也可以直接把圖片拖進來。
+            </div>
+          </div>
         </div>
         <div class="full">
           <label for="m-desc">商品描述</label>
@@ -1730,7 +1946,6 @@
             name: $('m-name').value.trim(),
             price: Number($('m-price').value),
             category: $('m-category').value,
-            image: $('m-image').value.trim(),
             description: $('m-desc').value.trim(),
             options: Object.fromEntries(OPTION_KEYS.map(option => [option.key, $(`m-opt-${option.key}`).checked]))
           };
@@ -1739,6 +1954,11 @@
             toast('請填寫品名與售價', 'error');
             return;
           }
+
+          // 有選新照片就先上傳拿到路徑；按過「移除」就清空；都沒動則沿用原本的照片
+          const uploadedPath = await uploadPendingImage();
+          if (uploadedPath) payload.image = uploadedPath;
+          else if (imageCleared) payload.image = '';
 
           await requestJson(`${BACKEND_BASE_URL}/api/admin/menu${item ? `/${item.id}` : ''}`, {
             method: item ? 'PATCH' : 'POST',
@@ -1752,6 +1972,9 @@
         }
       }
     ]);
+
+    // 上傳元件要等 Modal 內容渲染完才綁事件
+    bindImageUpload();
   }
 
   /* ---------------- 庫存 ---------------- */
@@ -1818,16 +2041,16 @@
 
   function renderReport(report) {
     const cards = [
-      { label: '營業額', value: report.totals.revenue, prefix: '$', icon: '💰', accent: '#fff1f1' },
-      { label: '完成訂單', value: report.totals.completed, icon: '✅', accent: '#dcfce7' },
-      { label: '取消訂單', value: report.totals.cancelled, icon: '🚫', accent: '#fee2e2' },
-      { label: '平均客單價', value: report.totals.avgOrderValue, prefix: '$', icon: '📊', accent: '#dbeafe' }
+      { label: '營業額', value: report.totals.revenue, prefix: '$', icon: 'revenue', accent: '#fff1f1', accentInk: '#c2410c' },
+      { label: '完成訂單', value: report.totals.completed, icon: 'checkCircle', accent: '#dcfce7', accentInk: '#15803d' },
+      { label: '取消訂單', value: report.totals.cancelled, icon: 'xCircle', accent: '#fee2e2', accentInk: '#b91c1c' },
+      { label: '平均客單價', value: report.totals.avgOrderValue, prefix: '$', icon: 'avg', accent: '#dbeafe', accentInk: '#1d4ed8' }
     ];
 
     const container = $('report-stats');
     container.innerHTML = cards.map(card => `
-      <div class="stat-card" style="--accent:${card.accent}">
-        <div class="stat-ico">${card.icon}</div>
+      <div class="stat-card" style="--accent:${card.accent}; --accent-ink:${card.accentInk}">
+        <div class="stat-ico">${ICONS[card.icon]}</div>
         <div class="stat-label">${card.label}</div>
         <div class="stat-value" data-value="0">0</div>
       </div>
@@ -1949,7 +2172,7 @@
             <div class="tl-detail">${escapeHtml(entry.detail)}</div>
           </div>
         `).join('')
-      : '<div class="empty"><div class="ico">📝</div><div>還沒有操作紀錄</div></div>';
+      : `<div class="empty"><div class="ico">${ICONS.clipboard}</div><div>還沒有操作紀錄</div></div>`;
   }
 
   /* ---------------- Modal ---------------- */
@@ -1982,38 +2205,83 @@
     $('modal-backdrop').classList.remove('open');
   }
 
-  /* ---------------- 提醒聲 ---------------- */
-  function playBeep() {
-    if (!soundEnabled || !audioContext) return;
+  /* ---------------- 接單鈴聲（最大音量警報）---------------- */
+  // 訊號鏈：多顆方波振盪器 → 每聲的音量包封 → 限幅壓縮器 → 總音量放大
+  // 壓縮器先把峰值壓住，再用 masterGain 放大，可以在不爆音的前提下把音壓拉到最大。
+  function buildAudioGraph() {
+    if (limiter) return;
 
-    const oscillator = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    oscillator.type = 'square';
-    oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
-    gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.22, audioContext.currentTime + 0.03);
-    gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.25);
-    oscillator.connect(gain);
-    gain.connect(audioContext.destination);
-    oscillator.start();
-    oscillator.stop(audioContext.currentTime + 0.28);
+    limiter = audioContext.createDynamicsCompressor();
+    limiter.threshold.value = -10;
+    limiter.knee.value = 0;
+    limiter.ratio.value = 20;
+    limiter.attack.value = 0.001;
+    limiter.release.value = 0.08;
+
+    masterGain = audioContext.createGain();
+    masterGain.gain.value = ALARM_MASTER_GAIN;
+
+    limiter.connect(masterGain);
+    masterGain.connect(audioContext.destination);
+  }
+
+  // 一次三短聲的警報，每聲疊 4 個泛音並做頻率上下擺盪，穿透力比單純 beep 高很多
+  function playAlarmBurst() {
+    if (!soundEnabled || !audioContext) return;
+    buildAudioGraph();
+
+    const base = audioContext.currentTime + 0.02;
+
+    [0, 0.24, 0.48].forEach(offset => {
+      const start = base + offset;
+      const end = start + 0.2;
+
+      const envelope = audioContext.createGain();
+      envelope.gain.setValueAtTime(0.0001, start);
+      envelope.gain.exponentialRampToValueAtTime(1, start + 0.008);
+      envelope.gain.setValueAtTime(1, end - 0.03);
+      envelope.gain.exponentialRampToValueAtTime(0.0001, end);
+      envelope.connect(limiter);
+
+      [880, 1320, 1760, 2640].forEach((frequency, index) => {
+        const oscillator = audioContext.createOscillator();
+        oscillator.type = 'square';
+        oscillator.frequency.setValueAtTime(frequency, start);
+        oscillator.frequency.linearRampToValueAtTime(frequency * 1.2, start + 0.1);
+        oscillator.frequency.linearRampToValueAtTime(frequency, end);
+
+        const partial = audioContext.createGain();
+        partial.gain.value = 1 / (index + 1.4); // 高泛音壓低一點，避免只有刺耳感
+        oscillator.connect(partial);
+        partial.connect(envelope);
+
+        oscillator.start(start);
+        oscillator.stop(end + 0.02);
+      });
+    });
   }
 
   function speakNewOrder() {
-    if (!soundEnabled || !('speechSynthesis' in window)) { playBeep(); return; }
+    if (!('speechSynthesis' in window)) return;
 
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance('您有新訂單');
     utterance.lang = 'zh-TW';
-    utterance.rate = 0.95;
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    utterance.volume = 1; // 語音也開到最大
     window.speechSynthesis.speak(utterance);
-    playBeep();
+  }
+
+  function alarmCycle() {
+    playAlarmBurst();
+    speakNewOrder();
   }
 
   function startAlarm() {
     if (!soundEnabled || alarmTimer) return;
-    speakNewOrder();
-    alarmTimer = setInterval(speakNewOrder, 2200);
+    alarmCycle();
+    alarmTimer = setInterval(alarmCycle, 1800);
   }
 
   function stopAlarm() {
@@ -2022,12 +2290,30 @@
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
   }
 
+  function renderSoundButton() {
+    const button = $('sound-btn');
+
+    if (soundEnabled) {
+      button.className = 'btn btn-soft btn-sm';
+      button.innerHTML = `${ICONS.bell} <span class="label-text">鈴聲已開啟</span>`;
+      button.disabled = true;
+    } else {
+      button.className = 'btn btn-danger btn-sm sound-off';
+      button.innerHTML = `${ICONS.bellOff} <span class="label-text">開啟接單鈴聲</span>`;
+      button.disabled = false;
+    }
+  }
+
   async function enableSound() {
     audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
     await audioContext.resume();
+
+    // resume() 有可能被瀏覽器擋掉，狀態不是 running 就不算啟用成功
+    if (audioContext.state !== 'running') throw new Error('瀏覽器封鎖了音訊播放');
+
+    buildAudioGraph();
     soundEnabled = true;
-    $('sound-btn').innerHTML = '🔔 <span class="label-text">提醒聲已啟用</span>';
-    $('sound-btn').disabled = true;
+    renderSoundButton();
 
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
@@ -2151,8 +2437,34 @@
 
   $('sound-btn').addEventListener('click', () => {
     enableSound()
-      .then(() => { if (orders.some(order => order.status === 'pending')) startAlarm(); })
-      .catch(() => toast('提醒聲啟用失敗，請確認瀏覽器允許播放聲音', 'error'));
+      .then(() => {
+        toast('接單鈴聲已開啟', 'ok');
+        if (orders.some(order => order.status === 'pending')) startAlarm();
+      })
+      .catch(() => toast('鈴聲啟用失敗，請確認瀏覽器允許此網站播放聲音', 'error'));
+  });
+
+  $('sound-test').addEventListener('click', async () => {
+    try {
+      if (!soundEnabled) await enableSound();
+      alarmCycle();
+      toast('已播放測試鈴聲', 'ok');
+    } catch (error) {
+      toast('無法播放聲音，請確認瀏覽器允許此網站播放聲音', 'error');
+    }
+  });
+
+  // 瀏覽器規定音訊必須由使用者操作啟動，所以第一次點畫面任何地方就順手把鈴聲開起來，
+  // 避免店家重新載入頁面後忘記按按鈕、結果新訂單沒有響鈴。
+  document.addEventListener('pointerdown', function autoEnableSound() {
+    if (soundEnabled || !token) return;
+
+    enableSound()
+      .then(() => {
+        document.removeEventListener('pointerdown', autoEnableSound);
+        if (orders.some(order => order.status === 'pending')) startAlarm();
+      })
+      .catch(() => { /* 使用者手勢還不夠或被封鎖，下次點擊再試 */ });
   });
 
   $('refresh-btn').addEventListener('click', async () => {
@@ -2333,6 +2645,13 @@
 
   /* ---------------- 啟動 ---------------- */
   (function init() {
+    // 把 HTML 裡標了 data-icon 的位置填入對應的 SVG，icon 只維護 ICONS 這一份
+    document.querySelectorAll('[data-icon]').forEach(element => {
+      element.innerHTML = ICONS[element.dataset.icon] || '';
+    });
+
+    renderSoundButton();
+
     const today = new Date();
     const monthAgo = new Date();
     monthAgo.setDate(monthAgo.getDate() - 29);
