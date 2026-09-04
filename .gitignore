@@ -1,2 +1,6 @@
 orders.json
 store-status.json
+vapid-keys.json
+push-subscriptions.json
+users.json
+order-counter.json

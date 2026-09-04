@@ -37,8 +37,8 @@
       "status": "available",
       "soldOut": false,
       "dailyStock": null,
-      "soldToday": 0,
-      "stockDate": "2026-09-02",
+      "soldToday": 13,
+      "stockDate": "2026-09-04",
       "sortOrder": 1
     },
     {
@@ -57,7 +57,7 @@
       "soldOut": false,
       "dailyStock": null,
       "soldToday": 0,
-      "stockDate": "2026-09-02",
+      "stockDate": "2026-09-04",
       "sortOrder": 2
     },
     {
@@ -75,8 +75,8 @@
       "status": "available",
       "soldOut": false,
       "dailyStock": null,
-      "soldToday": 1,
-      "stockDate": "2026-09-02",
+      "soldToday": 0,
+      "stockDate": "2026-09-04",
       "sortOrder": 3
     },
     {
@@ -95,7 +95,7 @@
       "soldOut": false,
       "dailyStock": null,
       "soldToday": 1,
-      "stockDate": "2026-09-02",
+      "stockDate": "2026-09-04",
       "sortOrder": 4
     },
     {
@@ -113,8 +113,8 @@
       "status": "available",
       "soldOut": false,
       "dailyStock": null,
-      "soldToday": 3,
-      "stockDate": "2026-09-02",
+      "soldToday": 0,
+      "stockDate": "2026-09-04",
       "sortOrder": 5
     },
     {
@@ -132,8 +132,8 @@
       "status": "available",
       "soldOut": false,
       "dailyStock": null,
-      "soldToday": 2,
-      "stockDate": "2026-09-02",
+      "soldToday": 0,
+      "stockDate": "2026-09-04",
       "sortOrder": 6
     },
     {
@@ -152,7 +152,7 @@
       "soldOut": false,
       "dailyStock": null,
       "soldToday": 0,
-      "stockDate": "2026-09-02",
+      "stockDate": "2026-09-04",
       "sortOrder": 7
     },
     {
@@ -171,7 +171,7 @@
       "soldOut": false,
       "dailyStock": null,
       "soldToday": 0,
-      "stockDate": "2026-09-02",
+      "stockDate": "2026-09-04",
       "sortOrder": 8
     },
     {
@@ -190,7 +190,7 @@
       "soldOut": false,
       "dailyStock": null,
       "soldToday": 0,
-      "stockDate": "2026-09-02",
+      "stockDate": "2026-09-04",
       "sortOrder": 9
     },
     {
@@ -208,8 +208,8 @@
       "status": "available",
       "soldOut": false,
       "dailyStock": null,
-      "soldToday": 0,
-      "stockDate": "2026-09-02",
+      "soldToday": 1,
+      "stockDate": "2026-09-04",
       "sortOrder": 10
     },
     {
@@ -227,8 +227,8 @@
       "status": "available",
       "soldOut": false,
       "dailyStock": null,
-      "soldToday": 1,
-      "stockDate": "2026-09-02",
+      "soldToday": 0,
+      "stockDate": "2026-09-04",
       "sortOrder": 11
     }
   ]

@@ -4,6 +4,11 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>邱媽媽美食 後台管理</title>
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#ff6b6b" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="邱媽媽接單" />
+<link rel="apple-touch-icon" href="images/logo.jpg" />
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
   /* ==========================================================
@@ -699,6 +704,253 @@
   .check-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--brand); cursor: pointer; }
 
   /* ==========================================================
+     滿版接單卡片（類似外送平台後台，必須按下才算接單）
+     ========================================================== */
+  @keyframes takeoverFlash {
+    0%, 100% { background: #b91c1c; }
+    50%      { background: #dc2626; }
+  }
+  @keyframes takeoverPulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 255, 255, .55); }
+    50%      { transform: scale(1.03); box-shadow: 0 0 0 22px rgba(255, 255, 255, 0); }
+  }
+  @keyframes takeoverIn {
+    from { opacity: 0; transform: translateY(28px) scale(.96); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .takeover {
+    position: fixed;
+    inset: 0;
+    z-index: 400;
+    display: none;
+    flex-direction: column;
+    animation: takeoverFlash 1s steps(1, end) infinite;
+    padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+    color: #fff;
+  }
+  .takeover.open { display: flex; }
+
+  .takeover-inner {
+    width: min(560px, 100%);
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 100%;
+    animation: takeoverIn .32s var(--ease-spring);
+  }
+
+  .takeover-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .takeover-kicker { font-size: .92rem; font-weight: 800; letter-spacing: .1em; opacity: .9; }
+  .takeover-count {
+    background: rgba(255, 255, 255, .22);
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: .84rem;
+    font-weight: 900;
+  }
+
+  .takeover-card {
+    background: #fff;
+    color: var(--ink);
+    border-radius: 18px;
+    padding: 18px;
+    overflow-y: auto;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, .35);
+  }
+
+  .takeover-no { font-size: 2.6rem; font-weight: 900; line-height: 1; letter-spacing: -.03em; }
+  .takeover-meta { color: var(--ink-3); font-size: .86rem; margin-top: 5px; }
+
+  .type-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 12px; border-radius: 999px;
+    font-size: .85rem; font-weight: 900;
+  }
+  .type-badge.instant { background: #fee2e2; color: #b91c1c; }
+  .type-badge.reserve { background: #dbeafe; color: #1d4ed8; }
+  .type-badge svg { width: 14px; height: 14px; }
+
+  .takeover-items { margin: 14px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+  .takeover-items li {
+    display: grid; grid-template-columns: minmax(0, 1fr) 46px 78px; gap: 8px;
+    padding: 10px 0; border-bottom: 1px solid var(--line); font-size: .95rem;
+  }
+  .takeover-items .qty { text-align: center; color: var(--ink-3); }
+  .takeover-items .price { text-align: right; font-weight: 800; }
+
+  .takeover-total {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 14px; font-size: 1.3rem; font-weight: 900;
+  }
+  .takeover-total .amount { color: var(--danger); }
+
+  .takeover-actions { display: grid; grid-template-columns: 1fr; gap: 9px; }
+  .btn-accept {
+    padding: 19px;
+    border-radius: 15px;
+    background: #fff;
+    color: #b91c1c;
+    font-size: 1.22rem;
+    font-weight: 900;
+    animation: takeoverPulse 1.15s ease-in-out infinite;
+  }
+  .btn-accept:active { transform: scale(.98); }
+  .btn-reject {
+    padding: 13px;
+    border-radius: 13px;
+    background: rgba(0, 0, 0, .28);
+    color: #fff;
+    font-size: .95rem;
+    font-weight: 800;
+  }
+  .takeover-hint { text-align: center; font-size: .8rem; opacity: .85; }
+
+  @media (max-width: 520px) {
+    .takeover-no { font-size: 2.1rem; }
+    .btn-accept { padding: 17px; font-size: 1.1rem; }
+  }
+
+  /* ==========================================================
+     互動回饋：漣漪、loading、成功/失敗
+     ========================================================== */
+  @keyframes ripple {
+    to { transform: scale(2.6); opacity: 0; }
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%      { transform: translateX(-5px); }
+    40%      { transform: translateX(5px); }
+    60%      { transform: translateX(-3px); }
+    80%      { transform: translateX(3px); }
+  }
+  @keyframes okPop {
+    0%   { transform: scale(0) rotate(-25deg); opacity: 0; }
+    60%  { transform: scale(1.2) rotate(0); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* 每個按鈕按下去都要看得到反應 */
+  .btn, .tab, .nav-item, .btn-accept, .btn-reject {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .ripple-dot {
+    position: absolute;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: .28;
+    pointer-events: none;
+    transform: scale(0);
+    animation: ripple .55s var(--ease-out) forwards;
+    z-index: 0;
+  }
+
+  /* loading 時鎖住寬度，避免文字換成轉圈導致按鈕跳動 */
+  .btn.is-loading {
+    color: transparent !important;
+    pointer-events: none;
+  }
+  .btn.is-loading > * { visibility: hidden; }
+  .btn.is-loading::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 15px; height: 15px;
+    border: 2px solid rgba(255, 255, 255, .35);
+    border-top-color: currentColor;
+    border-radius: 50%;
+    color: inherit;
+    animation: spin .65s linear infinite;
+    visibility: visible;
+  }
+  .btn-ghost.is-loading::after,
+  .btn-soft.is-loading::after,
+  .btn-danger.is-loading::after { border-color: rgba(0, 0, 0, .14); border-top-color: var(--ink-2); }
+
+  .btn.is-error { animation: shake .4s ease; }
+
+  .btn.is-done::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 15px; height: 9px;
+    border-left: 2.5px solid currentColor;
+    border-bottom: 2.5px solid currentColor;
+    border-radius: 1px;
+    transform: rotate(-45deg);
+    animation: okPop .34s var(--ease-spring);
+    visibility: visible;
+    color: inherit;
+  }
+  .btn.is-done { color: transparent !important; }
+  .btn.is-done > * { visibility: hidden; }
+
+  /* 大顆的接單鈕要有自己的 loading 樣式 */
+  .btn-accept.is-loading, .btn-reject.is-loading { color: transparent !important; pointer-events: none; }
+  .btn-accept.is-loading > *, .btn-reject.is-loading > * { visibility: hidden; }
+  .btn-accept.is-loading::after, .btn-reject.is-loading::after {
+    content: '';
+    position: absolute; inset: 0; margin: auto;
+    width: 24px; height: 24px;
+    border: 3px solid rgba(185, 28, 28, .25);
+    border-top-color: #b91c1c;
+    border-radius: 50%;
+    animation: spin .65s linear infinite;
+    visibility: visible;
+  }
+  .btn-reject.is-loading::after { border-color: rgba(255, 255, 255, .3); border-top-color: #fff; }
+  .btn-accept.is-loading { animation: none; }
+
+  /* 表格列 / 開關的忙碌狀態 */
+  tr.row-busy { opacity: .5; pointer-events: none; transition: opacity .2s; }
+  .switch.is-busy { opacity: .55; pointer-events: none; }
+
+  /* ==========================================================
+     接單流程動畫
+     ========================================================== */
+  @keyframes takeoverAccepted {
+    0%   { transform: scale(1); opacity: 1; }
+    35%  { transform: scale(1.04); }
+    100% { transform: scale(.9) translateY(-24px); opacity: 0; }
+  }
+  @keyframes takeoverOut {
+    to { opacity: 0; transform: scale(.96); }
+  }
+  @keyframes cardOut {
+    to { opacity: 0; transform: translateX(28px) scale(.97); max-height: 0; margin-bottom: -13px; padding-top: 0; padding-bottom: 0; }
+  }
+
+  /* 接單瞬間整張卡片放大再飛走，而不是直接消失 */
+  .takeover-inner.accepted { animation: takeoverAccepted .42s var(--ease-out) forwards; }
+  .takeover.closing { animation: takeoverOut .3s var(--ease-out) forwards; }
+  .takeover.closing, .takeover-inner.accepted { pointer-events: none; }
+
+  /* 綠色打勾閃一下，讓店家確定真的接到了 */
+  .accept-flash {
+    position: fixed;
+    inset: 0;
+    z-index: 420;
+    display: grid;
+    place-items: center;
+    background: rgba(22, 163, 74, .95);
+    animation: fadeIn .16s ease, fadeIn .3s ease .5s reverse forwards;
+    pointer-events: none;
+  }
+  .accept-flash svg { width: 96px; height: 96px; color: #fff; animation: okPop .45s var(--ease-spring); }
+
+  .order-card.removing { animation: cardOut .38s var(--ease-out) forwards; overflow: hidden; }
+
+  /* 檢視切換時先放骨架，不要一片空白 */
+  .sk-list { display: grid; gap: 12px; }
+  .sk-line { height: 13px; border-radius: 6px; }
+
+  /* ==========================================================
      Toast
      ========================================================== */
   .toasts { position: fixed; top: 16px; right: 16px; z-index: 300; display: flex; flex-direction: column; gap: 9px; pointer-events: none; }
@@ -838,6 +1090,7 @@
         <button class="btn btn-ok btn-sm" id="store-toggle">上線</button>
         <button class="btn btn-danger btn-sm sound-off" id="sound-btn"><span data-icon="bellOff"></span> <span class="label-text">開啟接單鈴聲</span></button>
         <button class="btn btn-soft btn-sm" id="sound-test"><span data-icon="bell"></span> <span class="label-text">試聽</span></button>
+        <button class="btn btn-danger btn-sm sound-off" id="push-btn"><span data-icon="phone"></span> <span class="label-text">開啟手機推播</span></button>
         <button class="btn btn-soft btn-sm" id="refresh-btn"><span data-icon="refresh"></span> <span class="label-text">重新整理</span></button>
       </div>
     </header>
@@ -905,6 +1158,12 @@
           <input class="field" type="date" id="order-to" style="width:auto;" />
           <button class="btn btn-soft btn-sm" id="order-clear">清除篩選</button>
         </div>
+
+        <nav class="tabs" id="order-type-tabs" style="margin-bottom:10px;">
+          <button class="tab active" data-type="all">全部類型</button>
+          <button class="tab" data-type="instant">即時單<span class="tab-count">0</span></button>
+          <button class="tab" data-type="reserve">預約單<span class="tab-count">0</span></button>
+        </nav>
 
         <nav class="tabs" id="order-tabs">
           <button class="tab active" data-status="pending">接單區<span class="tab-count">0</span></button>
@@ -1072,10 +1331,85 @@
             <label for="set-opt-shrimp">加蝦</label>
             <input class="field" type="number" id="set-opt-shrimp" min="0" />
           </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">新訂單提醒</div>
+                <div class="card-sub">未接單時要怎麼吵你</div>
+              </div>
+            </div>
+
+            <div class="check-row">
+              <label class="switch"><input type="checkbox" id="set-takeover"><span class="slider"></span></label>
+              <span>跳出滿版接單卡片</span>
+            </div>
+            <div class="hint">新訂單進來時蓋住整個後台畫面，持續閃爍與響鈴，按下「接單」才會消失。</div>
+
+            <label for="set-sound-repeat">警報聲重響間隔（秒）</label>
+            <input class="field" type="number" id="set-sound-repeat" min="2" max="60" />
+
+            <div class="check-row" style="margin-top:14px;">
+              <label class="switch"><input type="checkbox" id="set-push-repeat"><span class="slider"></span></label>
+              <span>未接單時持續重送推播</span>
+            </div>
+
+            <div class="form-grid">
+              <div>
+                <label for="set-push-interval">重送間隔（秒）</label>
+                <input class="field" type="number" id="set-push-interval" min="3" max="300" />
+              </div>
+              <div>
+                <label for="set-push-max">重送上限（分鐘）</label>
+                <input class="field" type="number" id="set-push-max" min="1" max="60" />
+              </div>
+            </div>
+            <div class="hint">間隔太短手機會很耗電，也可能被推播服務限流；建議 10 秒以上。</div>
+          </div>
         </div>
 
         <div style="display:flex; justify-content:flex-end; margin-top:16px;">
           <button class="btn btn-primary" id="settings-save">儲存設定</button>
+        </div>
+      </section>
+
+      <!-- ---------------- 帳號管理 ---------------- -->
+      <section class="view" id="view-users">
+        <div class="toolbar">
+          <button class="btn btn-primary btn-sm" id="user-add" style="margin-left:auto;">＋ 新增帳號</button>
+        </div>
+
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>帳號</th><th>顯示名稱</th><th>權限</th><th>建立時間</th><th style="text-align:right;">操作</th></tr>
+              </thead>
+              <tbody id="users-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card section-gap">
+          <div class="card-head">
+            <div>
+              <div class="card-title">我的帳號</div>
+              <div class="card-sub">修改自己的顯示名稱與密碼</div>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div>
+              <label for="me-display">顯示名稱</label>
+              <input class="field" id="me-display" />
+            </div>
+            <div>
+              <label for="me-password">新密碼（留空表示不變更）</label>
+              <input class="field" type="password" id="me-password" placeholder="至少 6 碼" />
+            </div>
+          </div>
+          <div style="display:flex; justify-content:flex-end; margin-top:14px;">
+            <button class="btn btn-primary btn-sm" id="me-save">儲存我的帳號</button>
+          </div>
         </div>
       </section>
 
@@ -1096,6 +1430,24 @@
 </div>
 
 <!-- ============================ Modal / Toast ============================ -->
+<!-- 滿版接單卡片：新訂單進來時蓋住整個畫面，一定要按下「接單」才會消失 -->
+<div class="takeover" id="takeover">
+  <div class="takeover-inner">
+    <div class="takeover-head">
+      <div class="takeover-kicker">新訂單待接單</div>
+      <div class="takeover-count" id="takeover-count"></div>
+    </div>
+
+    <div class="takeover-card" id="takeover-card"></div>
+
+    <div class="takeover-actions">
+      <button class="btn-accept" id="takeover-accept">接單</button>
+      <button class="btn-reject" id="takeover-reject">拒絕這張訂單</button>
+    </div>
+    <div class="takeover-hint" id="takeover-hint"></div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="modal-backdrop">
   <div class="modal" id="modal">
     <div class="modal-head">
@@ -1123,6 +1475,11 @@
   const IMAGE_SPEC = { width: 800, height: 600, quality: 0.85 };
   const STATUS_LABELS = { pending: '待接單', preparing: '製作中', completed: '已完成', cancelled: '已取消' };
   const STATUS_COLORS = { pending: '#f59e0b', preparing: '#2563eb', completed: '#16a34a', cancelled: '#9ca3af' };
+  const ORDER_TYPES = {
+    instant: { label: '即時單', icon: 'bolt' },
+    reserve: { label: '預約單', icon: 'clock' }
+  };
+
   const OPTION_KEYS = [
     { key: 'large', label: '加大' },
     { key: 'doubleEgg', label: '雙蛋' },
@@ -1150,6 +1507,11 @@
     image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="m4 18 4.5-4.5a2 2 0 0 1 2.8 0L20 20"/></svg>',
     upload: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17V5"/><path d="m7 10 5-5 5 5"/><path d="M4 21h16"/></svg>',
     close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 6 12 12"/><path d="m18 6-12 12"/></svg>',
+    bolt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>',
+    clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>',
+    users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16.5 5.2a3.2 3.2 0 0 1 0 5.6"/><path d="M18 14.3a6.5 6.5 0 0 1 3.5 5.7"/></svg>',
+    phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18.5h2"/></svg>',
+    share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m8 7 4-4 4 4"/><path d="M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg>',
     dashboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>',
     orders: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12l1.5 4.5H4.5z"/><path d="M5 6.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6.5"/><path d="M9 11h6"/></svg>',
     menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v16"/><path d="M8 4v6a2 2 0 0 1-4 0"/><path d="M17 4c-1.7 0-3 2.2-3 5s1 3 1.5 3H17"/><path d="M17 4v16"/></svg>',
@@ -1165,7 +1527,8 @@
     { id: 'menu', name: '菜單管理', icon: 'menu' },
     { id: 'stock', name: '庫存', icon: 'stock' },
     { id: 'reports', name: '報表', icon: 'reports' },
-    { id: 'settings', name: '門店設定', icon: 'settings' },
+    { id: 'settings', name: '門店設定', icon: 'settings', ownerOnly: true },
+    { id: 'users', name: '帳號管理', icon: 'users', ownerOnly: true },
     { id: 'audit', name: '操作紀錄', icon: 'audit' }
   ];
 
@@ -1194,6 +1557,11 @@
   let lastDashSignature = '';
   let pendingImageDataUrl = ''; // 已裁切、等待儲存時才上傳的照片
   let imageCleared = false;
+  let pushSubscribed = false;
+  let currentUser = null;
+  let alertSettings = { takeoverEnabled: true, soundRepeatSeconds: 3, pushRepeatEnabled: true, pushRepeatSeconds: 3, pushRepeatMaxMinutes: 10 };
+  let takeoverOrderId = null;
+  let orderTypeFilter = 'all';
 
   /* ---------------- helpers ---------------- */
   const authHeaders = () => (token ? { Authorization: `Bearer ${token}` } : {});
@@ -1269,7 +1637,8 @@
 
   /* ---------------- 導覽 ---------------- */
   function renderNav() {
-    $('nav').innerHTML = VIEWS.map(view => `
+    const visibleViews = VIEWS.filter(view => !view.ownerOnly || !currentUser || currentUser.role === 'owner');
+    $('nav').innerHTML = visibleViews.map(view => `
       <button class="nav-item ${view.id === currentView ? 'active' : ''}" data-view="${view.id}">
         ${ICONS[view.icon]}
         <span>${view.name}</span>
@@ -1299,6 +1668,7 @@
       if (viewId === 'stock') await fetchMenu();
       if (viewId === 'reports') await fetchReport();
       if (viewId === 'settings') await fetchSettings();
+      if (viewId === 'users') await fetchUsers();
       if (viewId === 'audit') await fetchAudit();
     } catch (error) {
       toast(error.message, 'error');
@@ -1504,12 +1874,12 @@
     orders = data.orders || [];
 
     const pending = orders.filter(order => order.status === 'pending');
-    const newPending = pending.filter(order => !knownPendingOrders.has(order.orderNumber));
-    knownPendingOrders = new Set(pending.map(order => order.orderNumber));
+    const newPending = pending.filter(order => !knownPendingOrders.has(order.id));
+    knownPendingOrders = new Set(pending.map(order => order.id));
 
     newPending.forEach(order => {
-      freshOrderNumbers.add(order.orderNumber);
-      setTimeout(() => freshOrderNumbers.delete(order.orderNumber), 6000);
+      freshOrderNumbers.add(order.id);
+      setTimeout(() => freshOrderNumbers.delete(order.id), 6000);
     });
 
     if (newPending.length && 'Notification' in window && Notification.permission === 'granted') {
@@ -1518,6 +1888,7 @@
 
     renderOrderTabs();
     renderOrders();
+    renderTakeover();
     updateConnection('online', pending.length);
 
     if (pending.length > 0) startAlarm();
@@ -1536,6 +1907,16 @@
       tab.classList.toggle('active', status === activeStatus);
     });
 
+    const typeCounts = orders.reduce((result, order) => {
+      const type = order.orderType === 'reserve' ? 'reserve' : 'instant';
+      result[type] = (result[type] || 0) + 1;
+      return result;
+    }, {});
+    $('order-type-tabs').querySelectorAll('.tab[data-type]').forEach(tab => {
+      const counter = tab.querySelector('.tab-count');
+      if (counter) counter.textContent = Number(typeCounts[tab.dataset.type] || 0);
+    });
+
     const badge = $('pending-badge');
     if (badge) {
       const pendingCount = Number(counts.pending || 0);
@@ -1552,26 +1933,30 @@
   }
 
   function actionButtons(order) {
-    const detail = `<button class="btn btn-ghost btn-sm" data-detail="${escapeHtml(order.orderNumber)}">詳情</button>`;
+    const key = escapeHtml(order.id || order.orderNumber);
+    const detail = `<button class="btn btn-ghost btn-sm" data-detail="${key}">詳情</button>`;
 
     if (order.status === 'pending') {
       return `${detail}
-        <button class="btn btn-ok btn-sm" data-action="preparing" data-order="${escapeHtml(order.orderNumber)}">接單</button>
-        <button class="btn btn-danger btn-sm" data-action="cancelled" data-order="${escapeHtml(order.orderNumber)}">拒絕</button>`;
+        <button class="btn btn-ok btn-sm" data-action="preparing" data-order="${key}">接單</button>
+        <button class="btn btn-danger btn-sm" data-action="cancelled" data-order="${key}">拒絕</button>`;
     }
 
     if (order.status === 'preparing') {
       return `${detail}
-        <button class="btn btn-primary btn-sm" data-action="completed" data-order="${escapeHtml(order.orderNumber)}">訂單已備妥</button>
-        <button class="btn btn-danger btn-sm" data-action="cancelled" data-order="${escapeHtml(order.orderNumber)}">取消</button>`;
+        <button class="btn btn-primary btn-sm" data-action="completed" data-order="${key}">訂單已備妥</button>
+        <button class="btn btn-danger btn-sm" data-action="cancelled" data-order="${key}">取消</button>`;
     }
 
     return detail;
   }
 
   function renderOrders() {
-    const visible = activeStatus === 'all' ? orders : orders.filter(order => order.status === activeStatus);
-    const signature = JSON.stringify(visible.map(order => [order.orderNumber, order.status, order.updatedAt, order.adminNote]));
+    let visible = activeStatus === 'all' ? orders : orders.filter(order => order.status === activeStatus);
+    if (orderTypeFilter !== 'all') {
+      visible = visible.filter(order => (order.orderType || 'instant') === orderTypeFilter);
+    }
+    const signature = JSON.stringify(visible.map(order => [order.id, order.status, order.updatedAt, order.adminNote]));
 
     // 每 3 秒輪詢一次，資料沒變就不重繪，避免動畫一直重跑
     if (signature === lastOrdersSignature) return;
@@ -1596,14 +1981,17 @@
       const notificationText = latestNotification(order);
 
       return `
-        <article class="order-card ${order.status} ${freshOrderNumbers.has(order.orderNumber) ? 'is-new' : ''}"
+        <article class="order-card ${order.status} ${freshOrderNumbers.has(order.id) ? 'is-new' : ''}"
                  style="opacity:0; animation: fadeUp .42s var(--ease-out) ${Math.min(index, 8) * 45}ms forwards;">
           <div class="order-top">
             <div>
               <div class="order-no">#${escapeHtml(order.orderNumber)}</div>
               <div class="order-time">${formatTime(order.createdAt)}</div>
             </div>
-            <span class="badge ${order.status}">${STATUS_LABELS[order.status] || order.status}</span>
+            <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+              ${orderTypeBadge(order)}
+              <span class="badge ${order.status}">${STATUS_LABELS[order.status] || order.status}</span>
+            </div>
           </div>
 
           <div class="customer">
@@ -1627,18 +2015,22 @@
     }).join('');
   }
 
-  async function updateOrderStatus(orderNumber, status) {
-    await requestJson(`${BACKEND_BASE_URL}/api/orders/${encodeURIComponent(orderNumber)}/status`, {
+  async function updateOrderStatus(orderKey, status) {
+    const order = orders.find(item => item.id === orderKey || item.orderNumber === orderKey);
+    const label = order ? order.orderNumber : orderKey;
+
+    await requestJson(`${BACKEND_BASE_URL}/api/orders/${encodeURIComponent(orderKey)}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status })
     });
-    toast(`訂單 #${orderNumber} 已更新為「${STATUS_LABELS[status]}」`, 'ok');
+    toast(`訂單 #${label} 已更新為「${STATUS_LABELS[status]}」`, 'ok');
+    lastOrdersSignature = '';
     await fetchOrders();
   }
 
-  function openOrderDetail(orderNumber) {
-    const order = orders.find(item => item.orderNumber === orderNumber);
+  function openOrderDetail(orderKey) {
+    const order = orders.find(item => item.id === orderKey || item.orderNumber === orderKey);
     if (!order) return;
 
     const history = (order.statusHistory || []).map((entry, index) => `
@@ -1687,7 +2079,7 @@
         label: '儲存備註',
         className: 'btn-primary',
         onClick: async () => {
-          await requestJson(`${BACKEND_BASE_URL}/api/admin/orders/${encodeURIComponent(order.orderNumber)}/note`, {
+          await requestJson(`${BACKEND_BASE_URL}/api/admin/orders/${encodeURIComponent(order.id || order.orderNumber)}/note`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ note: $('detail-note').value })
@@ -2122,6 +2514,13 @@
     $('set-opt-large').value = settings.optionPrices.large;
     $('set-opt-egg').value = settings.optionPrices.doubleEgg;
     $('set-opt-shrimp').value = settings.optionPrices.doubleShrimp;
+
+    alertSettings = settings.alerts;
+    $('set-takeover').checked = Boolean(alertSettings.takeoverEnabled);
+    $('set-sound-repeat').value = alertSettings.soundRepeatSeconds;
+    $('set-push-repeat').checked = Boolean(alertSettings.pushRepeatEnabled);
+    $('set-push-interval').value = alertSettings.pushRepeatSeconds;
+    $('set-push-max').value = alertSettings.pushRepeatMaxMinutes;
   }
 
   async function saveSettings() {
@@ -2147,15 +2546,133 @@
             large: Number($('set-opt-large').value),
             doubleEgg: Number($('set-opt-egg').value),
             doubleShrimp: Number($('set-opt-shrimp').value)
+          },
+          alerts: {
+            takeoverEnabled: $('set-takeover').checked,
+            soundRepeatSeconds: Number($('set-sound-repeat').value),
+            pushRepeatEnabled: $('set-push-repeat').checked,
+            pushRepeatSeconds: Number($('set-push-interval').value),
+            pushRepeatMaxMinutes: Number($('set-push-max').value)
           }
         })
       });
       toast('設定已儲存，前台會立即套用', 'ok');
+      await fetchSettings();
+      renderTakeover();
     } catch (error) {
       toast(`儲存失敗：${error.message}`, 'error');
     } finally {
       button.disabled = false;
       button.textContent = '儲存設定';
+    }
+  }
+
+  /* ---------------- 帳號管理 ---------------- */
+  const ROLE_LABELS = { owner: '店長', staff: '員工' };
+
+  async function fetchUsers() {
+    const me = await requestJson(`${BACKEND_BASE_URL}/api/admin/me`, { cache: 'no-store' });
+    currentUser = me.user;
+    $('me-display').value = currentUser.displayName || '';
+    $('me-password').value = '';
+
+    if (currentUser.role !== 'owner') {
+      $('users-tbody').innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--ink-3); padding:24px;">只有店長可以管理其他帳號</td></tr>';
+      $('user-add').style.display = 'none';
+      return;
+    }
+
+    $('user-add').style.display = '';
+    const data = await requestJson(`${BACKEND_BASE_URL}/api/admin/users`, { cache: 'no-store' });
+
+    $('users-tbody').innerHTML = data.users.map((user, index) => `
+      <tr style="opacity:0; animation: fadeUp .35s var(--ease-out) ${index * 35}ms forwards;">
+        <td class="cell-name">${escapeHtml(user.username)}${user.username === currentUser.username ? '（我）' : ''}</td>
+        <td>${escapeHtml(user.displayName)}</td>
+        <td><span class="pill ${user.role === 'owner' ? 'on' : 'off'}">${ROLE_LABELS[user.role] || user.role}</span></td>
+        <td class="cell-meta">${formatTime(user.createdAt)}</td>
+        <td style="text-align:right; white-space:nowrap;">
+          <button class="btn btn-ghost btn-sm" data-user-edit="${escapeHtml(user.username)}">編輯</button>
+          ${user.username === currentUser.username ? '' : `<button class="btn btn-danger btn-sm" data-user-delete="${escapeHtml(user.username)}">刪除</button>`}
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function openUserEditor(username) {
+    const isNew = !username;
+
+    openModal(isNew ? '新增帳號' : `編輯：${username}`, `
+      <div class="form-grid">
+        <div>
+          <label for="u-name">帳號 ${isNew ? '*' : ''}</label>
+          <input class="field" id="u-name" value="${escapeHtml(username || '')}" ${isNew ? '' : 'disabled'} />
+        </div>
+        <div>
+          <label for="u-display">顯示名稱</label>
+          <input class="field" id="u-display" />
+        </div>
+        <div>
+          <label for="u-password">密碼 ${isNew ? '*' : '（留空表示不變更）'}</label>
+          <input class="field" type="password" id="u-password" placeholder="至少 6 碼" />
+        </div>
+        <div>
+          <label for="u-role">權限</label>
+          <select class="field" id="u-role">
+            <option value="staff">員工（僅接單）</option>
+            <option value="owner">店長（可管理帳號與設定）</option>
+          </select>
+        </div>
+      </div>
+    `, [
+      { label: '取消', className: 'btn-soft', onClick: closeModal },
+      {
+        label: isNew ? '新增' : '儲存',
+        className: 'btn-primary',
+        onClick: async () => {
+          const payload = {
+            displayName: $('u-display').value.trim(),
+            role: $('u-role').value
+          };
+          const password = $('u-password').value;
+          if (password) payload.password = password;
+
+          if (isNew) {
+            payload.username = $('u-name').value.trim();
+            if (!payload.username || !password) {
+              toast('帳號與密碼都要填', 'error');
+              return;
+            }
+            await requestJson(`${BACKEND_BASE_URL}/api/admin/users`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+          } else {
+            await requestJson(`${BACKEND_BASE_URL}/api/admin/users/${encodeURIComponent(username)}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+          }
+
+          closeModal();
+          toast(isNew ? '帳號已新增' : '帳號已更新', 'ok');
+          await fetchUsers();
+        }
+      }
+    ]);
+
+    // 帶入現有資料（要等 modal 內容渲染完）
+    if (!isNew) {
+      requestJson(`${BACKEND_BASE_URL}/api/admin/users`, { cache: 'no-store' })
+        .then(data => {
+          const user = data.users.find(entry => entry.username === username);
+          if (!user) return;
+          $('u-display').value = user.displayName || '';
+          $('u-role').value = user.role;
+        })
+        .catch(() => { /* 帶不進來就讓店長自己填 */ });
     }
   }
 
@@ -2280,8 +2797,9 @@
 
   function startAlarm() {
     if (!soundEnabled || alarmTimer) return;
+    const intervalMs = Math.max(2, Number(alertSettings.soundRepeatSeconds) || 3) * 1000;
     alarmCycle();
-    alarmTimer = setInterval(alarmCycle, 1800);
+    alarmTimer = setInterval(alarmCycle, intervalMs);
   }
 
   function stopAlarm() {
@@ -2314,10 +2832,202 @@
     buildAudioGraph();
     soundEnabled = true;
     renderSoundButton();
+    refreshPushState();
 
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
+  }
+
+  /* ---------------- 滿版接單卡片 ---------------- */
+  // 忙的時候一則小小的訂單卡片很容易被漏掉，所以新訂單一進來就整個畫面蓋掉、
+  // 持續閃爍加響鈴，非得按下「接單」才會消失 —— 跟外送平台後台同樣的邏輯。
+  function pendingOrders() {
+    return orders.filter(order => order.status === 'pending');
+  }
+
+  function orderTypeBadge(order) {
+    const type = ORDER_TYPES[order.orderType] || ORDER_TYPES.instant;
+    return `<span class="type-badge ${order.orderType === 'reserve' ? 'reserve' : 'instant'}">${ICONS[type.icon]}${type.label}</span>`;
+  }
+
+  function renderTakeover() {
+    const takeover = $('takeover');
+    const waiting = pendingOrders();
+
+    // 沒有待接單，或店家自己關掉這個功能 → 收起來
+    if (!waiting.length || !alertSettings.takeoverEnabled) {
+      takeover.classList.remove('open');
+      takeoverOrderId = null;
+      return;
+    }
+
+    // 一律處理最舊的那張，避免插隊
+    const order = [...waiting].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0];
+    takeoverOrderId = order.id;
+
+    $('takeover-count').textContent = waiting.length > 1 ? `還有 ${waiting.length - 1} 張待處理` : '共 1 張';
+    $('takeover-hint').textContent = waiting.length > 1
+      ? '接單後會自動跳出下一張'
+      : '按下「接單」後鈴聲與推播才會停止';
+
+    $('takeover-card').innerHTML = `
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
+        <div>
+          <div class="takeover-no">#${escapeHtml(order.orderNumber)}</div>
+          <div class="takeover-meta">${formatTime(order.createdAt)}</div>
+        </div>
+        ${orderTypeBadge(order)}
+      </div>
+
+      <div class="customer" style="margin:14px 0 0;">
+        <div><div class="kv-label">姓名</div><div class="kv-value">${escapeHtml(order.name)}</div></div>
+        <div><div class="kv-label">電話</div><div class="kv-value">${escapeHtml(order.phone)}</div></div>
+        <div><div class="kv-label">取餐時間</div><div class="kv-value">${escapeHtml(order.pickupTime)}</div></div>
+        <div><div class="kv-label">付款</div><div class="kv-value">${order.paymentMethod === 'cash' ? '現金' : escapeHtml(order.paymentMethod)}</div></div>
+      </div>
+
+      <ul class="takeover-items">
+        ${(order.items || []).map(item => `
+          <li>
+            <span>${escapeHtml(item.name)}</span>
+            <span class="qty">x${Number(item.qty || 0)}</span>
+            <span class="price">${money(item.subtotal)}</span>
+          </li>
+        `).join('')}
+      </ul>
+
+      ${order.notes ? `<div class="note-box customer-note" style="margin-top:12px;"><strong>客人備註：</strong>${escapeHtml(order.notes)}</div>` : ''}
+
+      <div class="takeover-total"><span>總計</span><span class="amount">${money(order.totalAmount)}</span></div>
+    `;
+
+    takeover.classList.add('open');
+  }
+
+  async function takeoverAction(status) {
+    if (!takeoverOrderId) return;
+
+    const button = status === 'preparing' ? $('takeover-accept') : $('takeover-reject');
+    button.disabled = true;
+
+    try {
+      await updateOrderStatus(takeoverOrderId, status);
+    } catch (error) {
+      toast(`更新失敗：${error.message}`, 'error');
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  /* ---------------- 背景推播（切背景／鎖屏也會響）---------------- */
+  // 手機瀏覽器一切到背景，頁面的輪詢會被凍結、鈴聲也會停，所以背景通知只能靠
+  // 伺服器發 Web Push 給 Service Worker。iPhone 上這件事有一個硬性前提：
+  // 頁面必須先「加入主畫面」以獨立 App 形式開啟，否則 Safari 根本不提供 PushManager。
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+
+  function pushSupported() {
+    return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  }
+
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base64);
+    return Uint8Array.from([...raw].map(char => char.charCodeAt(0)));
+  }
+
+  function renderPushButton() {
+    const button = $('push-btn');
+
+    if (pushSubscribed) {
+      button.className = 'btn btn-soft btn-sm';
+      button.innerHTML = `${ICONS.phone} <span class="label-text">手機推播已開啟</span>`;
+    } else {
+      button.className = 'btn btn-danger btn-sm sound-off';
+      button.innerHTML = `${ICONS.phone} <span class="label-text">開啟手機推播</span>`;
+    }
+  }
+
+  async function refreshPushState() {
+    if (!pushSupported()) { pushSubscribed = false; renderPushButton(); return; }
+
+    try {
+      const registration = await navigator.serviceWorker.getRegistration();
+      const subscription = registration ? await registration.pushManager.getSubscription() : null;
+      pushSubscribed = Boolean(subscription);
+    } catch (error) {
+      pushSubscribed = false;
+    }
+    renderPushButton();
+  }
+
+  // iPhone 沒加入主畫面就沒有 PushManager，這時只能給安裝步驟，不能假裝可以開
+  function showIosInstallGuide() {
+    openModal('iPhone 需要先加入主畫面', `
+      <p style="margin-bottom:12px;">iPhone 的 Safari 規定：只有「加入主畫面」後以獨立 App 開啟的網頁，才能收到背景推播通知。這是 Apple 的限制，無法在網頁裡繞過。</p>
+      <div class="card" style="box-shadow:none; background:#f8fafc;">
+        <div style="display:flex; gap:10px; align-items:flex-start; margin-bottom:10px;">
+          <div style="font-weight:900; color:var(--brand);">1</div>
+          <div>在 Safari 開啟這個後台頁面，點下方工具列的<strong>分享</strong>按鈕 ${ICONS.share}</div>
+        </div>
+        <div style="display:flex; gap:10px; align-items:flex-start; margin-bottom:10px;">
+          <div style="font-weight:900; color:var(--brand);">2</div>
+          <div>選擇「<strong>加入主畫面</strong>」，然後確認新增</div>
+        </div>
+        <div style="display:flex; gap:10px; align-items:flex-start; margin-bottom:10px;">
+          <div style="font-weight:900; color:var(--brand);">3</div>
+          <div>從<strong>主畫面的圖示</strong>重新開啟後台（不是從 Safari）</div>
+        </div>
+        <div style="display:flex; gap:10px; align-items:flex-start;">
+          <div style="font-weight:900; color:var(--brand);">4</div>
+          <div>登入後再按一次「<strong>開啟手機推播</strong>」，允許通知</div>
+        </div>
+      </div>
+      <div class="hint" style="margin-top:12px;">需要 iOS 16.4 以上版本。另外請確認「設定 → 專注模式」沒有把這個 App 的通知擋掉。</div>
+    `, [{ label: '知道了', className: 'btn-primary', onClick: closeModal }]);
+  }
+
+  async function enablePush() {
+    if (!pushSupported()) {
+      if (isIos && !isStandalone) { showIosInstallGuide(); return; }
+      toast('這個瀏覽器不支援背景推播通知', 'error');
+      return;
+    }
+
+    const keyData = await requestJson(`${BACKEND_BASE_URL}/api/push/public-key`);
+    if (!keyData.enabled || !keyData.publicKey) {
+      toast('伺服器尚未設定推播金鑰', 'error');
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      toast('你拒絕了通知權限，背景不會收到新訂單提醒', 'error');
+      return;
+    }
+
+    const registration = await navigator.serviceWorker.register('sw.js');
+    await navigator.serviceWorker.ready;
+
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true, // iOS 強制要求
+      applicationServerKey: urlBase64ToUint8Array(keyData.publicKey)
+    });
+
+    await requestJson(`${BACKEND_BASE_URL}/api/admin/push/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subscription: subscription.toJSON(),
+        label: `${isIos ? 'iPhone' : /android/i.test(navigator.userAgent) ? 'Android' : '電腦'}${isStandalone ? '（主畫面）' : ''}`
+      })
+    });
+
+    pushSubscribed = true;
+    renderPushButton();
+    toast('手機推播已開啟，鎖屏也會收到新訂單通知', 'ok');
   }
 
   /* ---------------- 連線 / 店家狀態 ---------------- */
@@ -2353,6 +3063,25 @@
     const status = await requestJson(`${BACKEND_BASE_URL}/api/store/status`, { cache: 'no-store' });
     storeIsOpen = Boolean(status.isOpen);
     renderStoreToggle();
+  }
+
+  // 登入後先把「我是誰」和提醒設定拿回來：導覽選單要依角色決定，
+  // 滿版卡片與警報間隔也要用店家設定的值，不能等使用者點進設定頁才生效。
+  async function bootstrapSession() {
+    try {
+      const me = await requestJson(`${BACKEND_BASE_URL}/api/admin/me`, { cache: 'no-store' });
+      currentUser = me.user;
+      $('who-name').textContent = currentUser.displayName || currentUser.username;
+    } catch (error) {
+      currentUser = null;
+    }
+
+    try {
+      const data = await requestJson(`${BACKEND_BASE_URL}/api/admin/settings`, { cache: 'no-store' });
+      alertSettings = data.settings.alerts;
+    } catch (error) {
+      // 店員沒有讀設定的權限也沒關係，用預設值就好
+    }
   }
 
   function setLoggedIn(isLoggedIn) {
@@ -2393,7 +3122,9 @@
       const data = await response.json();
       token = data.token;
       localStorage.setItem('adminToken', token);
-      $('who-name').textContent = data.username || 'admin';
+      $('who-name').textContent = data.displayName || data.username || 'admin';
+      currentUser = { username: data.username, role: data.role, displayName: data.displayName };
+      await bootstrapSession();
       setLoggedIn(true);
       enableSound().catch(() => {});
       pollTick();
@@ -2442,6 +3173,25 @@
         if (orders.some(order => order.status === 'pending')) startAlarm();
       })
       .catch(() => toast('鈴聲啟用失敗，請確認瀏覽器允許此網站播放聲音', 'error'));
+  });
+
+  $('push-btn').addEventListener('click', async () => {
+    const button = $('push-btn');
+    button.disabled = true;
+    try {
+      if (pushSubscribed) {
+        // 已開啟就當成「測試推播」用，店家可以自己確認手機真的會響
+        const data = await requestJson(`${BACKEND_BASE_URL}/api/admin/push/test`, { method: 'POST' });
+        if (data.result.sent) toast(`已送出測試推播到 ${data.result.sent} 台裝置`, 'ok');
+        else toast(`推播未送出：${data.result.reason || '沒有可用裝置'}`, 'error');
+      } else {
+        await enablePush();
+      }
+    } catch (error) {
+      toast(error.message, 'error');
+    } finally {
+      button.disabled = false;
+    }
   });
 
   $('sound-test').addEventListener('click', async () => {
@@ -2631,6 +3381,103 @@
     button.addEventListener('click', () => exportCsv(button.dataset.export));
   });
 
+  /* 滿版接單卡片 */
+  $('takeover-accept').addEventListener('click', () => takeoverAction('preparing'));
+  $('takeover-reject').addEventListener('click', () => {
+    const order = orders.find(item => item.id === takeoverOrderId);
+    openModal('拒絕訂單', `
+      <p>確定要拒絕訂單 <strong>#${escapeHtml(order ? order.orderNumber : '')}</strong> 嗎？</p>
+      <p class="hint">客人會收到「店家已拒絕訂單」的 LINE 通知。</p>
+    `, [
+      { label: '返回', className: 'btn-soft', onClick: closeModal },
+      {
+        label: '確定拒絕',
+        className: 'btn-danger',
+        onClick: async () => { closeModal(); await takeoverAction('cancelled'); }
+      }
+    ]);
+  });
+
+  /* 訂單類型篩選 */
+  $('order-type-tabs').addEventListener('click', event => {
+    const tab = event.target.closest('.tab');
+    if (!tab) return;
+    orderTypeFilter = tab.dataset.type;
+    $('order-type-tabs').querySelectorAll('.tab').forEach(item => {
+      item.classList.toggle('active', item.dataset.type === orderTypeFilter);
+    });
+    lastOrdersSignature = '';
+    renderOrders();
+  });
+
+  /* 帳號管理 */
+  $('user-add').addEventListener('click', () => openUserEditor(null));
+
+  $('users-tbody').addEventListener('click', async event => {
+    const editButton = event.target.closest('[data-user-edit]');
+    if (editButton) { openUserEditor(editButton.dataset.userEdit); return; }
+
+    const deleteButton = event.target.closest('[data-user-delete]');
+    if (!deleteButton) return;
+
+    const username = deleteButton.dataset.userDelete;
+    openModal('刪除帳號', `
+      <p>確定要刪除帳號 <strong>${escapeHtml(username)}</strong> 嗎？</p>
+      <p class="hint">該帳號目前登入中的裝置會立刻被登出。</p>
+    `, [
+      { label: '取消', className: 'btn-soft', onClick: closeModal },
+      {
+        label: '確定刪除',
+        className: 'btn-danger',
+        onClick: async () => {
+          await requestJson(`${BACKEND_BASE_URL}/api/admin/users/${encodeURIComponent(username)}`, { method: 'DELETE' });
+          closeModal();
+          toast(`帳號 ${username} 已刪除`, 'ok');
+          await fetchUsers();
+        }
+      }
+    ]);
+  });
+
+  $('me-save').addEventListener('click', async () => {
+    const button = $('me-save');
+    button.disabled = true;
+    try {
+      const payload = { displayName: $('me-display').value.trim() };
+      const password = $('me-password').value;
+      if (password) payload.password = password;
+
+      await requestJson(`${BACKEND_BASE_URL}/api/admin/users/${encodeURIComponent(currentUser.username)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      toast(password ? '已更新，下次請用新密碼登入' : '帳號已更新', 'ok');
+      await fetchUsers();
+    } catch (error) {
+      toast(error.message, 'error');
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  /* 點推播通知 → 自動切到接單區 */
+  function goToPendingOrders() {
+    activeStatus = 'pending';
+    orderTypeFilter = 'all';
+    lastOrdersSignature = '';
+    switchView('orders');
+    renderOrderTabs();
+    renderOrders();
+  }
+
+  if ('serviceWorker' in navigator) {
+    // 後台已經開著時，Service Worker 會用 postMessage 叫頁面跳到接單區
+    navigator.serviceWorker.addEventListener('message', event => {
+      if (event.data && event.data.type === 'open-pending-orders') goToPendingOrders();
+    });
+  }
+
   /* 設定 */
   $('settings-save').addEventListener('click', saveSettings);
 
@@ -2659,9 +3506,19 @@
     $('report-from').value = iso(monthAgo);
     $('report-to').value = iso(today);
 
+    // 從推播通知冷啟動時，網址會帶 ?view=orders&status=pending
+    const params = new URLSearchParams(location.search);
+    if (params.get('view') === 'orders') {
+      currentView = 'orders';
+      if (params.get('status')) activeStatus = params.get('status');
+      history.replaceState({}, document.title, location.pathname);
+    }
+
     if (token) {
-      setLoggedIn(true);
-      pollTick();
+      bootstrapSession().then(() => {
+        setLoggedIn(true);
+        pollTick();
+      });
     } else {
       setLoggedIn(false);
     }

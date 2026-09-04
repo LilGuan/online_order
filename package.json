@@ -9,6 +9,7 @@
     "crypto": "^1.0.1",
     "ecpay_aio_nodejs": "^1.2.2",
     "express": "^5.2.1",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "web-push": "^3.6.7"
   }
 }

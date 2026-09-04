@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const axios = require('axios');
+const webpush = require('web-push');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -16,10 +17,14 @@ const AUDIT_FILE = path.join(__dirname, 'audit-log.json');
 const AUDIT_LIMIT = 500;
 const UPLOAD_DIR = path.join(__dirname, 'images', 'uploads');
 const MAX_IMAGE_BYTES = 3 * 1024 * 1024;
+const COUNTER_FILE = path.join(__dirname, 'order-counter.json');
+const USERS_FILE = path.join(__dirname, 'users.json');
+const VAPID_FILE = path.join(__dirname, 'vapid-keys.json');
+const PUSH_SUBS_FILE = path.join(__dirname, 'push-subscriptions.json');
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 const LINE_CHANNEL_ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN || 'UOk7R1DiDvRXXUxHwy/nDjspTVgC3ZzAYYRTWMO96rHgOycTbmPXUV/qtLwNa0r5+lCXvBGCcc3WHVHesgHxUd8gxwaoPMwaQuPuOT/PpzyCVMCgQdAboLV8waAZHmIXPRaeq6iMYHuECM+WY2jghQdB04t89/1O/w1cDnyilFU=';
-const adminSessions = new Set();
+const adminSessions = new Map(); // token -> { username, role }
 
 app.use(cors());
 // 菜單照片是以 base64 夾在 JSON 裡上傳，所以要放寬預設的 100kb 上限
@@ -76,6 +81,14 @@ const DEFAULT_SETTINGS = {
     minOrderAmount: 0,
     optionPrices: { large: 20, doubleEgg: 15, doubleShrimp: 35 },
     optionLabels: { large: '加大', doubleEgg: '雙蛋', doubleShrimp: '加蝦' },
+    alerts: {
+        // 新訂單未接單時的提醒行為
+        takeoverEnabled: true,        // 後台跳出滿版接單卡片
+        soundRepeatSeconds: 3,        // 頁面在前景時，警報聲每幾秒重響
+        pushRepeatEnabled: true,      // 未接單時持續重送推播
+        pushRepeatSeconds: 3,         // 推播重送間隔
+        pushRepeatMaxMinutes: 10      // 重送上限，避免無限轟炸
+    },
     updatedAt: new Date().toISOString()
 };
 
@@ -93,7 +106,11 @@ function readSettings() {
         return migrated;
     }
 
-    return { ...DEFAULT_SETTINGS, ...settings };
+    return {
+        ...DEFAULT_SETTINGS,
+        ...settings,
+        alerts: { ...DEFAULT_SETTINGS.alerts, ...(settings.alerts || {}) }
+    };
 }
 
 function writeSettings(settings) {
@@ -157,12 +174,12 @@ function readAuditLog() {
     return readJsonFile(AUDIT_FILE, []);
 }
 
-function logAudit(action, target, detail) {
+function logAudit(action, target, detail, user) {
     const entries = readAuditLog();
     entries.unshift({
         id: uuidv4(),
         at: new Date().toISOString(),
-        user: ADMIN_USERNAME,
+        user: user || 'system',
         action,
         target: String(target || ''),
         detail: String(detail || '')
@@ -170,14 +187,236 @@ function logAudit(action, target, detail) {
     writeJsonFile(AUDIT_FILE, entries.slice(0, AUDIT_LIMIT));
 }
 
+// ==========================================
+// 🟢 每日流水號
+// ==========================================
+// 店家要的是好記好管理的 1、2、3、4，每天 00:00 重新從 1 開始。
+// 但流水號每天重複，不能拿來當訂單的唯一鍵，所以另外用 `id`（日期-序號）當主鍵。
+function nextOrderSequence() {
+    const today = todayKey();
+    const counter = readJsonFile(COUNTER_FILE, { date: '', seq: 0 });
+
+    const seq = counter.date === today ? Number(counter.seq || 0) + 1 : 1;
+    writeJsonFile(COUNTER_FILE, { date: today, seq });
+
+    return { seq, date: today };
+}
+
+// 舊訂單的 id 就是隨機碼，新訂單是「日期-序號」，兩種都要找得到
+function findOrder(orders, key) {
+    const target = String(key);
+    return orders.find(order => String(order.id) === target)
+        || orders.find(order => String(order.orderNumber) === target);
+}
+
+// ==========================================
+// 🟢 帳號管理
+// ==========================================
+function hashPassword(password, salt) {
+    const useSalt = salt || crypto.randomBytes(16).toString('hex');
+    const hash = crypto.scryptSync(String(password), useSalt, 64).toString('hex');
+    return { salt: useSalt, hash };
+}
+
+function verifyPassword(password, salt, expectedHash) {
+    const { hash } = hashPassword(password, salt);
+    const a = Buffer.from(hash, 'hex');
+    const b = Buffer.from(String(expectedHash || ''), 'hex');
+    // 長度不同時 timingSafeEqual 會直接丟例外，先擋掉
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+function readUsers() {
+    const users = readJsonFile(USERS_FILE, null);
+    if (users && users.length) return users;
+
+    // 第一次啟動：把原本寫死的 admin 帳密轉成正式帳號（密碼經過雜湊，不再明文比對）
+    const { salt, hash } = hashPassword(ADMIN_PASSWORD);
+    const seeded = [{
+        username: ADMIN_USERNAME,
+        salt,
+        hash,
+        role: 'owner',
+        displayName: '店長',
+        createdAt: new Date().toISOString()
+    }];
+    writeJsonFile(USERS_FILE, seeded);
+    console.log(`[Auth] 已建立預設帳號 ${ADMIN_USERNAME}，請盡快到後台修改密碼`);
+    return seeded;
+}
+
+function writeUsers(users) {
+    writeJsonFile(USERS_FILE, users);
+}
+
+// owner 可以管理帳號，staff 只能接單
+const ROLES = { owner: '店長（可管理帳號與設定）', staff: '員工（僅接單）' };
+
+// ==========================================
+// 🟢 Web Push（背景／鎖屏通知）
+// ==========================================
+// 手機瀏覽器切到背景或鎖屏後，頁面的 setInterval 會被凍結、AudioContext 會被暫停，
+// 所以後台頁面自己的鈴聲在背景是完全靠不住的。唯一能在那些狀態把手機叫醒的機制
+// 就是由伺服器主動發 Web Push，交給 Service Worker 顯示系統通知。
+const vapid = readJsonFile(VAPID_FILE, null);
+const pushEnabled = Boolean(vapid && vapid.publicKey && vapid.privateKey);
+
+if (pushEnabled) {
+    webpush.setVapidDetails(vapid.subject || 'mailto:admin@example.com', vapid.publicKey, vapid.privateKey);
+} else {
+    console.warn('[Push] 找不到 vapid-keys.json，背景推播功能停用');
+}
+
+function readPushSubscriptions() {
+    return readJsonFile(PUSH_SUBS_FILE, []);
+}
+
+function writePushSubscriptions(subscriptions) {
+    writeJsonFile(PUSH_SUBS_FILE, subscriptions);
+}
+
+// 推播給所有已登記的裝置；訂閱失效（410/404）就自動清掉，避免無效訂閱越積越多
+async function sendPushToAll(payload) {
+    const result = { at: new Date().toISOString(), sent: 0, failed: 0, removed: 0, reason: '' };
+
+    if (!pushEnabled) {
+        result.reason = '尚未設定 VAPID 金鑰';
+        return result;
+    }
+
+    const subscriptions = readPushSubscriptions();
+    if (!subscriptions.length) {
+        result.reason = '還沒有裝置登記背景推播';
+        return result;
+    }
+
+    const body = JSON.stringify(payload);
+    const stale = [];
+
+    await Promise.all(subscriptions.map(async entry => {
+        try {
+            await webpush.sendNotification(entry.subscription, body, { TTL: 600, urgency: 'high' });
+            result.sent += 1;
+        } catch (error) {
+            result.failed += 1;
+            const status = error.statusCode;
+            if (status === 404 || status === 410) {
+                stale.push(entry.endpoint);
+            } else {
+                console.error('[Push] 發送失敗:', status, error.body || error.message);
+            }
+        }
+    }));
+
+    if (stale.length) {
+        writePushSubscriptions(subscriptions.filter(entry => !stale.includes(entry.endpoint)));
+        result.removed = stale.length;
+    }
+
+    return result;
+}
+
+// ---------- 未接單時持續重送推播 ----------
+// 一則通知很容易在忙碌時被滑掉，所以只要訂單還沒被接，就依設定的間隔一直重送，
+// 直到店家接單／取消，或達到重送上限為止。
+const pendingPushTimers = new Map();
+
+function stopOrderReminder(orderId) {
+    const timer = pendingPushTimers.get(String(orderId));
+    if (!timer) return;
+    clearInterval(timer.handle);
+    pendingPushTimers.delete(String(orderId));
+}
+
+function orderPushPayload(order, round) {
+    const typeLabel = order.orderType === 'reserve' ? '預約單' : '即時單';
+    return {
+        title: round > 0 ? `尚未接單 #${order.orderNumber}（第 ${round + 1} 次提醒）` : `新訂單 #${order.orderNumber}`,
+        body: `${typeLabel}　${order.name}　${order.items.length} 項　共 $${order.totalAmount}`,
+        tag: `order-${order.id}`,
+        url: '/merchant.html?view=orders&status=pending',
+        orderId: order.id
+    };
+}
+
+function startOrderReminder(order) {
+    const settings = readSettings();
+    const alerts = settings.alerts || {};
+
+    sendPushToAll(orderPushPayload(order, 0))
+        .then(result => logPushResult(order, result))
+        .catch(error => console.error('[Push] 通知失敗:', error.message));
+
+    if (!alerts.pushRepeatEnabled) return;
+
+    const intervalMs = Math.max(3, Number(alerts.pushRepeatSeconds) || 3) * 1000;
+    const maxMs = Math.max(1, Number(alerts.pushRepeatMaxMinutes) || 10) * 60 * 1000;
+    const maxRounds = Math.floor(maxMs / intervalMs);
+
+    stopOrderReminder(order.id);
+    let round = 0;
+
+    const handle = setInterval(() => {
+        round += 1;
+
+        // 每次重送前都重新讀檔確認狀態，店家在別台裝置接單也要能停下來
+        const current = findOrder(readOrders(), order.id);
+        if (!current || current.status !== 'pending') {
+            console.log(`[Push] #${order.orderNumber} 已處理，停止提醒`);
+            stopOrderReminder(order.id);
+            return;
+        }
+
+        if (round > maxRounds) {
+            console.warn(`[Push] #${order.orderNumber} 已提醒 ${maxRounds} 次仍未接單，停止重送`);
+            stopOrderReminder(order.id);
+            return;
+        }
+
+        sendPushToAll(orderPushPayload(current, round))
+            .catch(error => console.error('[Push] 重送失敗:', error.message));
+    }, intervalMs);
+
+    pendingPushTimers.set(String(order.id), { handle, startedAt: Date.now() });
+}
+
+function logPushResult(order, result) {
+    // 每一種結果都要留下紀錄：推播是店家唯一的漏單防線，靜默失敗最危險
+    const parts = [`成功 ${result.sent}`];
+    if (result.failed) parts.push(`失敗 ${result.failed}`);
+    if (result.removed) parts.push(`清除失效訂閱 ${result.removed}`);
+    if (result.reason) parts.push(result.reason);
+
+    const summary = `[Push] 新訂單 #${order.orderNumber} → ${parts.join('、')}`;
+    if (result.sent) console.log(summary);
+    else console.warn(`${summary}（沒有任何裝置收到通知）`);
+}
+
+// 伺服器重啟後，記憶體裡的計時器會全部消失，要幫還沒接的單重新掛上提醒
+function rearmPendingReminders() {
+    const pending = readOrders().filter(order => order.status === 'pending');
+    pending.forEach(order => startOrderReminder(order));
+    if (pending.length) console.log(`[Push] 重啟後重新掛上 ${pending.length} 筆未接單的提醒`);
+}
+
 function requireAdmin(req, res, next) {
     const authHeader = req.headers.authorization || '';
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+    const session = adminSessions.get(token);
 
-    if (!adminSessions.has(token)) {
+    if (!session) {
         return res.status(401).json({ message: '請先登入 admin' });
     }
 
+    req.session = session;
+    next();
+}
+
+// 帳號管理、門店設定這類設定面的操作只開放給店長
+function requireOwner(req, res, next) {
+    if (!req.session || req.session.role !== 'owner') {
+        return res.status(403).json({ message: '只有店長可以執行這個操作' });
+    }
     next();
 }
 
@@ -351,7 +590,7 @@ function applyStockForOrder(order) {
 
     if (changed) writeMenu(menu);
     if (soldOutNames.length) {
-        logAudit('stock.auto_sold_out', soldOutNames.join('、'), `達每日限量，訂單 #${order.orderNumber} 後自動標示賣完`);
+        logAudit('stock.auto_sold_out', soldOutNames.join('、'), `達每日限量，訂單 #${order.orderNumber} 後自動標示賣完`, '系統');
     }
 }
 
@@ -409,8 +648,12 @@ function normalizeOrder(body) {
     const totalAmount = Number(body.totalAmount || 0);
 
     return {
-        id: body.orderNumber || uuidv4(),
-        orderNumber: body.orderNumber || uuidv4().slice(0, 8).toUpperCase(),
+        // 編號留空，等確認是新訂單才配號 —— 重送同一張單不該吃掉一個流水號
+        id: '',
+        orderNumber: '',
+        orderDate: '',
+        clientRef: String(body.orderNumber || '').trim(), // 前端產的隨機碼，用來去重
+        orderType: body.orderType === 'reserve' ? 'reserve' : 'instant',
         name: String(body.name || '').trim(),
         phone: String(body.phone || '').trim(),
         pickupTime: String(body.pickupTime || '').trim(),
@@ -429,15 +672,17 @@ function normalizeOrder(body) {
 
 app.post('/api/admin/login', (req, res) => {
     const username = String(req.body.username || '').trim();
-    const password = String(req.body.password || '').trim();
+    const password = String(req.body.password || '');
 
-    if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
+    const user = readUsers().find(entry => entry.username === username);
+
+    if (!user || !verifyPassword(password, user.salt, user.hash)) {
         return res.status(401).json({ message: '帳號或密碼錯誤' });
     }
 
     const token = crypto.randomBytes(24).toString('hex');
-    adminSessions.add(token);
-    res.json({ ok: true, token, username: ADMIN_USERNAME });
+    adminSessions.set(token, { username: user.username, role: user.role, at: new Date().toISOString() });
+    res.json({ ok: true, token, username: user.username, role: user.role, displayName: user.displayName || user.username });
 });
 
 app.post('/api/admin/logout', requireAdmin, (req, res) => {
@@ -474,12 +719,19 @@ app.post('/api/orders', async (req, res) => {
     }
 
     const orders = readOrders();
-    const existingIndex = orders.findIndex(item => item.orderNumber === order.orderNumber);
+    // 用前端的隨機碼去重（例如網路重試重送同一張單），流水號每天重複不能當去重依據
+    const existingIndex = order.clientRef
+        ? orders.findIndex(item => item.clientRef && item.clientRef === order.clientRef)
+        : -1;
 
     if (existingIndex >= 0) {
         orders[existingIndex] = {
             ...orders[existingIndex],
             ...order,
+            // 沿用原本的編號，避免重送把流水號吃掉一個
+            id: orders[existingIndex].id,
+            orderNumber: orders[existingIndex].orderNumber,
+            orderDate: orders[existingIndex].orderDate,
             status: orders[existingIndex].status || 'pending',
             createdAt: orders[existingIndex].createdAt,
             updatedAt: new Date().toISOString()
@@ -496,9 +748,30 @@ app.post('/api/orders', async (req, res) => {
         order.customerNotifications.push(cardNotification);
     }
 
+    // 到這裡才確定是全新的訂單，配一個當日流水號。
+    // 顯示用的是每天從 1 重新開始的號碼；唯一鍵另外用「日期-序號」，
+    // 否則今天的 #1 會跟昨天的 #1 撞在一起。
+    let { seq, date } = nextOrderSequence();
+
+    // 保險：萬一 order-counter.json 遺失或被還原，計數器會從 1 重來而撞到既有訂單，
+    // 這裡往後找到第一個沒被用過的號碼，避免兩張單共用同一個 id。
+    while (orders.some(item => item.id === `${date}-${seq}`)) {
+        console.warn(`[Order] 編號 ${date}-${seq} 已存在，往後遞補`);
+        ({ seq } = nextOrderSequence());
+    }
+
+    order.id = `${date}-${seq}`;
+    order.orderNumber = String(seq);
+    order.orderDate = date;
+
     orders.unshift(order);
     writeOrders(orders);
     applyStockForOrder(order);
+
+    // 通知店家：手機切到背景或鎖屏時，後台頁面的鈴聲不會響，只有這個推播叫得動手機。
+    // 未接單會依設定持續重送，直到接單或達重送上限。
+    startOrderReminder(order);
+
     res.status(201).json({ ok: true, order });
 });
 
@@ -606,7 +879,7 @@ app.post('/api/admin/menu', requireAdmin, (req, res) => {
 
     menu.items.push(item);
     writeMenu(menu);
-    logAudit('menu.created', item.name, `新增商品，售價 $${item.price}`);
+    logAudit('menu.created', item.name, `新增商品，售價 $${item.price}`, req.session && req.session.username);
     res.status(201).json({ ok: true, item });
 });
 
@@ -645,7 +918,7 @@ app.patch('/api/admin/menu/:id', requireAdmin, (req, res) => {
     }
 
     writeMenu(menu);
-    if (changes.length) logAudit('menu.updated', item.name, changes.join('、'));
+    if (changes.length) logAudit('menu.updated', item.name, changes.join('、'), req.session && req.session.username);
     res.json({ ok: true, item });
 });
 
@@ -657,7 +930,7 @@ app.delete('/api/admin/menu/:id', requireAdmin, (req, res) => {
 
     const [removed] = menu.items.splice(index, 1);
     writeMenu(menu);
-    logAudit('menu.deleted', removed.name, `刪除商品，原售價 $${removed.price}`);
+    logAudit('menu.deleted', removed.name, `刪除商品，原售價 $${removed.price}`, req.session && req.session.username);
     res.json({ ok: true });
 });
 
@@ -685,7 +958,7 @@ app.post('/api/admin/menu/upload', requireAdmin, (req, res) => {
         fs.writeFileSync(path.join(UPLOAD_DIR, filename), buffer);
 
         const relativePath = `images/uploads/${filename}`;
-        logAudit('menu.image_uploaded', relativePath, `上傳菜單照片（${Math.round(buffer.length / 1024)} KB）`);
+        logAudit('menu.image_uploaded', relativePath, `上傳菜單照片（${Math.round(buffer.length / 1024)} KB）`, req.session && req.session.username);
         res.status(201).json({ ok: true, path: relativePath });
     } catch (error) {
         console.error('[Upload] 儲存失敗:', error.message);
@@ -723,7 +996,7 @@ app.patch('/api/admin/menu/:id/stock', requireAdmin, (req, res) => {
 
     item.stockDate = todayKey();
     writeMenu(menu);
-    if (changes.length) logAudit('stock.updated', item.name, changes.join('、'));
+    if (changes.length) logAudit('stock.updated', item.name, changes.join('、'), req.session && req.session.username);
     res.json({ ok: true, item });
 });
 
@@ -749,7 +1022,7 @@ app.get('/api/admin/settings', requireAdmin, (req, res) => {
     res.json({ settings: readSettings() });
 });
 
-app.patch('/api/admin/settings', requireAdmin, (req, res) => {
+app.patch('/api/admin/settings', requireAdmin, requireOwner, (req, res) => {
     const settings = readSettings();
     const changes = [];
 
@@ -800,9 +1073,31 @@ app.patch('/api/admin/settings', requireAdmin, (req, res) => {
         changes.push(settings.isOpen ? '店家上線' : '店家下線');
     }
 
+    if (req.body.alerts) {
+        const incoming = req.body.alerts;
+        const next = { ...settings.alerts };
+
+        if (incoming.takeoverEnabled !== undefined) next.takeoverEnabled = Boolean(incoming.takeoverEnabled);
+        if (incoming.pushRepeatEnabled !== undefined) next.pushRepeatEnabled = Boolean(incoming.pushRepeatEnabled);
+
+        // 間隔太短會被推播服務限流、也會把手機電池吃光，所以設下限
+        if (incoming.soundRepeatSeconds !== undefined) {
+            next.soundRepeatSeconds = Math.min(60, Math.max(2, Number(incoming.soundRepeatSeconds) || 3));
+        }
+        if (incoming.pushRepeatSeconds !== undefined) {
+            next.pushRepeatSeconds = Math.min(300, Math.max(3, Number(incoming.pushRepeatSeconds) || 3));
+        }
+        if (incoming.pushRepeatMaxMinutes !== undefined) {
+            next.pushRepeatMaxMinutes = Math.min(60, Math.max(1, Number(incoming.pushRepeatMaxMinutes) || 10));
+        }
+
+        if (JSON.stringify(next) !== JSON.stringify(settings.alerts)) changes.push('調整提醒設定');
+        settings.alerts = next;
+    }
+
     settings.updatedAt = new Date().toISOString();
     writeSettings(settings);
-    if (changes.length) logAudit('settings.updated', '門店設定', changes.join('、'));
+    if (changes.length) logAudit('settings.updated', '門店設定', changes.join('、'), req.session && req.session.username);
     res.json({ ok: true, settings });
 });
 
@@ -971,6 +1266,191 @@ app.get('/api/admin/reports/export', requireAdmin, (req, res) => {
 });
 
 // ==========================================
+// 🟢 背景推播 API
+// ==========================================
+app.get('/api/push/public-key', (req, res) => {
+    res.json({ enabled: pushEnabled, publicKey: pushEnabled ? vapid.publicKey : '' });
+});
+
+app.get('/api/admin/push/status', requireAdmin, (req, res) => {
+    const subscriptions = readPushSubscriptions();
+    res.json({
+        enabled: pushEnabled,
+        devices: subscriptions.map(entry => ({
+            endpoint: entry.endpoint.slice(-12), // 只回傳尾碼，前端用來比對是不是自己這台
+            label: entry.label || '',
+            createdAt: entry.createdAt
+        }))
+    });
+});
+
+app.post('/api/admin/push/subscribe', requireAdmin, (req, res) => {
+    const subscription = req.body.subscription;
+
+    if (!subscription || !subscription.endpoint) {
+        return res.status(400).json({ message: '訂閱資料不完整' });
+    }
+
+    const subscriptions = readPushSubscriptions();
+    const existing = subscriptions.findIndex(entry => entry.endpoint === subscription.endpoint);
+
+    const entry = {
+        endpoint: subscription.endpoint,
+        subscription,
+        label: String(req.body.label || '').trim(),
+        createdAt: new Date().toISOString()
+    };
+
+    if (existing >= 0) subscriptions[existing] = { ...subscriptions[existing], ...entry };
+    else subscriptions.push(entry);
+
+    writePushSubscriptions(subscriptions);
+    logAudit('push.subscribed', entry.label || '未命名裝置', `登記背景推播，目前共 ${subscriptions.length} 台裝置`, req.session && req.session.username);
+    res.status(201).json({ ok: true, devices: subscriptions.length });
+});
+
+app.post('/api/admin/push/unsubscribe', requireAdmin, (req, res) => {
+    const endpoint = String(req.body.endpoint || '');
+    const subscriptions = readPushSubscriptions();
+    const remaining = subscriptions.filter(entry => entry.endpoint !== endpoint);
+
+    writePushSubscriptions(remaining);
+    logAudit('push.unsubscribed', '裝置', `取消背景推播，剩下 ${remaining.length} 台裝置`, req.session && req.session.username);
+    res.json({ ok: true, devices: remaining.length });
+});
+
+app.post('/api/admin/push/test', requireAdmin, async (req, res) => {
+    const result = await sendPushToAll({
+        title: '推播測試',
+        body: '如果你看到這則通知，背景推播就設定成功了。',
+        tag: 'push-test',
+        url: '/merchant.html'
+    });
+    res.json({ ok: result.sent > 0, result });
+});
+
+// ==========================================
+// 🟢 帳號管理 API（僅店長）
+// ==========================================
+const safeUser = user => ({
+    username: user.username,
+    displayName: user.displayName || user.username,
+    role: user.role,
+    createdAt: user.createdAt
+});
+
+app.get('/api/admin/users', requireAdmin, requireOwner, (req, res) => {
+    res.json({ users: readUsers().map(safeUser), roles: ROLES });
+});
+
+app.get('/api/admin/me', requireAdmin, (req, res) => {
+    const user = readUsers().find(entry => entry.username === req.session.username);
+    res.json({ user: user ? safeUser(user) : { username: req.session.username, role: req.session.role } });
+});
+
+app.post('/api/admin/users', requireAdmin, requireOwner, (req, res) => {
+    const username = String(req.body.username || '').trim();
+    const password = String(req.body.password || '');
+    const role = req.body.role === 'owner' ? 'owner' : 'staff';
+
+    if (!username || password.length < 6) {
+        return res.status(400).json({ message: '帳號必填，密碼至少 6 碼' });
+    }
+
+    const users = readUsers();
+    if (users.some(entry => entry.username === username)) {
+        return res.status(409).json({ message: '這個帳號已經存在' });
+    }
+
+    const { salt, hash } = hashPassword(password);
+    users.push({
+        username,
+        salt,
+        hash,
+        role,
+        displayName: String(req.body.displayName || username).trim(),
+        createdAt: new Date().toISOString()
+    });
+
+    writeUsers(users);
+    logAudit('user.created', username, `新增帳號，權限：${ROLES[role]}`, req.session.username);
+    res.status(201).json({ ok: true });
+});
+
+app.patch('/api/admin/users/:username', requireAdmin, (req, res) => {
+    const target = String(req.params.username);
+    const isSelf = req.session.username === target;
+
+    // 店長可以改所有人；員工只能改自己的密碼與顯示名稱
+    if (!isSelf && req.session.role !== 'owner') {
+        return res.status(403).json({ message: '只能修改自己的帳號' });
+    }
+
+    const users = readUsers();
+    const user = users.find(entry => entry.username === target);
+    if (!user) return res.status(404).json({ message: '找不到帳號' });
+
+    const changes = [];
+
+    if (req.body.password) {
+        const password = String(req.body.password);
+        if (password.length < 6) return res.status(400).json({ message: '密碼至少 6 碼' });
+        const { salt, hash } = hashPassword(password);
+        user.salt = salt;
+        user.hash = hash;
+        changes.push('更改密碼');
+    }
+
+    if (req.body.displayName !== undefined) {
+        user.displayName = String(req.body.displayName).trim() || user.username;
+        changes.push(`顯示名稱改為 ${user.displayName}`);
+    }
+
+    if (req.body.role !== undefined && req.session.role === 'owner') {
+        const nextRole = req.body.role === 'owner' ? 'owner' : 'staff';
+
+        // 不能把最後一位店長降級，否則沒人能再管理帳號
+        if (user.role === 'owner' && nextRole !== 'owner'
+            && users.filter(entry => entry.role === 'owner').length <= 1) {
+            return res.status(400).json({ message: '至少要保留一位店長' });
+        }
+
+        if (nextRole !== user.role) changes.push(`權限改為 ${ROLES[nextRole]}`);
+        user.role = nextRole;
+    }
+
+    writeUsers(users);
+    if (changes.length) logAudit('user.updated', target, changes.join('、'), req.session.username);
+    res.json({ ok: true, user: safeUser(user) });
+});
+
+app.delete('/api/admin/users/:username', requireAdmin, requireOwner, (req, res) => {
+    const target = String(req.params.username);
+
+    if (target === req.session.username) {
+        return res.status(400).json({ message: '不能刪除自己正在使用的帳號' });
+    }
+
+    const users = readUsers();
+    const user = users.find(entry => entry.username === target);
+    if (!user) return res.status(404).json({ message: '找不到帳號' });
+
+    if (user.role === 'owner' && users.filter(entry => entry.role === 'owner').length <= 1) {
+        return res.status(400).json({ message: '至少要保留一位店長' });
+    }
+
+    writeUsers(users.filter(entry => entry.username !== target));
+
+    // 該帳號目前登入中的 session 一併作廢
+    [...adminSessions.entries()]
+        .filter(([, session]) => session.username === target)
+        .forEach(([token]) => adminSessions.delete(token));
+
+    logAudit('user.deleted', target, '刪除帳號', req.session.username);
+    res.json({ ok: true });
+});
+
+// ==========================================
 // 🟢 操作紀錄 API
 // ==========================================
 app.get('/api/admin/audit', requireAdmin, (req, res) => {
@@ -988,11 +1468,14 @@ app.patch('/api/orders/:orderNumber/status', requireAdmin, async (req, res) => {
     }
 
     const orders = readOrders();
-    const order = orders.find(item => item.orderNumber === req.params.orderNumber);
+    const order = findOrder(orders, req.params.orderNumber);
 
     if (!order) {
         return res.status(404).json({ message: '找不到訂單' });
     }
+
+    // 一旦離開待接單狀態就停止重送提醒
+    if (status !== 'pending') stopOrderReminder(order.id);
 
     order.status = status;
     if (status === 'completed') order.completedAt = new Date().toISOString();
@@ -1005,20 +1488,20 @@ app.patch('/api/orders/:orderNumber/status', requireAdmin, async (req, res) => {
     order.customerNotifications.push(notification);
 
     writeOrders(orders);
-    logAudit('order.status_changed', `#${order.orderNumber}`, `狀態改為 ${getStatusLabel(status)}${notification.sent ? '，已通知客人' : ''}`);
+    logAudit('order.status_changed', `#${order.orderNumber}`, `狀態改為 ${getStatusLabel(status)}${notification.sent ? '，已通知客人' : ''}`, req.session && req.session.username);
     res.json({ ok: true, order, notification });
 });
 
 app.patch('/api/admin/orders/:orderNumber/note', requireAdmin, (req, res) => {
     const orders = readOrders();
-    const order = orders.find(item => item.orderNumber === req.params.orderNumber);
+    const order = findOrder(orders, req.params.orderNumber);
 
     if (!order) return res.status(404).json({ message: '找不到訂單' });
 
     order.adminNote = String(req.body.note || '').trim();
     order.updatedAt = new Date().toISOString();
     writeOrders(orders);
-    logAudit('order.note_updated', `#${order.orderNumber}`, order.adminNote || '清除備註');
+    logAudit('order.note_updated', `#${order.orderNumber}`, order.adminNote || '清除備註', req.session && req.session.username);
     res.json({ ok: true, order });
 });
 
@@ -1153,4 +1636,6 @@ app.get('/api/linepay/confirm', async (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    readUsers();              // 首次啟動時建立預設帳號
+    rearmPendingReminders();  // 重啟前還沒接的單要繼續提醒
 });

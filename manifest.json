@@ -1,0 +1,25 @@
+{
+  "name": "邱媽媽美食 後台管理",
+  "short_name": "邱媽媽接單",
+  "description": "接單後台：新訂單即時推播通知",
+  "start_url": "/merchant.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f7fa",
+  "theme_color": "#ff6b6b",
+  "icons": [
+    {
+      "src": "images/logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "images/logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}

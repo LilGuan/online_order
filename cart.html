@@ -915,7 +915,7 @@
     const paymentMethod = document.getElementById('payment-method').value;
 
     const isInClient = liff.isInClient();
-    const orderData = { name, phone, cart, notes, paymentMethod, orderNumber, pickupTime: finalPickupTime, lineUserId, isInClient };
+    const orderData = { name, phone, cart, notes, paymentMethod, orderNumber, pickupTime: finalPickupTime, lineUserId, isInClient, orderType: currentMode };
     localStorage.setItem('orderData', JSON.stringify(orderData));
     localStorage.setItem('userPhone', phone); 
 
@@ -1022,7 +1022,12 @@
     submitBtn.style.pointerEvents = 'none';
 
     try {
-      await saveOrderToBackend(orderData);
+      // 編號改由伺服器指派每日流水號（1、2、3…），回寫本地暫存讓訂單詳情頁顯示一致
+      const saved = await saveOrderToBackend(orderData);
+      if (saved && saved.order && saved.order.orderNumber) {
+        orderData.orderNumber = saved.order.orderNumber;
+        localStorage.setItem('orderData', JSON.stringify(orderData));
+      }
     } catch (error) {
       console.error('訂單儲存失敗:', error);
       alert('訂單送出失敗，請稍後再試或直接電話聯絡店家。');
@@ -1075,6 +1080,7 @@
         notes: orderData.notes,
         lineUserId: orderData.lineUserId,
         isInClient: orderData.isInClient,
+        orderType: orderData.orderType,
         items,
         totalAmount
       })
