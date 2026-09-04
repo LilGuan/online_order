@@ -1561,6 +1561,7 @@
   let currentUser = null;
   let alertSettings = { takeoverEnabled: true, soundRepeatSeconds: 3, pushRepeatEnabled: true, pushRepeatSeconds: 3, pushRepeatMaxMinutes: 10 };
   let takeoverOrderId = null;
+  let takeoverSwapping = false;
   let orderTypeFilter = 'all';
 
   /* ---------------- helpers ---------------- */
@@ -1615,6 +1616,81 @@
     });
   }
 
+  /* ---------------- 統一的按鈕回饋 ---------------- */
+  // 所有非同步操作都走這裡：按下去立刻鎖住並轉圈，成功閃一下打勾，失敗抖一下。
+  // 店家在忙的時候最怕「我到底按到了沒」，所以每個按鈕都要有明確反應。
+  async function withLoading(button, task, options = {}) {
+    if (!button || button.dataset.busy === '1') return;
+
+    const { showDone = true, doneMs = 550 } = options;
+
+    // 鎖住當下寬高，避免內容換成轉圈時按鈕縮掉造成畫面跳動
+    const rect = button.getBoundingClientRect();
+    button.style.minWidth = `${Math.ceil(rect.width)}px`;
+    button.style.minHeight = `${Math.ceil(rect.height)}px`;
+
+    button.dataset.busy = '1';
+    button.classList.add('is-loading');
+    button.disabled = true;
+
+    try {
+      const result = await task();
+
+      if (showDone) {
+        button.classList.remove('is-loading');
+        button.classList.add('is-done');
+        await new Promise(resolve => setTimeout(resolve, doneMs));
+        button.classList.remove('is-done');
+      }
+
+      return result;
+    } catch (error) {
+      button.classList.remove('is-loading');
+      button.classList.add('is-error');
+      setTimeout(() => button.classList.remove('is-error'), 420);
+      throw error;
+    } finally {
+      button.classList.remove('is-loading');
+      button.disabled = false;
+      delete button.dataset.busy;
+      button.style.minWidth = '';
+      button.style.minHeight = '';
+    }
+  }
+
+  // 包一層 try/catch 的版本：錯誤直接跳 toast，呼叫端不用每個都寫
+  async function runAction(button, task, options) {
+    try {
+      return await withLoading(button, task, options);
+    } catch (error) {
+      toast(error.message || '操作失敗', 'error');
+    }
+  }
+
+  // 點擊漣漪：用事件委派，之後新增的按鈕自動就有
+  document.addEventListener('pointerdown', event => {
+    const target = event.target.closest('.btn, .tab, .nav-item, .btn-accept, .btn-reject');
+    if (!target || target.disabled) return;
+
+    const rect = target.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    const dot = document.createElement('span');
+    dot.className = 'ripple-dot';
+    dot.style.width = dot.style.height = `${size}px`;
+    dot.style.left = `${event.clientX - rect.left - size / 2}px`;
+    dot.style.top = `${event.clientY - rect.top - size / 2}px`;
+
+    target.appendChild(dot);
+    setTimeout(() => dot.remove(), 600);
+  });
+
+  // 切換檢視時先鋪骨架，避免資料還沒回來時一片空白
+  function showSkeleton(container, rows = 4) {
+    if (!container) return;
+    container.innerHTML = `<div class="sk-list">${Array.from({ length: rows }, () =>
+      '<div class="skeleton sk-row"></div>').join('')}</div>`;
+  }
+
   async function requestJson(url, options = {}) {
     const response = await fetch(url, {
       ...options,
@@ -1661,7 +1737,21 @@
     loadViewData(viewId);
   }
 
+  const VIEW_SKELETON_TARGETS = {
+    orders: 'orders',
+    menu: 'menu-tbody',
+    stock: 'stock-tbody',
+    users: 'users-tbody',
+    audit: 'audit-list'
+  };
+
   async function loadViewData(viewId) {
+    // 資料還沒回來時先鋪骨架，避免一片空白讓人以為壞了
+    const skeletonTarget = VIEW_SKELETON_TARGETS[viewId];
+    if (skeletonTarget && $(skeletonTarget) && !$(skeletonTarget).children.length) {
+      showSkeleton($(skeletonTarget), 4);
+    }
+
     try {
       if (viewId === 'dashboard') await fetchDashboard();
       if (viewId === 'menu') await fetchMenu();
@@ -2524,11 +2614,7 @@
   }
 
   async function saveSettings() {
-    const button = $('settings-save');
-    button.disabled = true;
-    button.innerHTML = '<span class="spinner"></span> 儲存中';
-
-    try {
+    return runAction($('settings-save'), async () => {
       await requestJson(`${BACKEND_BASE_URL}/api/admin/settings`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -2559,12 +2645,7 @@
       toast('設定已儲存，前台會立即套用', 'ok');
       await fetchSettings();
       renderTakeover();
-    } catch (error) {
-      toast(`儲存失敗：${error.message}`, 'error');
-    } finally {
-      button.disabled = false;
-      button.textContent = '儲存設定';
-    }
+    });
   }
 
   /* ---------------- 帳號管理 ---------------- */
@@ -2702,15 +2783,13 @@
       const button = document.createElement('button');
       button.className = `btn ${config.className || 'btn-soft'}`;
       button.textContent = config.label;
-      button.addEventListener('click', async () => {
-        button.disabled = true;
-        try {
-          await config.onClick();
-        } catch (error) {
-          toast(error.message, 'error');
-        } finally {
-          button.disabled = false;
+      button.addEventListener('click', () => {
+        // 「取消 / 關閉」這種同步動作不需要轉圈，只有真的會等的才顯示 loading
+        if (config.className === 'btn-soft') {
+          config.onClick();
+          return;
         }
+        runAction(button, () => config.onClick(), { showDone: false });
       });
       $('modal-foot').appendChild(button);
     });
@@ -2855,12 +2934,22 @@
     const takeover = $('takeover');
     const waiting = pendingOrders();
 
-    // 沒有待接單，或店家自己關掉這個功能 → 收起來
+    // 接單動畫進行中就先不要重繪，否則卡片會在飛走途中被抽掉
+    if (takeoverSwapping) return;
+
+    // 沒有待接單，或店家自己關掉這個功能 → 淡出收起
     if (!waiting.length || !alertSettings.takeoverEnabled) {
-      takeover.classList.remove('open');
+      if (takeover.classList.contains('open') && !takeover.classList.contains('closing')) {
+        takeover.classList.add('closing');
+        setTimeout(() => {
+          takeover.classList.remove('open', 'closing');
+        }, 300);
+      }
       takeoverOrderId = null;
       return;
     }
+
+    takeover.classList.remove('closing');
 
     // 一律處理最舊的那張，避免插隊
     const order = [...waiting].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0];
@@ -2871,7 +2960,16 @@
       ? '接單後會自動跳出下一張'
       : '按下「接單」後鈴聲與推播才會停止';
 
-    $('takeover-card').innerHTML = `
+    // 換單時重播進場動畫，讓「下一張」有明確的視覺切換
+    const card = $('takeover-card');
+    if (card.dataset.orderId && card.dataset.orderId !== order.id) {
+      card.style.animation = 'none';
+      void card.offsetWidth;
+      card.style.animation = 'takeoverIn .34s var(--ease-spring)';
+    }
+    card.dataset.orderId = order.id;
+
+    card.innerHTML = `
       <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
         <div>
           <div class="takeover-no">#${escapeHtml(order.orderNumber)}</div>
@@ -2905,18 +3003,37 @@
     takeover.classList.add('open');
   }
 
+  // 綠色打勾閃一下，讓店家在忙的時候也能一眼確認「這單真的接到了」
+  function flashAccepted() {
+    const flash = document.createElement('div');
+    flash.className = 'accept-flash';
+    flash.innerHTML = ICONS.checkCircle;
+    document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 850);
+  }
+
   async function takeoverAction(status) {
     if (!takeoverOrderId) return;
 
+    const orderId = takeoverOrderId;
     const button = status === 'preparing' ? $('takeover-accept') : $('takeover-reject');
-    button.disabled = true;
+    const inner = document.querySelector('.takeover-inner');
 
     try {
-      await updateOrderStatus(takeoverOrderId, status);
+      await withLoading(button, () => updateOrderStatus(orderId, status), { showDone: false });
+
+      // 先把卡片放大再飛走，接著才換下一張，避免畫面硬跳
+      if (inner) inner.classList.add('accepted');
+      if (status === 'preparing') flashAccepted();
+
+      await new Promise(resolve => setTimeout(resolve, 420));
+      if (inner) inner.classList.remove('accepted');
+
+      takeoverSwapping = false;
+      renderTakeover();
     } catch (error) {
       toast(`更新失敗：${error.message}`, 'error');
-    } finally {
-      button.disabled = false;
+      if (inner) inner.classList.remove('accepted');
     }
   }
 
@@ -3108,10 +3225,9 @@
     event.preventDefault();
     $('login-error').textContent = '';
     const button = $('login-btn');
-    button.disabled = true;
-    button.innerHTML = '<span class="spinner"></span> 登入中';
 
     try {
+      await withLoading(button, async () => {
       const response = await fetch(`${BACKEND_BASE_URL}/api/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -3128,11 +3244,9 @@
       setLoggedIn(true);
       enableSound().catch(() => {});
       pollTick();
+      }, { showDone: false });
     } catch (error) {
       $('login-error').textContent = error.message;
-    } finally {
-      button.disabled = false;
-      button.textContent = '登入';
     }
   });
 
@@ -3148,10 +3262,8 @@
 
   $('menu-toggle').addEventListener('click', () => $('sidebar').classList.toggle('open'));
 
-  $('store-toggle').addEventListener('click', async () => {
-    const button = $('store-toggle');
-    button.disabled = true;
-    try {
+  $('store-toggle').addEventListener('click', () => {
+    runAction($('store-toggle'), async () => {
       await requestJson(`${BACKEND_BASE_URL}/api/store/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -3159,26 +3271,19 @@
       });
       await fetchStoreStatus();
       toast(storeIsOpen ? '已上線，開始接單' : '已下線，暫停接單', 'ok');
-    } catch (error) {
-      toast('切換失敗，請稍後再試', 'error');
-    } finally {
-      button.disabled = false;
-    }
+    });
   });
 
   $('sound-btn').addEventListener('click', () => {
-    enableSound()
-      .then(() => {
-        toast('接單鈴聲已開啟', 'ok');
-        if (orders.some(order => order.status === 'pending')) startAlarm();
-      })
-      .catch(() => toast('鈴聲啟用失敗，請確認瀏覽器允許此網站播放聲音', 'error'));
+    withLoading($('sound-btn'), async () => {
+      await enableSound();
+      toast('接單鈴聲已開啟', 'ok');
+      if (orders.some(order => order.status === 'pending')) startAlarm();
+    }).catch(() => toast('鈴聲啟用失敗，請確認瀏覽器允許此網站播放聲音', 'error'));
   });
 
-  $('push-btn').addEventListener('click', async () => {
-    const button = $('push-btn');
-    button.disabled = true;
-    try {
+  $('push-btn').addEventListener('click', () => {
+    runAction($('push-btn'), async () => {
       if (pushSubscribed) {
         // 已開啟就當成「測試推播」用，店家可以自己確認手機真的會響
         const data = await requestJson(`${BACKEND_BASE_URL}/api/admin/push/test`, { method: 'POST' });
@@ -3187,21 +3292,15 @@
       } else {
         await enablePush();
       }
-    } catch (error) {
-      toast(error.message, 'error');
-    } finally {
-      button.disabled = false;
-    }
+    });
   });
 
-  $('sound-test').addEventListener('click', async () => {
-    try {
+  $('sound-test').addEventListener('click', () => {
+    withLoading($('sound-test'), async () => {
       if (!soundEnabled) await enableSound();
       alarmCycle();
       toast('已播放測試鈴聲', 'ok');
-    } catch (error) {
-      toast('無法播放聲音，請確認瀏覽器允許此網站播放聲音', 'error');
-    }
+    }).catch(() => toast('無法播放聲音，請確認瀏覽器允許此網站播放聲音', 'error'));
   });
 
   // 瀏覽器規定音訊必須由使用者操作啟動，所以第一次點畫面任何地方就順手把鈴聲開起來，
@@ -3217,23 +3316,28 @@
       .catch(() => { /* 使用者手勢還不夠或被封鎖，下次點擊再試 */ });
   });
 
-  $('refresh-btn').addEventListener('click', async () => {
-    lastOrdersSignature = '';
-    lastDashSignature = '';
-    await pollTick();
-    await loadViewData(currentView);
-    toast('已重新整理');
+  $('refresh-btn').addEventListener('click', () => {
+    runAction($('refresh-btn'), async () => {
+      lastOrdersSignature = '';
+      lastDashSignature = '';
+      await pollTick();
+      await loadViewData(currentView);
+      toast('已重新整理');
+    });
   });
 
-  $('logout-btn').addEventListener('click', async () => {
-    try {
-      await requestJson(`${BACKEND_BASE_URL}/api/admin/logout`, { method: 'POST' });
-    } catch (error) { /* 已失效的 token 直接忽略 */ }
+  $('logout-btn').addEventListener('click', () => {
+    withLoading($('logout-btn'), async () => {
+      try {
+        await requestJson(`${BACKEND_BASE_URL}/api/admin/logout`, { method: 'POST' });
+      } catch (error) { /* 已失效的 token 直接忽略 */ }
 
-    token = '';
-    localStorage.removeItem('adminToken');
-    stopAlarm();
-    setLoggedIn(false);
+      token = '';
+      currentUser = null;
+      localStorage.removeItem('adminToken');
+      stopAlarm();
+      setLoggedIn(false);
+    }, { showDone: false });
   });
 
   /* 訂單 */
@@ -3274,20 +3378,34 @@
     fetchOrders().catch(error => toast(error.message, 'error'));
   });
 
-  $('orders').addEventListener('click', async event => {
+  $('orders').addEventListener('click', event => {
     const detailButton = event.target.closest('[data-detail]');
     if (detailButton) { openOrderDetail(detailButton.dataset.detail); return; }
 
     const actionButton = event.target.closest('button[data-order]');
     if (!actionButton) return;
 
-    actionButton.disabled = true;
-    try {
-      await updateOrderStatus(actionButton.dataset.order, actionButton.dataset.action);
-    } catch (error) {
-      toast(`更新失敗：${error.message}`, 'error');
-      actionButton.disabled = false;
-    }
+    const orderKey = actionButton.dataset.order;
+    const action = actionButton.dataset.action;
+    const card = actionButton.closest('.order-card');
+
+    // 動畫必須在送出前就開始 —— updateOrderStatus 內的 renderOrders() 會整段重繪，
+    // 等它跑完再加 class，卡片早就從 DOM 被換掉了。
+    const willLeaveTab = card && activeStatus !== 'all' && activeStatus !== action;
+
+    runAction(actionButton, async () => {
+      if (willLeaveTab) card.classList.add('removing');
+
+      try {
+        await Promise.all([
+          updateOrderStatus(orderKey, action),
+          willLeaveTab ? new Promise(resolve => setTimeout(resolve, 380)) : Promise.resolve()
+        ]);
+      } catch (error) {
+        if (willLeaveTab) card.classList.remove('removing');
+        throw error;
+      }
+    }, { showDone: false });
   });
 
   /* 菜單 */
@@ -3295,14 +3413,14 @@
   $('menu-search').addEventListener('input', renderMenuTable);
   $('menu-category').addEventListener('change', renderMenuTable);
 
-  $('menu-tbody').addEventListener('click', async event => {
+  $('menu-tbody').addEventListener('click', event => {
     const editButton = event.target.closest('[data-edit]');
     if (editButton) { openMenuEditor(Number(editButton.dataset.edit)); return; }
 
     const toggleButton = event.target.closest('[data-toggle-status]');
     if (toggleButton) {
       const item = menuItems.find(entry => entry.id === Number(toggleButton.dataset.toggleStatus));
-      try {
+      runAction(toggleButton, async () => {
         await requestJson(`${BACKEND_BASE_URL}/api/admin/menu/${item.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -3310,9 +3428,7 @@
         });
         toast(item.status === 'hidden' ? `${item.name} 已上架` : `${item.name} 已下架`, 'ok');
         await fetchMenu();
-      } catch (error) {
-        toast(error.message, 'error');
-      }
+      });
       return;
     }
 
@@ -3339,15 +3455,28 @@
   });
 
   /* 庫存 */
-  $('stock-tbody').addEventListener('change', async event => {
+  // 開關與輸入框沒有按鈕可以轉圈，改成把整列變淡表示正在送出
+  async function withRowBusy(element, task) {
+    const row = element.closest('tr');
+    if (row) row.classList.add('row-busy');
+    try {
+      await task();
+    } catch (error) {
+      toast(error.message, 'error');
+    } finally {
+      if (row) row.classList.remove('row-busy');
+    }
+  }
+
+  $('stock-tbody').addEventListener('change', event => {
     const soldOutToggle = event.target.closest('[data-soldout]');
     if (soldOutToggle) {
       const item = menuItems.find(entry => entry.id === Number(soldOutToggle.dataset.soldout));
-      try {
-        await patchStock(item.id, { soldOut: !soldOutToggle.checked }, soldOutToggle.checked ? `${item.name} 恢復供應` : `${item.name} 已標示賣完`);
-      } catch (error) {
-        toast(error.message, 'error');
-      }
+      withRowBusy(soldOutToggle, () => patchStock(
+        item.id,
+        { soldOut: !soldOutToggle.checked },
+        soldOutToggle.checked ? `${item.name} 恢復供應` : `${item.name} 已標示賣完`
+      ));
       return;
     }
 
@@ -3355,30 +3484,28 @@
     if (stockInput) {
       const item = menuItems.find(entry => entry.id === Number(stockInput.dataset.stock));
       const value = stockInput.value === '' ? null : Number(stockInput.value);
-      try {
-        await patchStock(item.id, { dailyStock: value }, value ? `${item.name} 每日限量 ${value}` : `${item.name} 取消限量`);
-      } catch (error) {
-        toast(error.message, 'error');
-      }
+      withRowBusy(stockInput, () => patchStock(
+        item.id,
+        { dailyStock: value },
+        value ? `${item.name} 每日限量 ${value}` : `${item.name} 取消限量`
+      ));
     }
   });
 
-  $('stock-tbody').addEventListener('click', async event => {
+  $('stock-tbody').addEventListener('click', event => {
     const resetButton = event.target.closest('[data-reset-stock]');
     if (!resetButton) return;
 
     const item = menuItems.find(entry => entry.id === Number(resetButton.dataset.resetStock));
-    try {
-      await patchStock(item.id, { resetSold: true }, `${item.name} 已重設當日已售數量`);
-    } catch (error) {
-      toast(error.message, 'error');
-    }
+    runAction(resetButton, () => patchStock(item.id, { resetSold: true }, `${item.name} 已重設當日已售數量`));
   });
 
   /* 報表 */
-  $('report-apply').addEventListener('click', () => fetchReport().catch(error => toast(error.message, 'error')));
+  $('report-apply').addEventListener('click', () => {
+    runAction($('report-apply'), () => fetchReport());
+  });
   document.querySelectorAll('[data-export]').forEach(button => {
-    button.addEventListener('click', () => exportCsv(button.dataset.export));
+    button.addEventListener('click', () => runAction(button, () => exportCsv(button.dataset.export)));
   });
 
   /* 滿版接單卡片 */
@@ -3439,10 +3566,8 @@
     ]);
   });
 
-  $('me-save').addEventListener('click', async () => {
-    const button = $('me-save');
-    button.disabled = true;
-    try {
+  $('me-save').addEventListener('click', () => {
+    runAction($('me-save'), async () => {
       const payload = { displayName: $('me-display').value.trim() };
       const password = $('me-password').value;
       if (password) payload.password = password;
@@ -3454,11 +3579,7 @@
       });
       toast(password ? '已更新，下次請用新密碼登入' : '帳號已更新', 'ok');
       await fetchUsers();
-    } catch (error) {
-      toast(error.message, 'error');
-    } finally {
-      button.disabled = false;
-    }
+    });
   });
 
   /* 點推播通知 → 自動切到接單區 */
