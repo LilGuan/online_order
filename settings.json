@@ -1,5 +1,5 @@
 {
-  "isOpen": false,
+  "isOpen": true,
   "storeName": "邱媽媽美食",
   "phone": "033812828",
   "address": "桃園市大園區皇家六街12號",
@@ -34,5 +34,5 @@
     "pushRepeatSeconds": 3,
     "pushRepeatMaxMinutes": 10
   },
-  "updatedAt": "2026-09-04T07:57:15.937Z"
+  "updatedAt": "2026-09-04T08:30:00.385Z"
 }

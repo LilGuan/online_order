@@ -1076,7 +1076,8 @@
   .takeover.closing { animation: takeoverOut .3s var(--ease-out) forwards; }
   .takeover.closing, .takeover-inner.accepted { pointer-events: none; }
 
-  /* 綠色打勾閃一下，讓店家確定真的接到了 */
+  /* 接單/拒絕都要有明確的全螢幕閃現特效，讓店家不用盯著螢幕細看也知道剛剛的動作生效了。
+     綠色打勾 = 接單，紅色叉叉 = 拒絕，同一套動畫、不同顏色與圖示。 */
   .accept-flash {
     position: fixed;
     inset: 0;
@@ -1088,6 +1089,15 @@
     pointer-events: none;
   }
   .accept-flash svg { width: 96px; height: 96px; color: #fff; animation: okPop .45s var(--ease-spring); }
+  .accept-flash.is-reject { background: rgba(185, 28, 28, .95); }
+
+  /* 拒絕時卡片改往下沉出去，跟接單「往上飛走」的方向相反，兩個動作一眼就能分辨 */
+  @keyframes takeoverRejected {
+    0%   { transform: scale(1); opacity: 1; }
+    35%  { transform: scale(.98); }
+    100% { transform: scale(.9) translateY(24px); opacity: 0; }
+  }
+  .takeover-inner.rejected { animation: takeoverRejected .42s var(--ease-out) forwards; pointer-events: none; }
 
   .order-card.removing { animation: cardOut .38s var(--ease-out) forwards; overflow: hidden; }
 
@@ -3387,6 +3397,15 @@
     setTimeout(() => flash.remove(), 850);
   }
 
+  // 跟 flashAccepted 同一套效果，換成紅色叉叉，讓「拒絕」也有清楚的視覺回饋
+  function flashRejected() {
+    const flash = document.createElement('div');
+    flash.className = 'accept-flash is-reject';
+    flash.innerHTML = ICONS.xCircle;
+    document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 850);
+  }
+
   // 換單或收起卡片前，把拒絕確認面板收回去，不然下一張訂單一開就顯示在確認畫面
   function resetTakeoverConfirm() {
     $('takeover-confirm').style.display = 'none';
@@ -3396,26 +3415,29 @@
   async function takeoverAction(status) {
     if (!takeoverOrderId) return;
 
+    const isAccept = status === 'preparing';
     const orderId = takeoverOrderId;
-    const button = status === 'preparing' ? $('takeover-accept') : $('takeover-reject-confirm');
+    const button = isAccept ? $('takeover-accept') : $('takeover-reject-confirm');
     const inner = document.querySelector('.takeover-inner');
+    const exitClass = isAccept ? 'accepted' : 'rejected'; // 接單往上飛走、拒絕往下沉，兩種動作一眼就能分辨
 
     try {
       await withLoading(button, () => updateOrderStatus(orderId, status), { showDone: false });
 
-      // 先把卡片放大再飛走，接著才換下一張，避免畫面硬跳
-      if (inner) inner.classList.add('accepted');
-      if (status === 'preparing') flashAccepted();
+      // 兩種動作都要有明確的全螢幕特效 + 卡片飛出動畫，接單/拒絕才會感覺同樣「有效」
+      if (inner) inner.classList.add(exitClass);
+      if (isAccept) flashAccepted();
+      else flashRejected();
 
       await new Promise(resolve => setTimeout(resolve, 420));
-      if (inner) inner.classList.remove('accepted');
+      if (inner) inner.classList.remove(exitClass);
 
       resetTakeoverConfirm();
       takeoverSwapping = false;
       renderTakeover();
     } catch (error) {
       toast(`更新失敗：${error.message}`, 'error');
-      if (inner) inner.classList.remove('accepted');
+      if (inner) inner.classList.remove(exitClass);
     }
   }
 

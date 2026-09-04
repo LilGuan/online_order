@@ -1,5 +1,125 @@
 [
   {
+    "id": "59a94103-3a68-4f7d-9033-69aaf5b29b3f",
+    "at": "2026-09-04T08:30:59.909Z",
+    "user": "admin",
+    "action": "order.status_changed",
+    "target": "#T12",
+    "detail": "狀態改為 已取消"
+  },
+  {
+    "id": "03200015-661b-49b6-9e1c-6ecfcaee3578",
+    "at": "2026-09-04T08:30:56.122Z",
+    "user": "admin",
+    "action": "order.test_created",
+    "target": "#T12",
+    "detail": "推播對象：1 台指定裝置"
+  },
+  {
+    "id": "228308b5-42dd-4a0d-99c4-13cdb28ad127",
+    "at": "2026-09-04T08:28:08.097Z",
+    "user": "__qa_temp__",
+    "action": "order.test_cleared",
+    "target": "測試訂單",
+    "detail": "清除 4 張測試訂單"
+  },
+  {
+    "id": "635f5c72-2975-4e41-aeb2-418e75a661b3",
+    "at": "2026-09-04T08:27:49.737Z",
+    "user": "__qa_temp__",
+    "action": "order.status_changed",
+    "target": "#T11",
+    "detail": "狀態改為 已取消"
+  },
+  {
+    "id": "ede2ef2c-7b3c-480c-b9cc-db7e6cf649b9",
+    "at": "2026-09-04T08:27:27.592Z",
+    "user": "__qa_temp__",
+    "action": "order.test_created",
+    "target": "#T11",
+    "detail": "推播對象：全部裝置"
+  },
+  {
+    "id": "cb3ebb71-fc3d-4361-8341-4b52819a1818",
+    "at": "2026-09-04T08:27:09.954Z",
+    "user": "__qa_temp__",
+    "action": "order.status_changed",
+    "target": "#T10",
+    "detail": "狀態改為 已取消"
+  },
+  {
+    "id": "17822755-93d7-4ec0-bafc-0a89635b4ed6",
+    "at": "2026-09-04T08:26:50.977Z",
+    "user": "__qa_temp__",
+    "action": "order.test_created",
+    "target": "#T10",
+    "detail": "推播對象：全部裝置"
+  },
+  {
+    "id": "fa9e8e87-1c11-4f33-85a7-b7199698b6f7",
+    "at": "2026-09-04T08:26:35.630Z",
+    "user": "__qa_temp__",
+    "action": "order.status_changed",
+    "target": "#T9",
+    "detail": "狀態改為 已取消"
+  },
+  {
+    "id": "563e7979-2fe4-44fe-998b-46c1a6f92024",
+    "at": "2026-09-04T08:26:01.920Z",
+    "user": "__qa_temp__",
+    "action": "order.test_created",
+    "target": "#T9",
+    "detail": "推播對象：全部裝置"
+  },
+  {
+    "id": "ac61d167-9845-41ab-9e98-92f03597a8d3",
+    "at": "2026-09-04T08:24:00.040Z",
+    "user": "admin",
+    "action": "order.status_changed",
+    "target": "#T8",
+    "detail": "狀態改為 製作中"
+  },
+  {
+    "id": "cb05193b-b43a-4222-b1d3-30d9d6c650d6",
+    "at": "2026-09-04T08:23:54.685Z",
+    "user": "admin",
+    "action": "order.test_created",
+    "target": "#T8",
+    "detail": "推播對象：全部裝置"
+  },
+  {
+    "id": "c2d8a30e-8ad5-4b9a-92e8-a6ebb25b60b1",
+    "at": "2026-09-04T08:23:50.027Z",
+    "user": "admin",
+    "action": "order.test_cleared",
+    "target": "測試訂單",
+    "detail": "清除 3 張測試訂單"
+  },
+  {
+    "id": "b5fff7b8-05ff-43fc-9b21-12dfc8dbefee",
+    "at": "2026-09-04T08:21:21.195Z",
+    "user": "admin",
+    "action": "order.status_changed",
+    "target": "#T7",
+    "detail": "狀態改為 已取消"
+  },
+  {
+    "id": "38c235ec-b4b4-4d22-862e-44aedbb8eb19",
+    "at": "2026-09-04T08:20:56.299Z",
+    "user": "admin",
+    "action": "order.test_created",
+    "target": "#T7",
+    "detail": "推播對象：1 台指定裝置"
+  },
+  {
+    "id": "4e74a4b0-e393-45cc-986b-e6f2c5076d24",
+    "at": "2026-09-04T08:20:08.432Z",
+    "user": "admin",
+    "action": "settings.updated",
+    "target": "門店設定",
+    "detail": "調整營業時間"
+  },
+  {
     "id": "1e4c4dbc-6394-4dc7-9c87-77d8c4727a72",
     "at": "2026-09-04T07:55:54.955Z",
     "user": "admin",
