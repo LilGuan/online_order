@@ -620,7 +620,8 @@
   .modal-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 200;
+    /* 一定要蓋在滿版接單卡片（400）之上，否則從接單卡片開出的確認框會被蓋住點不到 */
+    z-index: 450;
     display: none;
     place-items: center;
     padding: 20px;
@@ -806,6 +807,40 @@
     font-weight: 800;
   }
   .takeover-hint { text-align: center; font-size: .8rem; opacity: .85; }
+
+  /* 拒絕的二次確認：疊在同一張卡片內，不靠另一層彈窗，保證點得到 */
+  .takeover-confirm {
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+    animation: fadeUp .22s var(--ease-out);
+  }
+  .takeover-confirm-text {
+    color: #fff;
+    font-size: .92rem;
+    font-weight: 700;
+    line-height: 1.55;
+    text-align: center;
+    padding: 0 6px;
+  }
+  .takeover-confirm-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .btn-confirm-back {
+    padding: 14px;
+    border-radius: 13px;
+    background: rgba(0, 0, 0, .28);
+    color: #fff;
+    font-size: .95rem;
+    font-weight: 800;
+  }
+  .btn-confirm-reject {
+    padding: 14px;
+    border-radius: 13px;
+    background: #fff;
+    color: #b91c1c;
+    font-size: .98rem;
+    font-weight: 900;
+  }
+  .btn-confirm-back:active, .btn-confirm-reject:active { transform: scale(.97); }
 
   @media (max-width: 520px) {
     .takeover-no { font-size: 2.1rem; }
@@ -1373,6 +1408,52 @@
         </div>
       </section>
 
+      <!-- ---------------- 推播測試 / 裝置管理 ---------------- -->
+      <section class="view" id="view-push-test">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">建立測試訂單</div>
+              <div class="card-sub">驗證推播、聲音、滿版接單卡片是否正常運作</div>
+            </div>
+          </div>
+
+          <div class="toolbar" style="margin-bottom:0;">
+            <select class="field" id="test-order-type" style="width:auto;">
+              <option value="instant">即時單</option>
+              <option value="reserve">預約單</option>
+            </select>
+            <select class="field" id="test-order-device" style="width:auto; flex:1; min-width:160px;">
+              <option value="">推播給全部裝置</option>
+            </select>
+            <button class="btn btn-primary btn-sm" id="test-order-create">建立測試訂單</button>
+            <button class="btn btn-danger btn-sm" id="test-order-clear">清除全部測試訂單</button>
+          </div>
+          <div class="hint">測試訂單會出現在接單區、觸發滿版卡片與推播，但不會計入營業額或報表。用「接單／拒絕」處理它就會停止提醒，跟真實訂單一樣。</div>
+        </div>
+
+        <div class="card section-gap">
+          <div class="card-head">
+            <div>
+              <div class="card-title">推播裝置</div>
+              <div class="card-sub">重新命名裝置，之後測試才能分清楚是哪一支手機</div>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>裝置名稱</th><th>登記時間</th><th style="text-align:right;">操作</th></tr>
+              </thead>
+              <tbody id="push-devices-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="push-devices-empty" style="display:none;">
+            <div class="ico" data-icon="phone"></div>
+            <div>目前沒有裝置登記背景推播</div>
+          </div>
+        </div>
+      </section>
+
       <!-- ---------------- 帳號管理 ---------------- -->
       <section class="view" id="view-users">
         <div class="toolbar">
@@ -1440,10 +1521,21 @@
 
     <div class="takeover-card" id="takeover-card"></div>
 
-    <div class="takeover-actions">
+    <div class="takeover-actions" id="takeover-actions">
       <button class="btn-accept" id="takeover-accept">接單</button>
       <button class="btn-reject" id="takeover-reject">拒絕這張訂單</button>
     </div>
+
+    <!-- 拒絕的二次確認直接做在滿版卡片內，不用另外開 Modal ——
+         Modal 疊層本身沒問題，但這裡是兩層全螢幕遮罩疊在一起，確認鈕之前會被蓋住點不到。 -->
+    <div class="takeover-confirm" id="takeover-confirm" style="display:none;">
+      <div class="takeover-confirm-text">確定要拒絕這張訂單嗎？客人會收到「店家已拒絕訂單」的通知。</div>
+      <div class="takeover-confirm-actions">
+        <button class="btn-confirm-back" id="takeover-reject-back">返回</button>
+        <button class="btn-confirm-reject" id="takeover-reject-confirm">確定拒絕</button>
+      </div>
+    </div>
+
     <div class="takeover-hint" id="takeover-hint"></div>
   </div>
 </div>
@@ -1528,6 +1620,7 @@
     { id: 'stock', name: '庫存', icon: 'stock' },
     { id: 'reports', name: '報表', icon: 'reports' },
     { id: 'settings', name: '門店設定', icon: 'settings', ownerOnly: true },
+    { id: 'push-test', name: '推播測試', icon: 'phone', ownerOnly: true },
     { id: 'users', name: '帳號管理', icon: 'users', ownerOnly: true },
     { id: 'audit', name: '操作紀錄', icon: 'audit' }
   ];
@@ -1742,7 +1835,8 @@
     menu: 'menu-tbody',
     stock: 'stock-tbody',
     users: 'users-tbody',
-    audit: 'audit-list'
+    audit: 'audit-list',
+    'push-test': 'push-devices-tbody'
   };
 
   async function loadViewData(viewId) {
@@ -1758,6 +1852,7 @@
       if (viewId === 'stock') await fetchMenu();
       if (viewId === 'reports') await fetchReport();
       if (viewId === 'settings') await fetchSettings();
+      if (viewId === 'push-test') await fetchPushDevices();
       if (viewId === 'users') await fetchUsers();
       if (viewId === 'audit') await fetchAudit();
     } catch (error) {
@@ -2079,6 +2174,7 @@
               <div class="order-time">${formatTime(order.createdAt)}</div>
             </div>
             <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+              ${order.isTest ? '<span class="pill off">測試</span>' : ''}
               ${orderTypeBadge(order)}
               <span class="badge ${order.status}">${STATUS_LABELS[order.status] || order.status}</span>
             </div>
@@ -2648,6 +2744,54 @@
     });
   }
 
+  /* ---------------- 推播測試 / 裝置管理 ---------------- */
+  let pushDevices = [];
+
+  async function fetchPushDevices() {
+    const data = await requestJson(`${BACKEND_BASE_URL}/api/admin/push/status`, { cache: 'no-store' });
+    pushDevices = data.devices || [];
+
+    $('push-devices-empty').style.display = pushDevices.length ? 'none' : 'flex';
+
+    $('push-devices-tbody').innerHTML = pushDevices.map((device, index) => `
+      <tr style="opacity:0; animation: fadeUp .35s var(--ease-out) ${index * 40}ms forwards;">
+        <td>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <input class="field" style="padding:7px 9px; max-width:220px;" value="${escapeHtml(device.label || '')}"
+                   placeholder="未命名裝置" data-device-label="${device.id}" />
+            <button class="btn btn-soft btn-sm" data-device-save="${device.id}">儲存</button>
+          </div>
+          <div class="cell-meta">尾碼 ${escapeHtml(device.endpoint)}</div>
+        </td>
+        <td class="cell-meta">${formatTime(device.createdAt)}</td>
+        <td style="text-align:right;">
+          <button class="btn btn-primary btn-sm" data-device-test="${device.id}">單獨測試</button>
+          <button class="btn btn-danger btn-sm" data-device-remove="${device.id}">移除</button>
+        </td>
+      </tr>
+    `).join('');
+
+    // 下拉選單同步裝置清單，方便直接指定要測試哪一台
+    const select = $('test-order-device');
+    const current = select.value;
+    select.innerHTML = '<option value="">推播給全部裝置</option>' + pushDevices.map(device => `
+      <option value="${device.id}">${escapeHtml(device.label || '未命名裝置')}（${formatTime(device.createdAt)}）</option>
+    `).join('');
+    if (pushDevices.some(device => device.id === current)) select.value = current;
+  }
+
+  async function createTestOrder(deviceIds) {
+    const data = await requestJson(`${BACKEND_BASE_URL}/api/admin/orders/test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderType: $('test-order-type').value, deviceIds })
+    });
+
+    toast(`測試訂單 #${data.order.orderNumber} 已建立`, 'ok');
+    lastOrdersSignature = '';
+    await fetchOrders(); // 立刻拉一次，滿版卡片才會馬上跳出來，不用等 3 秒輪詢
+  }
+
   /* ---------------- 帳號管理 ---------------- */
   const ROLE_LABELS = { owner: '店長', staff: '員工' };
 
@@ -2946,6 +3090,7 @@
         }, 300);
       }
       takeoverOrderId = null;
+      resetTakeoverConfirm();
       return;
     }
 
@@ -2966,6 +3111,7 @@
       card.style.animation = 'none';
       void card.offsetWidth;
       card.style.animation = 'takeoverIn .34s var(--ease-spring)';
+      resetTakeoverConfirm(); // 換成別張訂單了，不該還停在上一張的拒絕確認畫面
     }
     card.dataset.orderId = order.id;
 
@@ -2975,7 +3121,10 @@
           <div class="takeover-no">#${escapeHtml(order.orderNumber)}</div>
           <div class="takeover-meta">${formatTime(order.createdAt)}</div>
         </div>
-        ${orderTypeBadge(order)}
+        <div style="display:flex; gap:6px;">
+          ${order.isTest ? '<span class="pill off">測試</span>' : ''}
+          ${orderTypeBadge(order)}
+        </div>
       </div>
 
       <div class="customer" style="margin:14px 0 0;">
@@ -3012,11 +3161,17 @@
     setTimeout(() => flash.remove(), 850);
   }
 
+  // 換單或收起卡片前，把拒絕確認面板收回去，不然下一張訂單一開就顯示在確認畫面
+  function resetTakeoverConfirm() {
+    $('takeover-confirm').style.display = 'none';
+    $('takeover-actions').style.display = 'grid';
+  }
+
   async function takeoverAction(status) {
     if (!takeoverOrderId) return;
 
     const orderId = takeoverOrderId;
-    const button = status === 'preparing' ? $('takeover-accept') : $('takeover-reject');
+    const button = status === 'preparing' ? $('takeover-accept') : $('takeover-reject-confirm');
     const inner = document.querySelector('.takeover-inner');
 
     try {
@@ -3029,6 +3184,7 @@
       await new Promise(resolve => setTimeout(resolve, 420));
       if (inner) inner.classList.remove('accepted');
 
+      resetTakeoverConfirm();
       takeoverSwapping = false;
       renderTakeover();
     } catch (error) {
@@ -3510,20 +3666,21 @@
 
   /* 滿版接單卡片 */
   $('takeover-accept').addEventListener('click', () => takeoverAction('preparing'));
+
+  // 拒絕要二次確認，但這裡不能用一般的 Modal —— Modal 疊層本身沒問題，
+  // 是這個滿版卡片已經佔掉整個畫面的最上層，用同一種彈窗機制疊上去等於疊在自己頭上，
+  // 確認鈕永遠點不到。改成直接切換卡片內的按鈕區塊。
   $('takeover-reject').addEventListener('click', () => {
-    const order = orders.find(item => item.id === takeoverOrderId);
-    openModal('拒絕訂單', `
-      <p>確定要拒絕訂單 <strong>#${escapeHtml(order ? order.orderNumber : '')}</strong> 嗎？</p>
-      <p class="hint">客人會收到「店家已拒絕訂單」的 LINE 通知。</p>
-    `, [
-      { label: '返回', className: 'btn-soft', onClick: closeModal },
-      {
-        label: '確定拒絕',
-        className: 'btn-danger',
-        onClick: async () => { closeModal(); await takeoverAction('cancelled'); }
-      }
-    ]);
+    $('takeover-actions').style.display = 'none';
+    $('takeover-confirm').style.display = 'flex';
   });
+
+  $('takeover-reject-back').addEventListener('click', () => {
+    $('takeover-confirm').style.display = 'none';
+    $('takeover-actions').style.display = 'grid';
+  });
+
+  $('takeover-reject-confirm').addEventListener('click', () => takeoverAction('cancelled'));
 
   /* 訂單類型篩選 */
   $('order-type-tabs').addEventListener('click', event => {
@@ -3538,6 +3695,79 @@
   });
 
   /* 帳號管理 */
+  /* 推播測試 / 裝置管理 */
+  $('test-order-create').addEventListener('click', () => {
+    runAction($('test-order-create'), () => {
+      const selected = $('test-order-device').value;
+      return createTestOrder(selected ? [selected] : []);
+    });
+  });
+
+  $('test-order-clear').addEventListener('click', () => {
+    openModal('清除測試訂單', `
+      <p>確定要清除全部測試訂單嗎？</p>
+      <p class="hint">還在提醒中的測試訂單會一併停止推播。真實訂單不受影響。</p>
+    `, [
+      { label: '取消', className: 'btn-soft', onClick: closeModal },
+      {
+        label: '確定清除',
+        className: 'btn-danger',
+        onClick: async () => {
+          const data = await requestJson(`${BACKEND_BASE_URL}/api/admin/orders/test`, { method: 'DELETE' });
+          closeModal();
+          toast(`已清除 ${data.removed} 張測試訂單`, 'ok');
+          lastOrdersSignature = '';
+          await fetchOrders();
+        }
+      }
+    ]);
+  });
+
+  $('push-devices-tbody').addEventListener('click', event => {
+    const saveButton = event.target.closest('[data-device-save]');
+    if (saveButton) {
+      const id = saveButton.dataset.deviceSave;
+      const input = document.querySelector(`[data-device-label="${id}"]`);
+      runAction(saveButton, async () => {
+        await requestJson(`${BACKEND_BASE_URL}/api/admin/push/devices/${encodeURIComponent(id)}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ label: input.value.trim() })
+        });
+        toast('裝置名稱已更新', 'ok');
+        await fetchPushDevices();
+      });
+      return;
+    }
+
+    const testButton = event.target.closest('[data-device-test]');
+    if (testButton) {
+      runAction(testButton, () => createTestOrder([testButton.dataset.deviceTest]));
+      return;
+    }
+
+    const removeButton = event.target.closest('[data-device-remove]');
+    if (removeButton) {
+      const id = removeButton.dataset.deviceRemove;
+      openModal('移除裝置', `
+        <p>確定要移除這台裝置的背景推播嗎？</p>
+        <p class="hint">如果這台手機還想收到通知，要重新在後台按一次「開啟手機推播」。</p>
+      `, [
+        { label: '取消', className: 'btn-soft', onClick: closeModal },
+        {
+          label: '確定移除',
+          className: 'btn-danger',
+          onClick: async () => {
+            await requestJson(`${BACKEND_BASE_URL}/api/admin/push/devices/${encodeURIComponent(id)}`, { method: 'DELETE' });
+            closeModal();
+            toast('裝置已移除', 'ok');
+            await fetchPushDevices();
+          }
+        }
+      ]);
+    }
+  });
+
   $('user-add').addEventListener('click', () => openUserEditor(null));
 
   $('users-tbody').addEventListener('click', async event => {

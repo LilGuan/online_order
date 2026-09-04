@@ -37,7 +37,7 @@
       "status": "available",
       "soldOut": false,
       "dailyStock": null,
-      "soldToday": 16,
+      "soldToday": 17,
       "stockDate": "2026-09-04",
       "sortOrder": 1
     },
@@ -56,7 +56,7 @@
       "status": "available",
       "soldOut": false,
       "dailyStock": null,
-      "soldToday": 0,
+      "soldToday": 1,
       "stockDate": "2026-09-04",
       "sortOrder": 2
     },
@@ -208,7 +208,7 @@
       "status": "available",
       "soldOut": false,
       "dailyStock": null,
-      "soldToday": 1,
+      "soldToday": 2,
       "stockDate": "2026-09-04",
       "sortOrder": 10
     },

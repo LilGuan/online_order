@@ -1,5 +1,141 @@
 [
   {
+    "id": "509fc1b0-2a22-4c6f-8a5a-5cc35bdd9961",
+    "at": "2026-09-04T07:23:09.751Z",
+    "user": "__qa_temp__",
+    "action": "order.test_cleared",
+    "target": "測試訂單",
+    "detail": "清除 2 張測試訂單"
+  },
+  {
+    "id": "a1d7b2da-1ea9-48d5-8cc1-f17054592b83",
+    "at": "2026-09-04T07:22:27.677Z",
+    "user": "__qa_temp__",
+    "action": "order.test_created",
+    "target": "#T4",
+    "detail": "推播對象：全部裝置"
+  },
+  {
+    "id": "25e3e492-dc3d-428e-b08b-9a538638940d",
+    "at": "2026-09-04T07:22:07.421Z",
+    "user": "__qa_temp__",
+    "action": "order.status_changed",
+    "target": "#T3",
+    "detail": "狀態改為 已取消"
+  },
+  {
+    "id": "a772eb2e-c4a5-48ee-8e9e-05e4980ed3b1",
+    "at": "2026-09-04T07:20:50.636Z",
+    "user": "__qa_temp__",
+    "action": "order.test_created",
+    "target": "#T3",
+    "detail": "推播對象：全部裝置"
+  },
+  {
+    "id": "ff05a89a-8e4b-4670-b018-c9f6fd0565fa",
+    "at": "2026-09-04T07:15:52.029Z",
+    "user": "__qa_temp__",
+    "action": "order.test_cleared",
+    "target": "測試訂單",
+    "detail": "清除 2 張測試訂單"
+  },
+  {
+    "id": "e31d643c-8b09-454f-a6b3-9702381fdc2d",
+    "at": "2026-09-04T07:15:51.564Z",
+    "user": "Chiu960111",
+    "action": "order.status_changed",
+    "target": "#T2",
+    "detail": "狀態改為 製作中"
+  },
+  {
+    "id": "3804a5ab-278e-4f45-8449-d11dbc61e055",
+    "at": "2026-09-04T07:15:39.351Z",
+    "user": "__qa_temp__",
+    "action": "order.test_created",
+    "target": "#T2",
+    "detail": "推播對象：1 台指定裝置"
+  },
+  {
+    "id": "9dd79d7b-2470-4c2c-86c7-faf718f6b588",
+    "at": "2026-09-04T07:15:39.143Z",
+    "user": "__qa_temp__",
+    "action": "order.status_changed",
+    "target": "#T1",
+    "detail": "狀態改為 已取消"
+  },
+  {
+    "id": "4f46a798-155a-4114-9f7d-2b6c5b5c5578",
+    "at": "2026-09-04T07:15:25.041Z",
+    "user": "__qa_temp__",
+    "action": "order.test_created",
+    "target": "#T1",
+    "detail": "推播對象：全部裝置"
+  },
+  {
+    "id": "692cb311-5a26-4fd5-a461-825b43e2e28f",
+    "at": "2026-09-04T07:15:14.654Z",
+    "user": "__qa_temp__",
+    "action": "push.renamed",
+    "target": "Andy 的 iPhone 15",
+    "detail": "重新命名推播裝置"
+  },
+  {
+    "id": "5d889f6b-47be-423c-846b-700aa742edc0",
+    "at": "2026-09-04T07:13:52.219Z",
+    "user": "Chiu960111",
+    "action": "order.status_changed",
+    "target": "#2",
+    "detail": "狀態改為 已完成"
+  },
+  {
+    "id": "7db670cd-4283-489c-bc43-8b690adab088",
+    "at": "2026-09-04T07:13:47.369Z",
+    "user": "Chiu960111",
+    "action": "order.note_updated",
+    "target": "#2",
+    "detail": "測試"
+  },
+  {
+    "id": "80d067f3-0389-40e0-a403-4bd3f42b5afd",
+    "at": "2026-09-04T07:07:20.489Z",
+    "user": "Chiu960111",
+    "action": "order.status_changed",
+    "target": "#2",
+    "detail": "狀態改為 製作中"
+  },
+  {
+    "id": "9762682b-60b7-4db1-9c6f-9d0a429fa7f1",
+    "at": "2026-09-04T07:01:40.035Z",
+    "user": "admin",
+    "action": "user.created",
+    "target": "Chiu960111",
+    "detail": "新增帳號，權限：員工（僅接單）"
+  },
+  {
+    "id": "5bfdf6ae-c126-43cd-8107-53cf6db358c8",
+    "at": "2026-09-04T07:00:38.559Z",
+    "user": "admin",
+    "action": "user.updated",
+    "target": "admin",
+    "detail": "更改密碼、顯示名稱改為 CEO"
+  },
+  {
+    "id": "b99d99b9-7cd8-447a-b7e3-fe41c667d7d1",
+    "at": "2026-09-04T06:59:25.503Z",
+    "user": "admin",
+    "action": "order.status_changed",
+    "target": "#1",
+    "detail": "狀態改為 製作中，已通知客人"
+  },
+  {
+    "id": "97b5215e-306f-4856-83b4-dc2973e1c84c",
+    "at": "2026-09-04T06:56:31.153Z",
+    "user": "admin",
+    "action": "order.status_changed",
+    "target": "#B9684D",
+    "detail": "狀態改為 已完成，已通知客人"
+  },
+  {
     "id": "9187d40a-b739-4099-9a1d-72502058198b",
     "at": "2026-09-04T06:47:32.346Z",
     "user": "admin",

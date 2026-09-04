@@ -64,6 +64,11 @@ function readOrders() {
     return readJsonFile(ORDERS_FILE, []);
 }
 
+// 測試訂單只是拿來驗證推播/聲音/滿版卡片，不該算進營業額、報表、排行榜
+function readRealOrders() {
+    return readOrders().filter(order => !order.isTest);
+}
+
 function writeOrders(orders) {
     writeJsonFile(ORDERS_FILE, orders);
 }
@@ -202,6 +207,16 @@ function nextOrderSequence() {
     return { seq, date: today };
 }
 
+function nextTestSequence() {
+    const today = todayKey();
+    const counter = readJsonFile(COUNTER_FILE, { date: '', seq: 0, testDate: '', testSeq: 0 });
+
+    const testSeq = counter.testDate === today ? Number(counter.testSeq || 0) + 1 : 1;
+    writeJsonFile(COUNTER_FILE, { ...counter, testDate: today, testSeq });
+
+    return { seq: testSeq, date: today };
+}
+
 // 舊訂單的 id 就是隨機碼，新訂單是「日期-序號」，兩種都要找得到
 function findOrder(orders, key) {
     const target = String(key);
@@ -268,15 +283,28 @@ if (pushEnabled) {
 }
 
 function readPushSubscriptions() {
-    return readJsonFile(PUSH_SUBS_FILE, []);
+    const subscriptions = readJsonFile(PUSH_SUBS_FILE, []);
+
+    // 舊資料沒有 id，補上後存回去，之後命名／指定測試裝置都用這個 id 定位
+    let changed = false;
+    subscriptions.forEach(entry => {
+        if (!entry.id) {
+            entry.id = uuidv4();
+            changed = true;
+        }
+    });
+    if (changed) writePushSubscriptions(subscriptions);
+
+    return subscriptions;
 }
 
 function writePushSubscriptions(subscriptions) {
     writeJsonFile(PUSH_SUBS_FILE, subscriptions);
 }
 
-// 推播給所有已登記的裝置；訂閱失效（410/404）就自動清掉，避免無效訂閱越積越多
-async function sendPushToAll(payload) {
+// 推播給所有已登記的裝置（或用 deviceIds 只推給指定的幾台）；
+// 訂閱失效（410/404）就自動清掉，避免無效訂閱越積越多
+async function sendPushToAll(payload, deviceIds) {
     const result = { at: new Date().toISOString(), sent: 0, failed: 0, removed: 0, reason: '' };
 
     if (!pushEnabled) {
@@ -284,9 +312,13 @@ async function sendPushToAll(payload) {
         return result;
     }
 
-    const subscriptions = readPushSubscriptions();
+    const all = readPushSubscriptions();
+    const subscriptions = Array.isArray(deviceIds) && deviceIds.length
+        ? all.filter(entry => deviceIds.includes(entry.id))
+        : all;
+
     if (!subscriptions.length) {
-        result.reason = '還沒有裝置登記背景推播';
+        result.reason = all.length ? '指定的裝置找不到（可能已被移除）' : '還沒有裝置登記背景推播';
         return result;
     }
 
@@ -309,7 +341,7 @@ async function sendPushToAll(payload) {
     }));
 
     if (stale.length) {
-        writePushSubscriptions(subscriptions.filter(entry => !stale.includes(entry.endpoint)));
+        writePushSubscriptions(all.filter(entry => !stale.includes(entry.endpoint)));
         result.removed = stale.length;
     }
 
@@ -342,8 +374,10 @@ function orderPushPayload(order, round) {
 function startOrderReminder(order) {
     const settings = readSettings();
     const alerts = settings.alerts || {};
+    // 測試訂單可以指定只推給某台裝置（例如只想吵自己的手機）；一般訂單一律推全部
+    const deviceIds = Array.isArray(order.pushDeviceIds) && order.pushDeviceIds.length ? order.pushDeviceIds : undefined;
 
-    sendPushToAll(orderPushPayload(order, 0))
+    sendPushToAll(orderPushPayload(order, 0), deviceIds)
         .then(result => logPushResult(order, result))
         .catch(error => console.error('[Push] 通知失敗:', error.message));
 
@@ -373,7 +407,7 @@ function startOrderReminder(order) {
             return;
         }
 
-        sendPushToAll(orderPushPayload(current, round))
+        sendPushToAll(orderPushPayload(current, round), deviceIds)
             .catch(error => console.error('[Push] 重送失敗:', error.message));
     }, intervalMs);
 
@@ -805,7 +839,7 @@ app.get('/api/orders', (req, res) => {
 });
 
 app.get('/api/admin/summary', requireAdmin, (req, res) => {
-    res.json({ summary: summarizeRevenue(readOrders()) });
+    res.json({ summary: summarizeRevenue(readRealOrders()) });
 });
 
 // ==========================================
@@ -1121,7 +1155,7 @@ function aggregateProducts(orders) {
 }
 
 app.get('/api/admin/dashboard', requireAdmin, (req, res) => {
-    const orders = readOrders();
+    const orders = readRealOrders();
     const menu = readMenu();
     const summary = summarizeRevenue(orders);
     const today = startOfDay(new Date());
@@ -1208,7 +1242,7 @@ function parseRange(req) {
 
 function buildReport(req) {
     const { from, to } = parseRange(req);
-    const orders = readOrders().filter(order => {
+    const orders = readRealOrders().filter(order => {
         const date = getOrderDate(order);
         return date >= from && date <= to;
     });
@@ -1266,6 +1300,72 @@ app.get('/api/admin/reports/export', requireAdmin, (req, res) => {
 });
 
 // ==========================================
+// 🟢 測試訂單（後台用，驗證推播/聲音/滿版卡片）
+// ==========================================
+const TEST_SAMPLE_ITEMS = [
+    { key: '1-large-egg', name: '蛋炒飯 (加大、雙蛋)', qty: 1, price: 115, subtotal: 115 },
+    { key: '10', name: '海帶芽蛋花湯', qty: 1, price: 25, subtotal: 25 }
+];
+
+app.post('/api/admin/orders/test', requireAdmin, (req, res) => {
+    const { seq, date } = nextTestSequence();
+    const now = new Date().toISOString();
+    const deviceIds = Array.isArray(req.body.deviceIds) ? req.body.deviceIds.filter(Boolean) : [];
+
+    const order = {
+        id: `${date}-T${seq}`,
+        orderNumber: `T${seq}`,
+        orderDate: date,
+        clientRef: '',
+        orderType: req.body.orderType === 'reserve' ? 'reserve' : 'instant',
+        isTest: true,
+        pushDeviceIds: deviceIds, // 空陣列表示推全部裝置
+        name: '測試訂單',
+        phone: '0900000000',
+        pickupTime: req.body.orderType === 'reserve' ? '明天 12:00' : '約 15 分鐘後取餐',
+        paymentMethod: 'cash',
+        notes: '這是後台建立的測試訂單，用來確認推播、聲音、滿版接單卡片正常運作。',
+        lineUserId: '',
+        items: TEST_SAMPLE_ITEMS,
+        totalAmount: TEST_SAMPLE_ITEMS.reduce((sum, item) => sum + item.subtotal, 0),
+        status: 'pending',
+        statusHistory: [{ status: 'pending', note: '測試訂單建立', at: now }],
+        customerNotifications: [],
+        createdAt: now,
+        updatedAt: now
+    };
+
+    const orders = readOrders();
+    orders.unshift(order);
+    writeOrders(orders);
+
+    // 測試單不扣庫存、不推播給客人（本來就沒有 lineUserId），只觸發店家端的推播/提醒
+    startOrderReminder(order);
+
+    logAudit(
+        'order.test_created',
+        `#${order.orderNumber}`,
+        deviceIds.length ? `推播對象：${deviceIds.length} 台指定裝置` : '推播對象：全部裝置',
+        req.session.username
+    );
+
+    res.status(201).json({ ok: true, order });
+});
+
+app.delete('/api/admin/orders/test', requireAdmin, (req, res) => {
+    const orders = readOrders();
+    const testOrders = orders.filter(order => order.isTest);
+
+    testOrders.forEach(order => stopOrderReminder(order.id));
+
+    const remaining = orders.filter(order => !order.isTest);
+    writeOrders(remaining);
+
+    logAudit('order.test_cleared', '測試訂單', `清除 ${testOrders.length} 張測試訂單`, req.session.username);
+    res.json({ ok: true, removed: testOrders.length });
+});
+
+// ==========================================
 // 🟢 背景推播 API
 // ==========================================
 app.get('/api/push/public-key', (req, res) => {
@@ -1277,11 +1377,35 @@ app.get('/api/admin/push/status', requireAdmin, (req, res) => {
     res.json({
         enabled: pushEnabled,
         devices: subscriptions.map(entry => ({
+            id: entry.id,
             endpoint: entry.endpoint.slice(-12), // 只回傳尾碼，前端用來比對是不是自己這台
             label: entry.label || '',
             createdAt: entry.createdAt
         }))
     });
+});
+
+app.patch('/api/admin/push/devices/:id', requireAdmin, (req, res) => {
+    const subscriptions = readPushSubscriptions();
+    const device = subscriptions.find(entry => entry.id === req.params.id);
+
+    if (!device) return res.status(404).json({ message: '找不到這台裝置' });
+
+    const label = String(req.body.label || '').trim();
+    device.label = label;
+    writePushSubscriptions(subscriptions);
+    logAudit('push.renamed', label || '未命名裝置', '重新命名推播裝置', req.session && req.session.username);
+    res.json({ ok: true });
+});
+
+app.delete('/api/admin/push/devices/:id', requireAdmin, (req, res) => {
+    const subscriptions = readPushSubscriptions();
+    const device = subscriptions.find(entry => entry.id === req.params.id);
+    const remaining = subscriptions.filter(entry => entry.id !== req.params.id);
+
+    writePushSubscriptions(remaining);
+    logAudit('push.unsubscribed', device ? (device.label || '未命名裝置') : req.params.id, `手動移除裝置，剩下 ${remaining.length} 台`, req.session && req.session.username);
+    res.json({ ok: true, devices: remaining.length });
 });
 
 app.post('/api/admin/push/subscribe', requireAdmin, (req, res) => {
@@ -1295,10 +1419,11 @@ app.post('/api/admin/push/subscribe', requireAdmin, (req, res) => {
     const existing = subscriptions.findIndex(entry => entry.endpoint === subscription.endpoint);
 
     const entry = {
+        id: existing >= 0 ? subscriptions[existing].id : uuidv4(),
         endpoint: subscription.endpoint,
         subscription,
         label: String(req.body.label || '').trim(),
-        createdAt: new Date().toISOString()
+        createdAt: existing >= 0 ? subscriptions[existing].createdAt : new Date().toISOString()
     };
 
     if (existing >= 0) subscriptions[existing] = { ...subscriptions[existing], ...entry };

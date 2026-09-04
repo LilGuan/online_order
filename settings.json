@@ -27,5 +27,12 @@
     "doubleEgg": "雙蛋",
     "doubleShrimp": "加蝦"
   },
-  "updatedAt": "2026-09-02T17:05:51.229Z"
+  "alerts": {
+    "takeoverEnabled": true,
+    "soundRepeatSeconds": 3,
+    "pushRepeatEnabled": true,
+    "pushRepeatSeconds": 3,
+    "pushRepeatMaxMinutes": 10
+  },
+  "updatedAt": "2026-09-04T07:14:41.205Z"
 }
