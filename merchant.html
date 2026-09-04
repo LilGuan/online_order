@@ -312,7 +312,7 @@
   }
 
   .menu-toggle { display: none; font-size: 20px; padding: 4px 8px; border-radius: 8px; }
-  .page-title { font-size: 1.16rem; font-weight: 900; letter-spacing: -.02em; }
+  .page-title { font-size: 1.16rem; font-weight: 900; letter-spacing: -.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   .topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
   .conn {
@@ -1178,6 +1178,78 @@
     .grid-4 { grid-template-columns: 1fr; }
     .customer { grid-template-columns: 1fr; }
     .topbar-actions .label-text { display: none; }
+    /* 手機寬度放不下「標題 + 連線狀態文字 + 3 顆按鈕」，狀態改成只看燈號顏色，
+       標題放不下就用刪節號，按鈕統一維持同一排不換行。 */
+    .topbar { gap: 8px; padding: 11px 14px; }
+    .topbar-actions { flex-wrap: nowrap; gap: 6px; }
+    .conn { padding: 6px 8px; }
+    #conn-text { display: none; }
+  }
+
+  /* 尚未登入時、以及手機版選單展開時，都不該看到浮動的上線/下線元件 */
+  body.locked .store-fab { display: none; }
+  body:has(.sidebar.open) .store-fab { display: none; }
+
+  /* 頂列的操作按鈕在手機/平板上只剩 icon，統一做成固定尺寸的正方形，
+     不要因為藏起來的文字長度不同讓按鈕看起來大小不一。 */
+  @media (max-width: 520px) {
+    .topbar-actions .btn.icon-only {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      border-radius: 10px;
+      flex-shrink: 0;
+    }
+  }
+
+  /* ==========================================================
+     響應式表格：手機寬度時table自動變成一張一張的卡片，
+     避免像「蛋炒飯」這種欄位被擠到只剩幾 px 寬、中文字被迫逐字換行。
+     ========================================================== */
+  @media (max-width: 720px) {
+    .table-wrap table,
+    .table-wrap thead,
+    .table-wrap tbody,
+    .table-wrap tr,
+    .table-wrap th,
+    .table-wrap td {
+      display: block;
+      width: auto;
+    }
+    .table-wrap thead { display: none; }
+    .table-wrap tbody tr {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .table-wrap tbody tr:last-child { margin-bottom: 0; }
+    .table-wrap td {
+      border-bottom: none !important;
+      padding: 6px 0 !important;
+      text-align: left !important;
+      white-space: normal !important;
+    }
+    /* 第一欄（商品名稱/帳號/裝置）本身就有清楚的標題感，維持原本排版，不用再加欄位標籤 */
+    .table-wrap td.cell-primary {
+      padding-bottom: 10px !important;
+      margin-bottom: 6px;
+      border-bottom: 1px solid var(--line) !important;
+    }
+    /* 其他欄位在手機版改成「欄位名稱：內容」一行左右對齊，取代原本被壓扁的直排欄位 */
+    .table-wrap td[data-label] {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .table-wrap td[data-label]::before {
+      content: attr(data-label);
+      font-size: .76rem;
+      font-weight: 800;
+      color: var(--ink-3);
+      flex-shrink: 0;
+    }
   }
 </style>
 </head>
@@ -1232,10 +1304,9 @@
           <span class="conn-dot" id="conn-dot"></span>
           <span id="conn-text">連線中</span>
         </div>
-        <button class="btn btn-danger btn-sm sound-off" id="sound-btn"><span data-icon="bellOff"></span> <span class="label-text">開啟接單鈴聲</span></button>
-        <button class="btn btn-soft btn-sm" id="sound-test"><span data-icon="bell"></span> <span class="label-text">試聽</span></button>
-        <button class="btn btn-danger btn-sm sound-off" id="push-btn"><span data-icon="phone"></span> <span class="label-text">開啟手機推播</span></button>
-        <button class="btn btn-soft btn-sm" id="refresh-btn"><span data-icon="refresh"></span> <span class="label-text">重新整理</span></button>
+        <button class="btn btn-danger btn-sm sound-off icon-only" id="sound-btn"><span data-icon="bellOff"></span> <span class="label-text">開啟接單鈴聲</span></button>
+        <button class="btn btn-danger btn-sm sound-off icon-only" id="push-btn"><span data-icon="phone"></span> <span class="label-text">開啟手機推播</span></button>
+        <button class="btn btn-soft btn-sm icon-only" id="refresh-btn"><span data-icon="refresh"></span> <span class="label-text">重新整理</span></button>
       </div>
     </header>
 
@@ -1520,6 +1591,21 @@
       <!-- ---------------- 推播測試 / 裝置管理 ---------------- -->
       <section class="view" id="view-push-test">
         <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">接單鈴聲試聽</div>
+              <div class="card-sub">確認手機音量與鈴聲效果，不會影響任何訂單</div>
+            </div>
+          </div>
+          <div class="toolbar" style="margin-bottom:0;">
+            <button class="btn btn-primary btn-sm" id="sound-test">
+              <span data-icon="bell"></span> 試聽接單鈴聲
+            </button>
+          </div>
+          <div class="hint">如果還沒開啟接單鈴聲，按這個按鈕會先幫你開啟，再立刻播放一次。</div>
+        </div>
+
+        <div class="card section-gap">
           <div class="card-head">
             <div>
               <div class="card-title">建立測試訂單</div>
@@ -2459,7 +2545,7 @@
 
       return `
         <tr style="opacity:0; animation: fadeUp .35s var(--ease-out) ${Math.min(index, 10) * 35}ms forwards;">
-          <td>
+          <td class="cell-primary">
             <div class="cell-item">
               ${item.image ? `<img class="thumb" src="${escapeHtml(item.image)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<div class="thumb"></div>'}
               <div>
@@ -2468,15 +2554,15 @@
               </div>
             </div>
           </td>
-          <td>${escapeHtml(categoryName(item.category))}</td>
-          <td style="font-weight:800;">${money(item.price)}</td>
-          <td>${options.length ? options.map(option => `<span class="pill off">${option.label}</span>`).join(' ') : '<span style="color:var(--ink-3);">—</span>'}</td>
-          <td>
+          <td data-label="分類">${escapeHtml(categoryName(item.category))}</td>
+          <td data-label="售價" style="font-weight:800;">${money(item.price)}</td>
+          <td data-label="可選加購">${options.length ? options.map(option => `<span class="pill off">${option.label}</span>`).join(' ') : '<span style="color:var(--ink-3);">—</span>'}</td>
+          <td data-label="狀態">
             ${item.status === 'hidden'
               ? '<span class="pill off">已下架</span>'
               : soldOut ? '<span class="pill out">賣完</span>' : '<span class="pill on">供應中</span>'}
           </td>
-          <td style="text-align:right; white-space:nowrap;">
+          <td data-label="操作" style="text-align:right; white-space:nowrap;">
             <button class="btn btn-ghost btn-sm" data-edit="${item.id}">編輯</button>
             <button class="btn btn-soft btn-sm" data-toggle-status="${item.id}">${item.status === 'hidden' ? '上架' : '下架'}</button>
             <button class="btn btn-danger btn-sm" data-delete="${item.id}">刪除</button>
@@ -2705,25 +2791,25 @@
 
       return `
         <tr style="opacity:0; animation: fadeUp .35s var(--ease-out) ${Math.min(index, 10) * 35}ms forwards;">
-          <td>
+          <td class="cell-primary">
             <div class="cell-name">${escapeHtml(item.name)}</div>
             <div class="cell-meta">${escapeHtml(categoryName(item.category))} · ${money(item.price)}</div>
           </td>
-          <td>
+          <td data-label="供應中">
             <label class="switch">
               <input type="checkbox" data-soldout="${item.id}" ${orderable ? 'checked' : ''} ${item.status === 'hidden' ? 'disabled' : ''}>
               <span class="slider"></span>
             </label>
           </td>
-          <td>
+          <td data-label="每日限量">
             <input class="field" type="number" min="0" placeholder="不限"
                    style="width:96px; padding:7px 9px;" data-stock="${item.id}" value="${stock ?? ''}" />
           </td>
-          <td style="min-width:140px;">
+          <td data-label="今日已售" style="min-width:140px;">
             <div style="font-weight:800; margin-bottom:5px;">${soldToday}${stock ? ` / ${stock}` : ''}</div>
             ${stock ? `<div class="progress"><div class="progress-fill ${ratio >= 100 ? 'full' : ratio >= 80 ? 'warn' : ''}" data-width="${ratio}"></div></div>` : '<span class="cell-meta">未設限量</span>'}
           </td>
-          <td style="text-align:right; white-space:nowrap;">
+          <td data-label="操作" style="text-align:right; white-space:nowrap;">
             <button class="btn btn-soft btn-sm" data-reset-stock="${item.id}">重設已售</button>
           </td>
         </tr>
@@ -2788,10 +2874,10 @@
     $('report-tbody').innerHTML = report.products.length
       ? report.products.map((product, index) => `
           <tr style="opacity:0; animation: fadeUp .35s var(--ease-out) ${Math.min(index, 12) * 30}ms forwards;">
-            <td style="font-weight:900; color:${index < 3 ? 'var(--brand)' : 'var(--ink-3)'};">${index + 1}</td>
-            <td class="cell-name">${escapeHtml(product.name)}</td>
-            <td>${product.qty}</td>
-            <td style="font-weight:800;">${money(product.revenue)}</td>
+            <td data-label="名次" style="font-weight:900; color:${index < 3 ? 'var(--brand)' : 'var(--ink-3)'};">${index + 1}</td>
+            <td class="cell-primary cell-name">${escapeHtml(product.name)}</td>
+            <td data-label="數量">${product.qty}</td>
+            <td data-label="銷售額" style="font-weight:800;">${money(product.revenue)}</td>
           </tr>
         `).join('')
       : '<tr><td colspan="4" style="text-align:center; color:var(--ink-3); padding:28px;">這段期間沒有銷售資料</td></tr>';
@@ -2895,16 +2981,16 @@
 
     $('push-devices-tbody').innerHTML = pushDevices.map((device, index) => `
       <tr style="opacity:0; animation: fadeUp .35s var(--ease-out) ${index * 40}ms forwards;">
-        <td>
-          <div style="display:flex; gap:6px; align-items:center;">
-            <input class="field" style="padding:7px 9px; max-width:220px;" value="${escapeHtml(device.label || '')}"
+        <td class="cell-primary">
+          <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+            <input class="field" style="padding:7px 9px; max-width:220px; flex:1;" value="${escapeHtml(device.label || '')}"
                    placeholder="未命名裝置" data-device-label="${device.id}" />
             <button class="btn btn-soft btn-sm" data-device-save="${device.id}">儲存</button>
           </div>
           <div class="cell-meta">尾碼 ${escapeHtml(device.endpoint)}</div>
         </td>
-        <td class="cell-meta">${formatTime(device.createdAt)}</td>
-        <td style="text-align:right;">
+        <td data-label="登記時間" class="cell-meta">${formatTime(device.createdAt)}</td>
+        <td data-label="操作" style="text-align:right;">
           <button class="btn btn-primary btn-sm" data-device-test="${device.id}">單獨測試</button>
           <button class="btn btn-danger btn-sm" data-device-remove="${device.id}">移除</button>
         </td>
@@ -2952,11 +3038,11 @@
 
     $('users-tbody').innerHTML = data.users.map((user, index) => `
       <tr style="opacity:0; animation: fadeUp .35s var(--ease-out) ${index * 35}ms forwards;">
-        <td class="cell-name">${escapeHtml(user.username)}${user.username === currentUser.username ? '（我）' : ''}</td>
-        <td>${escapeHtml(user.displayName)}</td>
-        <td><span class="pill ${user.role === 'owner' ? 'on' : 'off'}">${ROLE_LABELS[user.role] || user.role}</span></td>
-        <td class="cell-meta">${formatTime(user.createdAt)}</td>
-        <td style="text-align:right; white-space:nowrap;">
+        <td class="cell-primary cell-name">${escapeHtml(user.username)}${user.username === currentUser.username ? '（我）' : ''}</td>
+        <td data-label="顯示名稱">${escapeHtml(user.displayName)}</td>
+        <td data-label="權限"><span class="pill ${user.role === 'owner' ? 'on' : 'off'}">${ROLE_LABELS[user.role] || user.role}</span></td>
+        <td data-label="建立時間" class="cell-meta">${formatTime(user.createdAt)}</td>
+        <td data-label="操作" style="text-align:right; white-space:nowrap;">
           <button class="btn btn-ghost btn-sm" data-user-edit="${escapeHtml(user.username)}">編輯</button>
           ${user.username === currentUser.username ? '' : `<button class="btn btn-danger btn-sm" data-user-delete="${escapeHtml(user.username)}">刪除</button>`}
         </td>
@@ -3175,11 +3261,11 @@
     const button = $('sound-btn');
 
     if (soundEnabled) {
-      button.className = 'btn btn-soft btn-sm';
+      button.className = 'btn btn-soft btn-sm icon-only';
       button.innerHTML = `${ICONS.bell} <span class="label-text">鈴聲已開啟</span>`;
       button.disabled = true;
     } else {
-      button.className = 'btn btn-danger btn-sm sound-off';
+      button.className = 'btn btn-danger btn-sm sound-off icon-only';
       button.innerHTML = `${ICONS.bellOff} <span class="label-text">開啟接單鈴聲</span>`;
       button.disabled = false;
     }
@@ -3355,10 +3441,10 @@
     const button = $('push-btn');
 
     if (pushSubscribed) {
-      button.className = 'btn btn-soft btn-sm';
+      button.className = 'btn btn-soft btn-sm icon-only';
       button.innerHTML = `${ICONS.phone} <span class="label-text">手機推播已開啟</span>`;
     } else {
-      button.className = 'btn btn-danger btn-sm sound-off';
+      button.className = 'btn btn-danger btn-sm sound-off icon-only';
       button.innerHTML = `${ICONS.phone} <span class="label-text">開啟手機推播</span>`;
     }
   }

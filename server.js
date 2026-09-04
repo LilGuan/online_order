@@ -30,6 +30,16 @@ app.use(cors());
 // 菜單照片是以 base64 夾在 JSON 裡上傳，所以要放寬預設的 100kb 上限
 app.use(bodyParser.json({ limit: '8mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '8mb' }));
+// HTML 頁面（尤其是加到 iPhone 主畫面的後台）絕對不能被瀏覽器快取住舊版本，
+// 這裡強制每次都要重新跟伺服器要最新內容；圖片/CSS/JS 這類靜態資源則維持原本的快取行為。
+app.use((req, res, next) => {
+    if (req.path.endsWith('.html') || req.path === '/') {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+    }
+    next();
+});
 app.use(express.static(__dirname));
 
 // ==========================================

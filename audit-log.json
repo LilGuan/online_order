@@ -1,5 +1,45 @@
 [
   {
+    "id": "1e4c4dbc-6394-4dc7-9c87-77d8c4727a72",
+    "at": "2026-09-04T07:55:54.955Z",
+    "user": "admin",
+    "action": "order.status_changed",
+    "target": "#T6",
+    "detail": "狀態改為 已取消"
+  },
+  {
+    "id": "ae18a9d4-fb6f-4f89-845f-e62cacb617f1",
+    "at": "2026-09-04T07:55:51.894Z",
+    "user": "admin",
+    "action": "order.test_created",
+    "target": "#T6",
+    "detail": "推播對象：1 台指定裝置"
+  },
+  {
+    "id": "8e553b22-3380-48bd-9efb-ed488ceb2ad7",
+    "at": "2026-09-04T07:55:49.034Z",
+    "user": "admin",
+    "action": "order.status_changed",
+    "target": "#T5",
+    "detail": "狀態改為 製作中"
+  },
+  {
+    "id": "11dd521f-00c4-4c0f-bf61-956c9068c299",
+    "at": "2026-09-04T07:55:43.553Z",
+    "user": "admin",
+    "action": "order.test_created",
+    "target": "#T5",
+    "detail": "推播對象：1 台指定裝置"
+  },
+  {
+    "id": "45bac4c9-f83c-4c2e-8897-9dd8dbfda8b6",
+    "at": "2026-09-04T07:54:33.476Z",
+    "user": "admin",
+    "action": "push.subscribed",
+    "target": "iPhone（主畫面）",
+    "detail": "登記背景推播，目前共 4 台裝置"
+  },
+  {
     "id": "509fc1b0-2a22-4c6f-8a5a-5cc35bdd9961",
     "at": "2026-09-04T07:23:09.751Z",
     "user": "__qa_temp__",
