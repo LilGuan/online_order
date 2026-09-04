@@ -258,6 +258,24 @@
   }
   @keyframes navBar { to { transform: translateY(-50%) scaleY(1); } }
 
+  /* 側邊欄分組線：把「測試工具」跟門店設定/帳號管理清楚分開，不會混在一起 */
+  .nav-divider {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 14px 4px 6px;
+    color: var(--ink-3);
+    font-size: .72rem;
+    font-weight: 800;
+    letter-spacing: .06em;
+  }
+  .nav-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+
   .nav-badge {
     margin-left: auto;
     min-width: 21px;
@@ -307,7 +325,7 @@
   .conn-dot.closed  { background: var(--ink-3); }
   .conn-dot.alert   { background: var(--danger); animation: alertPulse 1.1s infinite; }
 
-  .content { padding: 22px; flex: 1; }
+  .content { padding: 22px; padding-bottom: 96px; flex: 1; }
   .view { display: none; }
   .view.active { display: block; animation: fadeUp .38s var(--ease-out); }
 
@@ -703,6 +721,98 @@
   }
   .upload-busy .spinner { width: 22px; height: 22px; border-color: rgba(255, 107, 107, .3); border-top-color: var(--brand); }
   .check-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--brand); cursor: pointer; }
+
+  /* ==========================================================
+     上線/下線浮動控制
+     ========================================================== */
+  .store-fab {
+    position: fixed;
+    left: 50%;
+    bottom: max(20px, env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    z-index: 150; /* 要蓋過一般內容，但蓋不過滿版接單卡片(400)跟 Modal(450) */
+    width: min(340px, calc(100vw - 32px));
+  }
+
+  /* 下線狀態：點一下就生效，低風險操作 */
+  .store-fab-tap {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 15px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: #fff;
+    font-size: .96rem;
+    font-weight: 800;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, .28);
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .store-fab-tap svg { width: 18px; height: 18px; }
+  .store-fab-tap:active { transform: scale(.97); }
+
+  /* 上線狀態：要整條滑到底才會下線，避免手滑誤觸就停止接單 */
+  .store-fab-slider { width: 100%; }
+  .store-fab-track {
+    position: relative;
+    height: 54px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #16a34a, #22c55e);
+    box-shadow: 0 10px 28px rgba(22, 163, 74, .35);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    padding: 4px;
+  }
+  .store-fab-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: .88rem;
+    font-weight: 800;
+    letter-spacing: .01em;
+    pointer-events: none;
+    opacity: calc(1 - var(--drag-progress, 0) * .8);
+  }
+  .store-fab-handle {
+    position: relative;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: #fff;
+    color: #16a34a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, .25);
+    touch-action: none; /* 交給 JS 處理左右拖曳，不要被瀏覽器當成滑動頁面 */
+    cursor: grab;
+    z-index: 1;
+  }
+  .store-fab-handle svg { width: 19px; height: 19px; }
+  .store-fab-handle:active { cursor: grabbing; }
+  .store-fab-handle.is-dragging { transition: none; }
+
+  .store-fab-handle.is-loading svg { display: none; }
+  .store-fab-handle.is-loading::after {
+    content: '';
+    width: 18px; height: 18px;
+    border: 2.5px solid rgba(22, 163, 74, .25);
+    border-top-color: #16a34a;
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+  }
+
+  @media (max-width: 520px) {
+    .store-fab { bottom: max(14px, env(safe-area-inset-bottom)); }
+  }
 
   /* ==========================================================
      滿版接單卡片（類似外送平台後台，必須按下才算接單）
@@ -1122,7 +1232,6 @@
           <span class="conn-dot" id="conn-dot"></span>
           <span id="conn-text">連線中</span>
         </div>
-        <button class="btn btn-ok btn-sm" id="store-toggle">上線</button>
         <button class="btn btn-danger btn-sm sound-off" id="sound-btn"><span data-icon="bellOff"></span> <span class="label-text">開啟接單鈴聲</span></button>
         <button class="btn btn-soft btn-sm" id="sound-test"><span data-icon="bell"></span> <span class="label-text">試聽</span></button>
         <button class="btn btn-danger btn-sm sound-off" id="push-btn"><span data-icon="phone"></span> <span class="label-text">開啟手機推播</span></button>
@@ -1511,6 +1620,24 @@
 </div>
 
 <!-- ============================ Modal / Toast ============================ -->
+<!-- 上線/下線浮動控制：上線只要點一下（低風險），下線要整條滑到底才生效，
+     避免手滑誤觸就停止接單。同一時間只會顯示其中一種狀態。 -->
+<div class="store-fab" id="store-fab">
+  <button class="store-fab-tap btn" id="store-fab-tap">
+    <span data-icon="bolt"></span>
+    <span>點擊上線接單</span>
+  </button>
+
+  <div class="store-fab-slider" id="store-fab-slider" style="display:none;">
+    <div class="store-fab-track" id="store-fab-track">
+      <span class="store-fab-label">營業中・滑動右側關閉</span>
+      <div class="store-fab-handle" id="store-fab-handle">
+        <span data-icon="bolt"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 滿版接單卡片：新訂單進來時蓋住整個畫面，一定要按下「接單」才會消失 -->
 <div class="takeover" id="takeover">
   <div class="takeover-inner">
@@ -1602,6 +1729,7 @@
     bolt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>',
     clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>',
     users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16.5 5.2a3.2 3.2 0 0 1 0 5.6"/><path d="M18 14.3a6.5 6.5 0 0 1 3.5 5.7"/></svg>',
+    flask: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2h6"/><path d="M10 2v6.5L4.5 18a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 8.5V2"/><path d="M7.5 14h9"/></svg>',
     phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18.5h2"/></svg>',
     share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m8 7 4-4 4 4"/><path d="M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg>',
     dashboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>',
@@ -1613,17 +1741,19 @@
     audit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>'
   };
 
+  // group 只用來在側邊欄插入分隔線，跟權限或路由邏輯無關
   const VIEWS = [
-    { id: 'dashboard', name: '儀表板', icon: 'dashboard' },
-    { id: 'orders', name: '訂單管理', icon: 'orders', badge: true },
-    { id: 'menu', name: '菜單管理', icon: 'menu' },
-    { id: 'stock', name: '庫存', icon: 'stock' },
-    { id: 'reports', name: '報表', icon: 'reports' },
-    { id: 'settings', name: '門店設定', icon: 'settings', ownerOnly: true },
-    { id: 'push-test', name: '推播測試', icon: 'phone', ownerOnly: true },
-    { id: 'users', name: '帳號管理', icon: 'users', ownerOnly: true },
-    { id: 'audit', name: '操作紀錄', icon: 'audit' }
+    { id: 'dashboard', name: '儀表板', icon: 'dashboard', group: 'main' },
+    { id: 'orders', name: '訂單管理', icon: 'orders', badge: true, group: 'main' },
+    { id: 'menu', name: '菜單管理', icon: 'menu', group: 'main' },
+    { id: 'stock', name: '庫存', icon: 'stock', group: 'main' },
+    { id: 'reports', name: '報表', icon: 'reports', group: 'main' },
+    { id: 'settings', name: '門店設定', icon: 'settings', ownerOnly: true, group: 'manage' },
+    { id: 'users', name: '帳號管理', icon: 'users', ownerOnly: true, group: 'manage' },
+    { id: 'audit', name: '操作紀錄', icon: 'audit', group: 'manage' },
+    { id: 'push-test', name: '測試工具', icon: 'flask', ownerOnly: true, group: 'test' }
   ];
+  const GROUP_LABELS = { manage: '管理', test: '測試' };
 
   const $ = id => document.getElementById(id);
 
@@ -1807,13 +1937,23 @@
   /* ---------------- 導覽 ---------------- */
   function renderNav() {
     const visibleViews = VIEWS.filter(view => !view.ownerOnly || !currentUser || currentUser.role === 'owner');
-    $('nav').innerHTML = visibleViews.map(view => `
-      <button class="nav-item ${view.id === currentView ? 'active' : ''}" data-view="${view.id}">
-        ${ICONS[view.icon]}
-        <span>${view.name}</span>
-        ${view.badge ? '<span class="nav-badge" id="pending-badge">0</span>' : ''}
-      </button>
-    `).join('');
+    let lastGroup = null;
+
+    $('nav').innerHTML = visibleViews.map(view => {
+      // 換到新分組時插一條分隔線＋小標籤，讓「測試工具」清楚獨立出來，不會跟門店設定混在一起
+      const divider = view.group !== lastGroup && GROUP_LABELS[view.group]
+        ? `<div class="nav-divider"><span>${GROUP_LABELS[view.group]}</span></div>`
+        : '';
+      lastGroup = view.group;
+
+      return `${divider}
+        <button class="nav-item ${view.id === currentView ? 'active' : ''}" data-view="${view.id}">
+          ${ICONS[view.icon]}
+          <span>${view.name}</span>
+          ${view.badge ? '<span class="nav-badge" id="pending-badge">0</span>' : ''}
+        </button>
+      `;
+    }).join('');
   }
 
   function switchView(viewId) {
@@ -3326,10 +3466,82 @@
     $('conn-text').textContent = '連線失敗';
   }
 
+  // 上線只要點一下（低風險，隨時可以再關掉）；下線要整條滑到底才生效，
+  // 因為誤觸下線 = 直接停止接單，代價比誤觸上線高得多，兩種操作故意做成不對稱的難度。
   function renderStoreToggle() {
-    const button = $('store-toggle');
-    button.textContent = storeIsOpen ? '目前上線' : '目前下線';
-    button.className = `btn btn-sm ${storeIsOpen ? 'btn-ok' : 'btn-dark'}`;
+    $('store-fab-tap').style.display = storeIsOpen ? 'none' : 'flex';
+    $('store-fab-slider').style.display = storeIsOpen ? 'block' : 'none';
+    if (storeIsOpen) resetStoreSliderHandle(false);
+  }
+
+  function resetStoreSliderHandle(animated) {
+    const handle = $('store-fab-handle');
+    handle.style.transition = animated ? 'transform .3s var(--ease-spring)' : 'none';
+    handle.style.transform = 'translateX(0px)';
+    $('store-fab-track').style.setProperty('--drag-progress', '0');
+  }
+
+  function initStoreSlider() {
+    const handle = $('store-fab-handle');
+    const track = $('store-fab-track');
+    let dragging = false;
+    let startX = 0;
+    let dragX = 0;
+    let maxX = 0;
+
+    function setDrag(x) {
+      dragX = x;
+      handle.style.transform = `translateX(${x}px)`;
+      track.style.setProperty('--drag-progress', maxX > 0 ? String(x / maxX) : '0');
+    }
+
+    handle.addEventListener('pointerdown', event => {
+      if (handle.classList.contains('is-loading')) return;
+      dragging = true;
+      maxX = track.clientWidth - handle.clientWidth - 8; // 8px 是左右留白
+      startX = event.clientX;
+      handle.classList.add('is-dragging');
+      handle.setPointerCapture(event.pointerId);
+    });
+
+    handle.addEventListener('pointermove', event => {
+      if (!dragging) return;
+      const next = Math.min(maxX, Math.max(0, event.clientX - startX));
+      setDrag(next);
+    });
+
+    async function finishDrag() {
+      if (!dragging) return;
+      dragging = false;
+      handle.classList.remove('is-dragging');
+
+      // 要滑到接近終點（85%）才算數，滑一半放開會彈回去，不會誤觸下線
+      if (maxX > 0 && dragX >= maxX * 0.85) {
+        setDrag(maxX);
+        handle.classList.add('is-loading');
+
+        try {
+          await requestJson(`${BACKEND_BASE_URL}/api/store/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isOpen: false })
+          });
+          await fetchStoreStatus();
+          toast('已下線，暫停接單', 'ok');
+        } catch (error) {
+          toast('切換失敗，請稍後再試', 'error');
+          resetStoreSliderHandle(true);
+        } finally {
+          handle.classList.remove('is-loading');
+        }
+      } else {
+        handle.style.transition = 'transform .25s var(--ease-spring)';
+        setDrag(0);
+      }
+    }
+
+    handle.addEventListener('pointerup', finishDrag);
+    handle.addEventListener('pointercancel', finishDrag);
   }
 
   async function fetchStoreStatus() {
@@ -3418,17 +3630,19 @@
 
   $('menu-toggle').addEventListener('click', () => $('sidebar').classList.toggle('open'));
 
-  $('store-toggle').addEventListener('click', () => {
-    runAction($('store-toggle'), async () => {
+  // 上線是低風險操作，點一下就生效；下線改用上面的滑動元件，這裡只保留「上線」的點擊
+  $('store-fab-tap').addEventListener('click', () => {
+    runAction($('store-fab-tap'), async () => {
       await requestJson(`${BACKEND_BASE_URL}/api/store/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isOpen: !storeIsOpen })
+        body: JSON.stringify({ isOpen: true })
       });
       await fetchStoreStatus();
-      toast(storeIsOpen ? '已上線，開始接單' : '已下線，暫停接單', 'ok');
+      toast('已上線，開始接單', 'ok');
     });
   });
+  initStoreSlider();
 
   $('sound-btn').addEventListener('click', () => {
     withLoading($('sound-btn'), async () => {
