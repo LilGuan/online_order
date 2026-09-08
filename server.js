@@ -6,6 +6,7 @@ const webpush = require('web-push');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { spawn } = require('child_process');
 const { v4: uuidv4 } = require('uuid');
 
 const app = express();
@@ -21,6 +22,7 @@ const COUNTER_FILE = path.join(__dirname, 'order-counter.json');
 const USERS_FILE = path.join(__dirname, 'users.json');
 const VAPID_FILE = path.join(__dirname, 'vapid-keys.json');
 const PUSH_SUBS_FILE = path.join(__dirname, 'push-subscriptions.json');
+const PRINT_QUEUE_FILE = path.join(__dirname, 'print-queue.json');
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 const LINE_CHANNEL_ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN || 'UOk7R1DiDvRXXUxHwy/nDjspTVgC3ZzAYYRTWMO96rHgOycTbmPXUV/qtLwNa0r5+lCXvBGCcc3WHVHesgHxUd8gxwaoPMwaQuPuOT/PpzyCVMCgQdAboLV8waAZHmIXPRaeq6iMYHuECM+WY2jghQdB04t89/1O/w1cDnyilFU=';
@@ -49,6 +51,12 @@ const LINEPAY_CHANNEL_ID = '2008931183'; // 請確認這串數字是否正確
 const LINEPAY_CHANNEL_SECRET = 'e461fe2765ab6bf8187dd0f76c54f27b'; // 請確認這串亂碼是否正確
 const LINEPAY_SITE = 'https://sandbox-api-pay.line.me'; 
 const LINEPAY_VERSION = '/v3/payments/request'; // Request API URI
+
+// 出單先走店內電腦的系統列印佇列。Mac 配對藍牙印表機後，若已設成預設印表機，
+// 不用設定 PRINTER_NAME；若有多台印表機，再用環境變數指定名稱。
+const PRINTER_NAME = String(process.env.PRINTER_NAME || '').trim();
+const PRINTER_RAW = process.env.PRINTER_RAW === 'true';
+const AUTO_PRINT_ON_ACCEPT = process.env.AUTO_PRINT_ON_ACCEPT !== 'false';
 
 // ★★★ 請務必更新您的 ngrok 網址 ★★★
 const MY_DOMAIN = 'https://person-solid-resolution-unified.trycloudflare.com';
@@ -81,6 +89,106 @@ function readRealOrders() {
 
 function writeOrders(orders) {
     writeJsonFile(ORDERS_FILE, orders);
+}
+
+function readPrintJobs() {
+    return readJsonFile(PRINT_QUEUE_FILE, []);
+}
+
+function writePrintJobs(jobs) {
+    writeJsonFile(PRINT_QUEUE_FILE, jobs.slice(-200));
+}
+
+function receiptText(order) {
+    const divider = '--------------------------------';
+    const lines = [
+        '邱媽媽美食',
+        divider,
+        `訂單 #${order.orderNumber}`,
+        `時間：${new Date(order.createdAt || Date.now()).toLocaleString('zh-TW')}`,
+        `姓名：${order.name || ''}`,
+        `電話：${order.phone || ''}`,
+        `取餐：${order.pickupTime || ''}`,
+        `付款：${order.paymentMethod === 'cash' ? '現金' : (order.paymentMethod || '')}`,
+        divider
+    ];
+
+    (order.items || []).forEach(item => {
+        lines.push(`${item.name || '未命名商品'}`);
+        lines.push(`  x${Number(item.qty || 0)}    $${Number(item.subtotal || 0)}`);
+    });
+
+    lines.push(divider, `總計：$${Number(order.totalAmount || 0)}`);
+    if (order.notes) lines.push(`備註：${order.notes}`);
+    lines.push(divider, '接單後列印', '', '');
+    return `${lines.join('\n')}\n\f`;
+}
+
+function updatePrintJob(jobId, changes) {
+    const jobs = readPrintJobs();
+    const job = jobs.find(entry => entry.id === jobId);
+    if (!job) return null;
+    Object.assign(job, changes, { updatedAt: new Date().toISOString() });
+    writePrintJobs(jobs);
+    return job;
+}
+
+function sendToSystemPrinter(job, order) {
+    return new Promise(resolve => {
+        if (!['darwin', 'linux'].includes(process.platform)) {
+            resolve({ status: 'waiting_printer', message: '目前先支援 Mac/Linux 系統列印，Windows 出單橋接程式稍後接上' });
+            return;
+        }
+
+        const args = [];
+        if (PRINTER_NAME) args.push('-d', PRINTER_NAME);
+        if (PRINTER_RAW) args.push('-o', 'raw');
+        args.push('-');
+
+        const printer = spawn('lp', args);
+        let stderr = '';
+        printer.stderr.on('data', chunk => { stderr += chunk.toString(); });
+        printer.on('error', error => resolve({ status: 'failed', message: error.message }));
+        printer.on('close', code => {
+            if (code === 0) {
+                resolve({ status: 'printed', message: PRINTER_NAME ? `已送到 ${PRINTER_NAME}` : '已送到預設印表機' });
+            } else {
+                resolve({ status: 'failed', message: stderr.trim() || `lp 結束碼 ${code}` });
+            }
+        });
+        printer.stdin.end(receiptText(order), 'utf8');
+    });
+}
+
+async function processPrintJob(job, order) {
+    updatePrintJob(job.id, { status: 'printing', attempts: Number(job.attempts || 0) + 1 });
+    const result = await sendToSystemPrinter(job, order);
+    updatePrintJob(job.id, { status: result.status, message: result.message, printedAt: result.status === 'printed' ? new Date().toISOString() : undefined });
+    return { ...result, jobId: job.id };
+}
+
+async function queueOrderPrint(order, kind = 'accept') {
+    const jobs = readPrintJobs();
+    if (kind === 'accept') {
+        const existing = jobs.find(job => job.orderId === String(order.id) && job.kind === 'accept');
+        if (existing) return { status: existing.status, message: '這張訂單已建立過出單工作', jobId: existing.id, duplicate: true };
+    }
+
+    const job = {
+        id: uuidv4(),
+        orderId: String(order.id),
+        orderNumber: String(order.orderNumber || ''),
+        kind,
+        status: AUTO_PRINT_ON_ACCEPT ? 'queued' : 'disabled',
+        attempts: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    };
+    jobs.push(job);
+    writePrintJobs(jobs);
+
+    if (!AUTO_PRINT_ON_ACCEPT) return { status: 'disabled', message: '自動列印已關閉', jobId: job.id };
+    return processPrintJob(job, order);
 }
 
 const DEFAULT_SETTINGS = {
@@ -1609,6 +1717,8 @@ app.patch('/api/orders/:orderNumber/status', requireAdmin, async (req, res) => {
         return res.status(404).json({ message: '找不到訂單' });
     }
 
+    const previousStatus = order.status;
+
     // 一旦離開待接單狀態就停止重送提醒
     if (status !== 'pending') stopOrderReminder(order.id);
 
@@ -1623,8 +1733,46 @@ app.patch('/api/orders/:orderNumber/status', requireAdmin, async (req, res) => {
     order.customerNotifications.push(notification);
 
     writeOrders(orders);
+    let print = null;
+    // 只有真正由「待接單」變成「製作中」才自動出單，避免重複點擊或重整頁面重印。
+    if (previousStatus === 'pending' && status === 'preparing') {
+        try {
+            print = await queueOrderPrint(order, 'accept');
+        } catch (error) {
+            print = { status: 'failed', message: error.message };
+            console.error('[Print] 自動出單失敗:', error.message);
+        }
+    }
     logAudit('order.status_changed', `#${order.orderNumber}`, `狀態改為 ${getStatusLabel(status)}${notification.sent ? '，已通知客人' : ''}`, req.session && req.session.username);
-    res.json({ ok: true, order, notification });
+    if (print) {
+        logAudit('print.order', `#${order.orderNumber}`, `${print.status}：${print.message || ''}`, req.session && req.session.username);
+    }
+    res.json({ ok: true, order, notification, print });
+});
+
+// 後台手動補印。補印一定建立新工作，但不會改變訂單狀態。
+app.post('/api/admin/orders/:orderNumber/print', requireAdmin, async (req, res) => {
+    const order = findOrder(readOrders(), req.params.orderNumber);
+    if (!order) return res.status(404).json({ message: '找不到訂單' });
+
+    try {
+        const print = await queueOrderPrint(order, 'reprint');
+        logAudit('print.reprint', `#${order.orderNumber}`, `${print.status}：${print.message || ''}`, req.session && req.session.username);
+        res.json({ ok: print.status === 'printed', order, print });
+    } catch (error) {
+        console.error('[Print] 補印失敗:', error.message);
+        res.status(500).json({ message: `補印失敗：${error.message}` });
+    }
+});
+
+app.get('/api/admin/print/status', requireAdmin, (req, res) => {
+    const jobs = readPrintJobs();
+    res.json({
+        enabled: AUTO_PRINT_ON_ACCEPT,
+        printerName: PRINTER_NAME || '系統預設印表機',
+        raw: PRINTER_RAW,
+        jobs: jobs.slice(-30).reverse()
+    });
 });
 
 app.patch('/api/admin/orders/:orderNumber/note', requireAdmin, (req, res) => {

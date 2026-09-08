@@ -952,6 +952,26 @@
   }
   .btn-confirm-back:active, .btn-confirm-reject:active { transform: scale(.97); }
 
+  /* 「確定拒絕」是實際會打 API 的按鈕，要跟接單鈕一樣有轉圈的 loading 樣式，
+     不然按下去畫面完全沒反應，看起來像沒點到。 */
+  .btn-confirm-reject.is-loading {
+    color: transparent !important;
+    pointer-events: none;
+  }
+  .btn-confirm-reject.is-loading > * { visibility: hidden; }
+  .btn-confirm-reject.is-loading::after {
+    content: '';
+    position: absolute; inset: 0; margin: auto;
+    width: 22px; height: 22px;
+    border: 3px solid rgba(185, 28, 28, .25);
+    border-top-color: #b91c1c;
+    border-radius: 50%;
+    animation: spin .65s linear infinite;
+    visibility: visible;
+  }
+  /* 拒絕確認的當下不該還能按「返回」反悔，避免使用者在 API 進行中切換畫面狀態 */
+  .takeover-confirm.is-busy .btn-confirm-back { opacity: .4; pointer-events: none; }
+
   @media (max-width: 520px) {
     .takeover-no { font-size: 2.1rem; }
     .btn-accept { padding: 17px; font-size: 1.1rem; }
@@ -977,7 +997,7 @@
   }
 
   /* 每個按鈕按下去都要看得到反應 */
-  .btn, .tab, .nav-item, .btn-accept, .btn-reject {
+  .btn, .tab, .nav-item, .btn-accept, .btn-reject, .btn-confirm-back, .btn-confirm-reject {
     position: relative;
     overflow: hidden;
     isolation: isolate;
@@ -1988,7 +2008,7 @@
 
   // 點擊漣漪：用事件委派，之後新增的按鈕自動就有
   document.addEventListener('pointerdown', event => {
-    const target = event.target.closest('.btn, .tab, .nav-item, .btn-accept, .btn-reject');
+    const target = event.target.closest('.btn, .tab, .nav-item, .btn-accept, .btn-reject, .btn-confirm-back, .btn-confirm-reject');
     if (!target || target.disabled) return;
 
     const rect = target.getBoundingClientRect();
@@ -2441,12 +2461,17 @@
     const order = orders.find(item => item.id === orderKey || item.orderNumber === orderKey);
     const label = order ? order.orderNumber : orderKey;
 
-    await requestJson(`${BACKEND_BASE_URL}/api/orders/${encodeURIComponent(orderKey)}/status`, {
+    const result = await requestJson(`${BACKEND_BASE_URL}/api/orders/${encodeURIComponent(orderKey)}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status })
     });
     toast(`訂單 #${label} 已更新為「${STATUS_LABELS[status]}」`, 'ok');
+    if (result.print && result.print.status !== 'printed') {
+      toast(`訂單已接單，但列印未完成：${result.print.message || '請檢查印表機'}`, 'error');
+    } else if (result.print && result.print.status === 'printed') {
+      toast(`訂單 #${label} 已送到印表機`, 'ok');
+    }
     lastOrdersSignature = '';
     await fetchOrders();
   }
@@ -2497,6 +2522,20 @@
       ${pushes ? `<div class="card-title" style="margin:18px 0 10px;">LINE 通知紀錄</div><div class="timeline">${pushes}</div>` : ''}
     `, [
       { label: '關閉', className: 'btn-soft', onClick: closeModal },
+      {
+        label: '補印',
+        className: 'btn-soft',
+        onClick: async () => {
+          const result = await requestJson(`${BACKEND_BASE_URL}/api/admin/orders/${encodeURIComponent(order.id || order.orderNumber)}/print`, {
+            method: 'POST'
+          });
+          if (result.print && result.print.status === 'printed') {
+            toast('訂單已補印', 'ok');
+          } else {
+            toast(`補印未完成：${result.print?.message || '請檢查印表機'}`, 'error');
+          }
+        }
+      },
       {
         label: '儲存備註',
         className: 'btn-primary',
@@ -3419,7 +3458,11 @@
     const orderId = takeoverOrderId;
     const button = isAccept ? $('takeover-accept') : $('takeover-reject-confirm');
     const inner = document.querySelector('.takeover-inner');
+    const confirmPanel = $('takeover-confirm');
     const exitClass = isAccept ? 'accepted' : 'rejected'; // 接單往上飛走、拒絕往下沉，兩種動作一眼就能分辨
+
+    // 拒絕確認送出後，「返回」也要鎖住，不然使用者可能在 API 還在跑的時候手滑切換畫面
+    if (!isAccept) confirmPanel.classList.add('is-busy');
 
     try {
       await withLoading(button, () => updateOrderStatus(orderId, status), { showDone: false });
@@ -3438,6 +3481,8 @@
     } catch (error) {
       toast(`更新失敗：${error.message}`, 'error');
       if (inner) inner.classList.remove(exitClass);
+    } finally {
+      confirmPanel.classList.remove('is-busy');
     }
   }
 

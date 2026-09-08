@@ -4,3 +4,4 @@ vapid-keys.json
 push-subscriptions.json
 users.json
 order-counter.json
+print-queue.json
