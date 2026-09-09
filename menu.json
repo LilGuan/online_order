@@ -38,7 +38,7 @@
       "soldOut": false,
       "dailyStock": null,
       "soldToday": 0,
-      "stockDate": "2026-09-08",
+      "stockDate": "2026-09-09",
       "sortOrder": 1
     },
     {
@@ -57,7 +57,7 @@
       "soldOut": false,
       "dailyStock": null,
       "soldToday": 0,
-      "stockDate": "2026-09-08",
+      "stockDate": "2026-09-09",
       "sortOrder": 2
     },
     {
@@ -76,7 +76,7 @@
       "soldOut": false,
       "dailyStock": null,
       "soldToday": 0,
-      "stockDate": "2026-09-08",
+      "stockDate": "2026-09-09",
       "sortOrder": 3
     },
     {
@@ -95,7 +95,7 @@
       "soldOut": false,
       "dailyStock": null,
       "soldToday": 0,
-      "stockDate": "2026-09-08",
+      "stockDate": "2026-09-09",
       "sortOrder": 4
     },
     {
@@ -114,7 +114,7 @@
       "soldOut": false,
       "dailyStock": null,
       "soldToday": 0,
-      "stockDate": "2026-09-08",
+      "stockDate": "2026-09-09",
       "sortOrder": 5
     },
     {
@@ -133,7 +133,7 @@
       "soldOut": false,
       "dailyStock": null,
       "soldToday": 0,
-      "stockDate": "2026-09-08",
+      "stockDate": "2026-09-09",
       "sortOrder": 6
     },
     {
@@ -152,7 +152,7 @@
       "soldOut": false,
       "dailyStock": null,
       "soldToday": 0,
-      "stockDate": "2026-09-08",
+      "stockDate": "2026-09-09",
       "sortOrder": 7
     },
     {
@@ -171,7 +171,7 @@
       "soldOut": false,
       "dailyStock": null,
       "soldToday": 0,
-      "stockDate": "2026-09-08",
+      "stockDate": "2026-09-09",
       "sortOrder": 8
     },
     {
@@ -190,7 +190,7 @@
       "soldOut": false,
       "dailyStock": null,
       "soldToday": 0,
-      "stockDate": "2026-09-08",
+      "stockDate": "2026-09-09",
       "sortOrder": 9
     },
     {
@@ -209,7 +209,7 @@
       "soldOut": false,
       "dailyStock": null,
       "soldToday": 0,
-      "stockDate": "2026-09-08",
+      "stockDate": "2026-09-09",
       "sortOrder": 10
     },
     {
@@ -228,8 +228,27 @@
       "soldOut": false,
       "dailyStock": null,
       "soldToday": 0,
-      "stockDate": "2026-09-08",
+      "stockDate": "2026-09-09",
       "sortOrder": 11
+    },
+    {
+      "id": 12,
+      "name": "派",
+      "price": 99999,
+      "image": "images/uploads/2026-09-09-361645ce.jpg",
+      "description": "派",
+      "category": "alacarte",
+      "options": {
+        "large": false,
+        "doubleEgg": false,
+        "doubleShrimp": false
+      },
+      "status": "available",
+      "soldOut": false,
+      "dailyStock": null,
+      "soldToday": 0,
+      "stockDate": "2026-09-09",
+      "sortOrder": 12
     }
   ]
 }

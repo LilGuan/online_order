@@ -57,6 +57,7 @@ const LINEPAY_VERSION = '/v3/payments/request'; // Request API URI
 const PRINTER_NAME = String(process.env.PRINTER_NAME || '').trim();
 const PRINTER_RAW = process.env.PRINTER_RAW === 'true';
 const AUTO_PRINT_ON_ACCEPT = process.env.AUTO_PRINT_ON_ACCEPT !== 'false';
+const RECEIPT_WIDTH = 32; // 58mm 熱感紙使用一般字體時約 32 個半形字元
 
 // ★★★ 請務必更新您的 ngrok 網址 ★★★
 const MY_DOMAIN = 'https://person-solid-resolution-unified.trycloudflare.com';
@@ -99,28 +100,200 @@ function writePrintJobs(jobs) {
     writeJsonFile(PRINT_QUEUE_FILE, jobs.slice(-200));
 }
 
-function receiptText(order) {
-    const divider = '--------------------------------';
+function charWidth(char) {
+    return /[\u1100-\u115f\u2329\u232a\u2e80-\u303e\u3040-\ua4cf\uac00-\ud7a3\uf900-\ufaff\ufe10-\ufe19\ufe30-\ufe6f\uff00-\uff60\uffe0-\uffe6]/.test(char) ? 2 : 1;
+}
+
+function textWidth(text) {
+    return [...String(text)].reduce((width, char) => width + charWidth(char), 0);
+}
+
+function wrapReceiptText(text, width = RECEIPT_WIDTH) {
+    const result = [];
+    let line = '';
+    let lineWidth = 0;
+
+    for (const char of String(text ?? '')) {
+        if (char === '\n') {
+            result.push(line);
+            line = '';
+            lineWidth = 0;
+            continue;
+        }
+        const nextWidth = charWidth(char);
+        if (line && lineWidth + nextWidth > width) {
+            result.push(line);
+            line = '';
+            lineWidth = 0;
+        }
+        line += char;
+        lineWidth += nextWidth;
+    }
+
+    if (line || !result.length) result.push(line);
+    return result;
+}
+
+function centerReceiptText(text, width = RECEIPT_WIDTH) {
+    const value = String(text);
+    const padding = Math.max(0, Math.floor((width - textWidth(value)) / 2));
+    return `${' '.repeat(padding)}${value}`;
+}
+
+function receiptColumns(left, right, width = RECEIPT_WIDTH) {
+    const leftText = String(left);
+    const rightText = String(right);
+    const spaces = Math.max(1, width - textWidth(leftText) - textWidth(rightText));
+    return `${leftText}${' '.repeat(spaces)}${rightText}`;
+}
+
+function formatReceiptTime(value) {
+    return new Date(value || Date.now()).toLocaleString('zh-TW', {
+        month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false
+    });
+}
+
+// 把字元之間插入空白，讓訂單號碼在一堆等寬字裡跳出來
+function spacedReceiptText(text) {
+    return [...String(text)].join(' ');
+}
+
+function receiptSection(title) {
+    return `【 ${title} 】`;
+}
+
+// 出單上不能出現 linepay_online 這種內部代號；線上付款還必須明確標示已付款，
+// 否則店員看到單子會再跟客人收一次錢。
+const PAYMENT_LABELS = {
+    cash: { name: '現金', paid: false },
+    linepay_online: { name: 'LINE Pay', paid: true },
+    online_payment: { name: '線上付款', paid: true }
+};
+
+function paymentReceiptLabel(order) {
+    const info = PAYMENT_LABELS[order.paymentMethod];
+    if (!info) return String(order.paymentMethod || '未指定');
+    return info.paid ? `${info.name}（已付款）` : `${info.name}（現場收款）`;
+}
+
+// 58mm 熱感紙只有 32 個半形字元、等寬字型，沒有粗體大小可用，
+// 所以「美編」全靠分隔線層級（=／-）、置中、字距、全角空格對齊做出視覺層次。
+// 刻意只用 ASCII 分隔線與中文字型必有的【】，避免某些出單機在 Big5 模式下
+// 把 box-drawing 或特殊符號印成亂碼。
+function receiptText(order, kind = 'accept') {
+    const settings = readSettings();
+    const thick = '='.repeat(RECEIPT_WIDTH);
+    const thin = '-'.repeat(RECEIPT_WIDTH);
+
+    const statusLabel = order.status === 'completed'
+        ? '已完成'
+        : order.status === 'cancelled' ? '已取消' : '製作中';
+    const typeLabel = order.orderType === 'reserve' ? '預約單' : '即時單';
+
     const lines = [
-        '邱媽媽美食',
-        divider,
-        `訂單 #${order.orderNumber}`,
-        `時間：${new Date(order.createdAt || Date.now()).toLocaleString('zh-TW')}`,
-        `姓名：${order.name || ''}`,
-        `電話：${order.phone || ''}`,
-        `取餐：${order.pickupTime || ''}`,
-        `付款：${order.paymentMethod === 'cash' ? '現金' : (order.paymentMethod || '')}`,
-        divider
+        thick,
+        centerReceiptText(settings.storeName || '邱媽媽美食'),
+        centerReceiptText('外帶訂單'),
+        thick
     ];
 
-    (order.items || []).forEach(item => {
-        lines.push(`${item.name || '未命名商品'}`);
-        lines.push(`  x${Number(item.qty || 0)}    $${Number(item.subtotal || 0)}`);
+    // 測試單要放在最醒目的位置，否則廚房會照著做出一份不存在的餐
+    if (order.isTest) {
+        lines.push(
+            '',
+            centerReceiptText('*** 測 試 單 ***'),
+            centerReceiptText('請勿製作、請勿出餐'),
+            '',
+            thin
+        );
+    }
+
+    // 補印要標記，避免廚房把同一張單做兩次
+    if (kind === 'reprint') {
+        lines.push(centerReceiptText('※ 補 印 ※'), thin);
+    }
+
+    // 訂單號碼是廚房與取餐時最常掃的資訊，用字距拉開＋前後留白讓它最醒目
+    lines.push(
+        '',
+        centerReceiptText('訂 單 號 碼'),
+        centerReceiptText(spacedReceiptText(`#${order.orderNumber}`)),
+        '',
+        centerReceiptText(`${typeLabel}  ・  ${statusLabel}`),
+        ''
+    );
+
+    // 取餐資訊：標籤一律補成 8 半形寬（4 個全角字），值才會對齊成整齊一欄
+    const infoRows = [
+        ['取餐時間', order.pickupTime || '未指定'],
+        ['姓　　名', order.name || ''],
+        ['電　　話', order.phone || ''],
+        ['付款方式', paymentReceiptLabel(order)],
+        ['下單時間', formatReceiptTime(order.createdAt)]
+    ];
+
+    lines.push(thick, receiptSection('取餐資訊'));
+    infoRows.forEach(([label, value]) => {
+        // 值太長就換行，續行縮排到與值同一欄，不要跑回最左邊
+        const wrapped = wrapReceiptText(value, RECEIPT_WIDTH - 10);
+        lines.push(` ${label} ${wrapped[0]}`);
+        wrapped.slice(1).forEach(part => lines.push(`${' '.repeat(10)}${part}`));
     });
 
-    lines.push(divider, `總計：$${Number(order.totalAmount || 0)}`);
-    if (order.notes) lines.push(`備註：${order.notes}`);
-    lines.push(divider, '接單後列印', '', '');
+    lines.push(thin, receiptSection('餐點明細'), '');
+
+    let totalQty = 0;
+    (order.items || []).forEach((item, index) => {
+        const qty = Number(item.qty || 0);
+        const subtotal = Number(item.subtotal || 0);
+        const unitPrice = qty > 0 ? Math.round(subtotal / qty) : subtotal;
+        totalQty += qty;
+
+        // 品名含加購選項時會很長，讓它獨佔整行，數量與金額另一行右對齊
+        wrapReceiptText(`${String(index + 1).padStart(2, ' ')} ${item.name || '未命名商品'}`, RECEIPT_WIDTH)
+            .forEach((part, partIndex) => lines.push(partIndex === 0 ? part : `    ${part}`));
+
+        lines.push(receiptColumns(`    x${qty}  @$${unitPrice}`, `$${subtotal}`, RECEIPT_WIDTH - 1));
+        lines.push('');
+    });
+
+    // 打包時可以用這行快速核對有沒有漏東西
+    lines.push(
+        thin,
+        receiptColumns(` 共 ${(order.items || []).length} 項`, `合計 ${totalQty} 份`, RECEIPT_WIDTH - 1),
+        thick,
+        receiptColumns(' 應付金額', `$${Number(order.totalAmount || 0)}`, RECEIPT_WIDTH - 1),
+        thick
+    );
+
+    // 交餐當下最容易出錯的就是「該收沒收」或「收兩次」，所以直接寫清楚
+    const payment = PAYMENT_LABELS[order.paymentMethod];
+    if (payment && payment.paid) {
+        lines.push(centerReceiptText('*** 已付款・請勿收款 ***'), thick);
+    } else {
+        lines.push(centerReceiptText(`*** 請收現金 $${Number(order.totalAmount || 0)} ***`), thick);
+    }
+
+    if (order.notes) {
+        lines.push(receiptSection('客人備註'));
+        wrapReceiptText(order.notes, RECEIPT_WIDTH - 2).forEach(part => lines.push(` ${part}`));
+        lines.push(thin);
+    }
+
+    // 客人拿到收據要找得到店家；出單時間可以分辨原始單與補印
+    if (settings.phone) lines.push(centerReceiptText(`電話 ${settings.phone}`));
+    if (settings.address) {
+        wrapReceiptText(settings.address).forEach(part => lines.push(centerReceiptText(part)));
+    }
+    lines.push(
+        centerReceiptText(`出單 ${formatReceiptTime()}`),
+        '',
+        centerReceiptText('謝謝您的訂購'),
+        thick,
+        '',
+        ''
+    );
+
     return `${lines.join('\n')}\n\f`;
 }
 
@@ -156,7 +329,7 @@ function sendToSystemPrinter(job, order) {
                 resolve({ status: 'failed', message: stderr.trim() || `lp 結束碼 ${code}` });
             }
         });
-        printer.stdin.end(receiptText(order), 'utf8');
+        printer.stdin.end(receiptText(order, job && job.kind), 'utf8');
     });
 }
 
@@ -1763,6 +1936,12 @@ app.post('/api/admin/orders/:orderNumber/print', requireAdmin, async (req, res) 
         console.error('[Print] 補印失敗:', error.message);
         res.status(500).json({ message: `補印失敗：${error.message}` });
     }
+});
+
+app.get('/api/admin/orders/:orderNumber/receipt', requireAdmin, (req, res) => {
+    const order = findOrder(readOrders(), req.params.orderNumber);
+    if (!order) return res.status(404).json({ message: '找不到訂單' });
+    res.json({ width: '58mm', text: receiptText(order, req.query.kind === 'reprint' ? 'reprint' : 'accept') });
 });
 
 app.get('/api/admin/print/status', requireAdmin, (req, res) => {

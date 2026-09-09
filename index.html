@@ -388,6 +388,11 @@
   const BACKEND_BASE_URL = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
     ? location.origin
     : "https://person-solid-resolution-unified.trycloudflare.com";
+  function assetUrl(value) {
+    const image = String(value || '').trim();
+    if (!image || /^(https?:|data:|blob:)/i.test(image)) return image;
+    return new URL(image.replace(/^\/+/, ''), `${BACKEND_BASE_URL}/`).href;
+  }
   let currentCategory = 'all';
   let isStoreOpen = true;
 
@@ -428,7 +433,7 @@
       div.className = 'item';
       div.innerHTML = `
         <div class="item-image-wrapper">
-          <img src="${item.image}" alt="${item.name}" loading="lazy" />
+          <img src="${assetUrl(item.image)}" alt="${item.name}" loading="lazy" />
           ${item.soldOut ? '<div class="sold-out-badge">已售完</div>' : ''}
         </div>
         <div class="item-content">

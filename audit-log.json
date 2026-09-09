@@ -1,5 +1,141 @@
 [
   {
+    "id": "5793620f-8bd0-44e2-a437-fdae35e50f96",
+    "at": "2026-09-09T02:12:52.861Z",
+    "user": "admin",
+    "action": "menu.created",
+    "target": "派",
+    "detail": "新增商品，售價 $99999"
+  },
+  {
+    "id": "fe9ce926-6160-4554-8ad4-a753bdd72826",
+    "at": "2026-09-09T02:12:52.668Z",
+    "user": "admin",
+    "action": "menu.image_uploaded",
+    "target": "images/uploads/2026-09-09-361645ce.jpg",
+    "detail": "上傳菜單照片（100 KB）"
+  },
+  {
+    "id": "81d5f481-5b31-41e6-8eda-dbdccf7fd5ad",
+    "at": "2026-09-08T08:35:06.368Z",
+    "user": "admin",
+    "action": "print.reprint",
+    "target": "#T4",
+    "detail": "failed：lp: 錯誤 - 沒有預設目標。"
+  },
+  {
+    "id": "eeb17009-5d17-431e-b18e-896683d188af",
+    "at": "2026-09-08T08:35:02.591Z",
+    "user": "admin",
+    "action": "print.reprint",
+    "target": "#T4",
+    "detail": "failed：lp: 錯誤 - 沒有預設目標。"
+  },
+  {
+    "id": "2734ec90-2d72-4a73-a466-c7706abe7af9",
+    "at": "2026-09-08T03:26:00.976Z",
+    "user": "admin",
+    "action": "print.order",
+    "target": "#T4",
+    "detail": "failed：lp: 錯誤 - 沒有預設目標。"
+  },
+  {
+    "id": "73dd5836-bf16-470b-a27c-be5be9d4f9f1",
+    "at": "2026-09-08T03:26:00.970Z",
+    "user": "admin",
+    "action": "order.status_changed",
+    "target": "#T4",
+    "detail": "狀態改為 製作中"
+  },
+  {
+    "id": "48aaa2ff-3d91-4bdf-843b-f0cb2004930f",
+    "at": "2026-09-08T03:25:59.383Z",
+    "user": "admin",
+    "action": "order.test_created",
+    "target": "#T4",
+    "detail": "推播對象：1 台指定裝置"
+  },
+  {
+    "id": "5ac3c689-93e4-4400-9a05-4fd75a1c1c0a",
+    "at": "2026-09-08T02:35:02.589Z",
+    "user": "admin",
+    "action": "order.status_changed",
+    "target": "#T1",
+    "detail": "狀態改為 已完成"
+  },
+  {
+    "id": "7f102694-dfb0-4815-9f0e-76bafce47211",
+    "at": "2026-09-08T02:34:27.109Z",
+    "user": "admin",
+    "action": "order.status_changed",
+    "target": "#T1",
+    "detail": "狀態改為 已完成"
+  },
+  {
+    "id": "030f2774-8e40-4700-9b17-4e6ee4153f1e",
+    "at": "2026-09-08T02:34:26.416Z",
+    "user": "admin",
+    "action": "order.status_changed",
+    "target": "#T2",
+    "detail": "狀態改為 已完成"
+  },
+  {
+    "id": "5ec3d478-4f98-42a4-acc0-0f73f4cfa9f8",
+    "at": "2026-09-08T02:34:25.119Z",
+    "user": "admin",
+    "action": "order.status_changed",
+    "target": "#T3",
+    "detail": "狀態改為 已完成"
+  },
+  {
+    "id": "d83df8d7-b819-4440-bc88-a1624ce0d2a4",
+    "at": "2026-09-08T02:34:16.245Z",
+    "user": "admin",
+    "action": "print.order",
+    "target": "#T3",
+    "detail": "failed：lp: 錯誤 - 沒有預設目標。"
+  },
+  {
+    "id": "3a1de2b8-ff9b-41e2-9178-ccde398afb27",
+    "at": "2026-09-08T02:34:16.240Z",
+    "user": "admin",
+    "action": "order.status_changed",
+    "target": "#T3",
+    "detail": "狀態改為 製作中"
+  },
+  {
+    "id": "07a0e3ac-ae8b-46a8-94eb-42a44f2b5ffd",
+    "at": "2026-09-08T02:34:15.103Z",
+    "user": "admin",
+    "action": "order.test_created",
+    "target": "#T3",
+    "detail": "推播對象：1 台指定裝置"
+  },
+  {
+    "id": "be978c1d-3ca7-4f72-8457-220fd6b0d335",
+    "at": "2026-09-08T02:34:08.600Z",
+    "user": "admin",
+    "action": "print.order",
+    "target": "#T2",
+    "detail": "failed：lp: 錯誤 - 沒有預設目標。"
+  },
+  {
+    "id": "d1543484-aff1-489d-87e8-2704cbc5d9b2",
+    "at": "2026-09-08T02:34:08.598Z",
+    "user": "admin",
+    "action": "order.status_changed",
+    "target": "#T2",
+    "detail": "狀態改為 製作中"
+  },
+  {
+    "id": "3b4c0f79-d06c-46d7-a357-75a59de7d8a6",
+    "at": "2026-09-08T02:33:58.126Z",
+    "user": "admin",
+    "action": "order.test_created",
+    "target": "#T2",
+    "detail": "推播對象：1 台指定裝置"
+  },
+  {
     "id": "498666c9-a90b-4cf3-ba2e-1cd210acd2cb",
     "at": "2026-09-07T17:26:50.059Z",
     "user": "admin",

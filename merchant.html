@@ -1126,6 +1126,46 @@
   .sk-line { height: 13px; border-radius: 6px; }
 
   /* ==========================================================
+     58mm 出單預覽：把純文字包成看得出是熱感紙的樣子，
+     店家在預覽時就能判斷實際印出來的排版對不對。
+     ========================================================== */
+  .receipt-stage {
+    display: flex;
+    justify-content: center;
+    padding: 18px 10px 24px;
+    background: repeating-linear-gradient(45deg, #e9ecf1, #e9ecf1 10px, #eef1f5 10px, #eef1f5 20px);
+    border-radius: var(--radius-sm);
+  }
+
+  .receipt-paper {
+    position: relative;
+    width: 58mm;
+    max-width: 100%;
+    background: #fffdf9; /* 熱感紙偏暖白，不是純白 */
+    box-shadow: 0 6px 20px rgba(16, 24, 40, .18);
+  }
+
+  .receipt-text {
+    margin: 0;
+    padding: 16px 10px 22px;
+    color: #1a1a1a;
+    font: 11.5px/1.7 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    white-space: pre;               /* 出單是等寬對齊，不能讓它自己折行破壞版面 */
+    overflow-x: auto;
+    letter-spacing: .02em;
+  }
+
+  /* 底部做出撕紙的鋸齒邊 */
+  .receipt-tear {
+    height: 8px;
+    background:
+      linear-gradient(-45deg, transparent 50%, #fffdf9 50%) 0 0 / 8px 8px repeat-x,
+      linear-gradient(45deg, transparent 50%, #fffdf9 50%) 0 0 / 8px 8px repeat-x;
+    filter: drop-shadow(0 2px 2px rgba(16, 24, 40, .12));
+    margin-top: -8px;
+  }
+
+  /* ==========================================================
      Toast
      ========================================================== */
   .toasts { position: fixed; top: 16px; right: 16px; z-index: 300; display: flex; flex-direction: column; gap: 9px; pointer-events: none; }
@@ -1797,9 +1837,14 @@
 <div class="toasts" id="toasts"></div>
 
 <script>
-  const BACKEND_BASE_URL = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
-    ? location.origin
-    : 'https://person-solid-resolution-unified.trycloudflare.com';
+  // 後台與 API 由同一個 Node 服務提供。使用目前網址可讓手機透過當次的
+  // Cloudflare Tunnel 連回店內 Mac，不會因為 Quick Tunnel 換網址而打到舊站。
+  const BACKEND_BASE_URL = location.origin;
+  function assetUrl(value) {
+    const image = String(value || '').trim();
+    if (!image || /^(https?:|data:|blob:)/i.test(image)) return image;
+    return new URL(image.replace(/^\/+/, ''), `${BACKEND_BASE_URL}/`).href;
+  }
 
   const POLL_INTERVAL_MS = 3000;
   // 限幅後的總增益。實測輸出峰值 = 0.749 × 增益，取 1.4 讓峰值落在 1.05，
@@ -2523,6 +2568,22 @@
     `, [
       { label: '關閉', className: 'btn-soft', onClick: closeModal },
       {
+        label: '出單預覽',
+        className: 'btn-soft',
+        onClick: async () => {
+          const result = await requestJson(`${BACKEND_BASE_URL}/api/admin/orders/${encodeURIComponent(order.id || order.orderNumber)}/receipt`, { cache: 'no-store' });
+          openModal('58mm 出單預覽', `
+            <div class="receipt-stage">
+              <div class="receipt-paper">
+                <pre class="receipt-text">${escapeHtml(result.text.replace(/\f/g, ''))}</pre>
+                <div class="receipt-tear"></div>
+              </div>
+            </div>
+            <p class="hint" style="margin:12px 0 0;">58mm 熱感紙格式（每行 32 個半形字元）。實際字型與中文字體效果依出單機而異。</p>
+          `, [{ label: '返回訂單', className: 'btn-soft', onClick: () => openOrderDetail(order.id || order.orderNumber) }]);
+        }
+      },
+      {
         label: '補印',
         className: 'btn-soft',
         onClick: async () => {
@@ -2596,7 +2657,7 @@
         <tr style="opacity:0; animation: fadeUp .35s var(--ease-out) ${Math.min(index, 10) * 35}ms forwards;">
           <td class="cell-primary">
             <div class="cell-item">
-              ${item.image ? `<img class="thumb" src="${escapeHtml(item.image)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<div class="thumb"></div>'}
+              ${item.image ? `<img class="thumb" src="${escapeHtml(assetUrl(item.image))}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<div class="thumb"></div>'}
               <div>
                 <div class="cell-name">${escapeHtml(item.name)}</div>
                 ${item.description ? `<div class="cell-meta">${escapeHtml(item.description)}</div>` : ''}
@@ -2762,7 +2823,7 @@
           <div class="upload-zone" id="m-upload-zone">
             <div class="upload-preview" id="m-preview">
               ${item?.image
-                ? `<img src="${escapeHtml(item.image)}" alt="" onerror="this.style.display='none'">`
+                ? `<img src="${escapeHtml(assetUrl(item.image))}" alt="" onerror="this.style.display='none'">`
                 : `<div class="upload-placeholder">${ICONS.image}<span>尚未設定照片</span></div>`}
             </div>
             <div class="upload-actions">
