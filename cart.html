@@ -268,6 +268,44 @@
     box-shadow: 0 4px 10px rgba(255, 107, 107, 0.3);
   }
   #submit-order:active { transform: scale(0.98); background-color: #fa5252; }
+  /* 不能送出時只做視覺變淡，「絕對不要」用 disabled / pointer-events:none，
+     否則客人點下去完全沒有反應，會以為系統壞掉。 */
+  #submit-order.is-blocked {
+    background: #c9ced6;
+    box-shadow: none;
+    color: #fff;
+  }
+  #submit-order.is-blocked:active { background: #b9bfc8; }
+  #submit-order.shake { animation: submitShake .4s cubic-bezier(.36,.07,.19,.97); }
+  @keyframes submitShake {
+    10%, 90% { transform: translateX(-2px); }
+    20%, 80% { transform: translateX(4px); }
+    30%, 50%, 70% { transform: translateX(-6px); }
+    40%, 60% { transform: translateX(6px); }
+  }
+  /* 送出被擋下來時的提示條 */
+  #submit-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 88px;
+    transform: translateX(-50%) translateY(12px);
+    max-width: min(92vw, 420px);
+    background: #2b2f36;
+    color: #fff;
+    padding: 12px 18px;
+    border-radius: 12px;
+    font-size: .92rem;
+    font-weight: 600;
+    line-height: 1.5;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(16, 24, 40, .28);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .22s ease, transform .22s ease;
+    z-index: 3000;
+  }
+  #submit-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #submit-toast.danger { background: #c2410c; }
 
   /* 空購物車訊息 */
   #empty-msg {
@@ -486,8 +524,14 @@
         storeSettings = await settingsResponse.json();
         if (storeSettings.optionPrices) optionPrices = storeSettings.optionPrices;
       }
+
+      // 菜單讀不到就無法算價格，這時候不能讓客人送出一張金額錯誤的單
+      menuLoaded = menuItems.length > 0;
+      if (!menuLoaded) throw new Error('菜單是空的');
     } catch (error) {
+      menuLoaded = false;
       console.error('讀取菜單或門店設定失敗:', error);
+      showSubmitToast('連不上店家系統，請檢查網路後重新整理。');
     }
   }
 
@@ -523,7 +567,21 @@
   const emptyMsg = document.getElementById('empty-msg');
   const submitBtn = document.getElementById('submit-order');
   const closedBanner = document.getElementById('closed-banner');
-  const emptyCartModal = new bootstrap.Modal(document.getElementById('emptyCartModal'));
+  // 這個 Modal 依賴 CDN 上的 bootstrap。以前在這裡直接 new，只要 CDN 被擋或載入失敗，
+  // 整段 script 就會在這一行中斷，連下面的「送出訂單」監聽器都來不及掛上去，
+  // 結果就是按鈕完全沒有反應。改成用到才建立，而且失敗有退路。
+  let emptyCartModal = null;
+  function showEmptyCartModal() {
+    try {
+      if (!emptyCartModal && window.bootstrap && window.bootstrap.Modal) {
+        emptyCartModal = new window.bootstrap.Modal(document.getElementById('emptyCartModal'));
+      }
+      if (emptyCartModal) { emptyCartModal.show(); return; }
+    } catch (error) {
+      console.error('購物車彈窗開啟失敗:', error);
+    }
+    showSubmitToast('購物車是空的，請先回菜單選擇餐點。');
+  }
   const pickupTimeSelect = document.getElementById('pickup-time');
   const pickupDateSelect = document.getElementById('pickup-date');
   const timeGroup = document.getElementById('time-group');
@@ -538,6 +596,47 @@
   let isClosedForToday = false; // 是否已過今日營業時間 (打烊)
   let isStoreOpen = true;
   let lineUserId = '';
+  let isSubmitting = false;      // 正在送出，避免重複下單
+  let menuLoaded = false;        // 菜單/門店設定是否成功載入
+  let submitBlockReason = '';    // 目前不能送出的原因；空字串代表可以送出
+
+  // LIFF SDK 也是從 CDN 載入的，載入失敗時 liff 會是 undefined。
+  // 任何用到 liff 的地方都要走這裡，避免整個送單流程被一個 ReferenceError 打斷。
+  function liffCan(api) {
+    try {
+      return typeof liff !== 'undefined' && liff
+        && typeof liff.isInClient === 'function' && liff.isInClient()
+        && liff.isApiAvailable(api);
+    } catch (error) {
+      return false;
+    }
+  }
+
+  // 送出被擋下來時的提示。按鈕永遠可以點，點了一定要看得到原因。
+  let submitToastTimer = null;
+  function showSubmitToast(message, tone = 'danger') {
+    let toast = document.getElementById('submit-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'submit-toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.classList.toggle('danger', tone === 'danger');
+    // 重新觸發動畫
+    toast.classList.remove('show');
+    void toast.offsetWidth;
+    toast.classList.add('show');
+
+    clearTimeout(submitToastTimer);
+    submitToastTimer = setTimeout(() => toast.classList.remove('show'), 3600);
+
+    // 按鈕抖一下，讓人知道剛剛那一下有被接收到
+    submitBtn.classList.remove('shake');
+    void submitBtn.offsetWidth;
+    submitBtn.classList.add('shake');
+    setTimeout(() => submitBtn.classList.remove('shake'), 450);
+  }
 
   // 載入購物車資料
   function loadCart() {
@@ -651,10 +750,34 @@
       }
     }
 
-    const enabled = Boolean(canSubmit && !belowMinimum);
-    submitBtn.disabled = !enabled;
-    submitBtn.style.opacity = enabled ? '1' : '0.5';
-    submitBtn.style.pointerEvents = enabled ? 'auto' : 'none';
+    // 先決定「為什麼不能送出」，訊息之後點按鈕時要原封不動地告訴客人
+    if (!menuLoaded) {
+      submitBlockReason = '菜單還在載入中，請稍候再送出。';
+    } else if (totalValue <= 0) {
+      submitBlockReason = '購物車是空的，請先回菜單選擇餐點。';
+    } else if (!canSubmit) {
+      submitBlockReason = '店家目前未開放點餐，請稍後再試或直接電話聯絡店家。';
+    } else if (belowMinimum) {
+      submitBlockReason = `最低消費為 $${minOrderAmount}，目前為 $${totalValue}，還差 $${minOrderAmount - totalValue}。`;
+    } else {
+      submitBlockReason = '';
+    }
+
+    // ★ 關鍵修正 ★
+    // 以前這裡是 disabled = true + pointerEvents = 'none'，瀏覽器會直接吃掉點擊事件，
+    // 客人怎麼按都「完全沒有反應」，也看不到任何原因。
+    // 現在按鈕永遠保持可點，只用顏色表示不能送，點下去由 click handler 說明原因。
+    submitBtn.disabled = false;
+    submitBtn.style.pointerEvents = 'auto';
+    submitBtn.style.opacity = '1';
+    submitBtn.classList.toggle('is-blocked', Boolean(submitBlockReason));
+
+    // 送出中不要蓋掉「送出中...」的字
+    if (!isSubmitting) {
+      submitBtn.textContent = belowMinimum
+        ? `還差 $${minOrderAmount - totalValue} 才能送出`
+        : '送出訂單';
+    }
   }
 
   async function initStoreStatus() {
@@ -912,12 +1035,20 @@
   })();
 
   // ====== 表單驗證與送出 ======
-  let isSubmitting = false;
+  // isSubmitting 已在上面的狀態變數區宣告
 
   submitBtn.addEventListener('click', async () => {
     if (isSubmitting) return;
+
+    // 按鈕現在永遠可以點，所以「不能送出」的情況一律在這裡說明原因，
+    // 絕對不會再出現點了完全沒反應的狀況。
+    if (submitBlockReason) {
+      showSubmitToast(submitBlockReason);
+      return;
+    }
+
     if (!isStoreOpen) {
-      alert('店家目前未開放點餐，請稍後再試。');
+      showSubmitToast('店家目前未開放點餐，請稍後再試。');
       return;
     }
 
@@ -939,13 +1070,13 @@
     phoneError.style.display = 'none';
     timeError.style.display = 'none';
 
-    if (Object.keys(cart).length === 0) { emptyCartModal.show(); return; }
+    if (Object.keys(cart).length === 0) { showEmptyCartModal(); return; }
 
     const { totalAmount } = getOrderItemsAndTotal(cart);
     const minOrderAmount = Number(storeSettings?.minOrderAmount || 0);
     if (minOrderAmount > 0 && totalAmount < minOrderAmount) {
       updateSubmitButtonState(isStoreOpen, totalAmount);
-      alert(`最低消費為 $${minOrderAmount}，目前為 $${totalAmount}，還差 $${minOrderAmount - totalAmount}`);
+      showSubmitToast(`最低消費為 $${minOrderAmount}，目前為 $${totalAmount}，還差 $${minOrderAmount - totalAmount}。`);
       return;
     }
 
@@ -997,7 +1128,7 @@
     // 取得付款方式
     const paymentMethod = document.getElementById('payment-method').value;
 
-    const isInClient = liff.isInClient() && liff.isApiAvailable('sendMessages');
+    const isInClient = liffCan('sendMessages');
     const orderData = { name, phone, cart, notes, paymentMethod, orderNumber, pickupTime: finalPickupTime, lineUserId, isInClient, orderType: currentMode };
     localStorage.setItem('orderData', JSON.stringify(orderData));
     localStorage.setItem('userPhone', phone); 
@@ -1473,15 +1604,21 @@
 
   function sendOrderMessage(flexMessage, order) {
     const detailPage = `order-detail.html?order=${encodeURIComponent(order.id || '')}`;
-    if (!liff.isInClient() || !liff.isApiAvailable('sendMessages')) {
+    if (!liffCan('sendMessages')) {
       // 網頁版（非 LINE App 內建瀏覽器）無法用 liff.sendMessages() 以使用者身份發送，
       // 改由後端在儲存訂單後透過官方帳號主動推播訂單卡片給客人（見 saveOrderToBackend 的 isInClient 參數）。
       window.location.href = detailPage;
       return;
     }
 
-    if (!liff.isLoggedIn()) {
-      liff.login();
+    try {
+      if (!liff.isLoggedIn()) {
+        liff.login();
+        return;
+      }
+    } catch (error) {
+      console.error('LIFF 狀態異常，改用網頁流程:', error);
+      window.location.href = detailPage;
       return;
     }
     liff.sendMessages([flexMessage])
