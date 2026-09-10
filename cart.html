@@ -668,12 +668,27 @@
   });
   
   // 初始化 LIFF (包含自動填入電話)
+  function registerCustomerProfile() {
+    const phone = document.getElementById('phone').value.trim();
+    const name = document.getElementById('name').value.trim();
+    if (!lineUserId && !phone) return;
+
+    fetch(`${BACKEND_BASE_URL}/api/customers/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lineUserId, name, phone, displayName: name })
+    }).catch(() => { /* 會員登記失敗不阻擋客人結帳 */ });
+  }
+
   async function initLiff() {
     try {
       await liff.init({ liffId: LIFF_ID });
       if (liff.isLoggedIn()) {
         const profile = await liff.getProfile();
         lineUserId = profile.userId || '';
+
+        // 只要 LINE 使用者開啟結帳頁就登記會員，即使最後沒有下單也會出現在店家會員名單。
+        registerCustomerProfile();
         
         // 1. 自動填入姓名
         const nameInput = document.getElementById('name');
@@ -692,6 +707,8 @@
       console.error(err);
     }
   }
+
+  document.getElementById('phone').addEventListener('blur', registerCustomerProfile);
   // ====== 時段邏輯處理 ======
 
   function initMode() {

@@ -8,6 +8,15 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 const { v4: uuidv4 } = require('uuid');
+require('dotenv').config();
+const { hydrateStateFiles, queueStateSync } = require('./supabase-state');
+const { hydrateNormalizedStateFiles, queueNormalizedSync } = require('./supabase-normalized');
+const {
+    buildCustomersFromOrders,
+    customerStatsForOrder,
+    safeCustomer,
+    upsertCustomerProfile
+} = require('./customer-utils');
 
 const app = express();
 const ORDERS_FILE = path.join(__dirname, 'orders.json');
@@ -20,6 +29,7 @@ const UPLOAD_DIR = path.join(__dirname, 'images', 'uploads');
 const MAX_IMAGE_BYTES = 3 * 1024 * 1024;
 const COUNTER_FILE = path.join(__dirname, 'order-counter.json');
 const USERS_FILE = path.join(__dirname, 'users.json');
+const CUSTOMERS_FILE = path.join(__dirname, 'customers.json');
 const VAPID_FILE = path.join(__dirname, 'vapid-keys.json');
 const PUSH_SUBS_FILE = path.join(__dirname, 'push-subscriptions.json');
 const PRINT_QUEUE_FILE = path.join(__dirname, 'print-queue.json');
@@ -77,6 +87,8 @@ function readJsonFile(filePath, fallback) {
 
 function writeJsonFile(filePath, data) {
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+    queueStateSync(filePath, data);
+    queueNormalizedSync(filePath, data);
 }
 
 function readOrders() {
@@ -90,6 +102,30 @@ function readRealOrders() {
 
 function writeOrders(orders) {
     writeJsonFile(ORDERS_FILE, orders);
+    const savedCustomers = readJsonFile(CUSTOMERS_FILE, []);
+    writeCustomers(buildCustomersFromOrders(orders, savedCustomers));
+}
+
+function readCustomers() {
+    const customers = readJsonFile(CUSTOMERS_FILE, null);
+    if (customers) return customers;
+
+    const generated = buildCustomersFromOrders(readOrders());
+    writeCustomers(generated);
+    return generated;
+}
+
+function writeCustomers(customers) {
+    writeJsonFile(CUSTOMERS_FILE, customers);
+}
+
+function decorateOrderCustomer(order, customers = readCustomers()) {
+    return { ...order, ...customerStatsForOrder(order, customers) };
+}
+
+function decorateOrdersCustomer(orders) {
+    const customers = readCustomers();
+    return orders.map(order => decorateOrderCustomer(order, customers));
 }
 
 function readPrintJobs() {
@@ -1030,6 +1066,24 @@ app.patch('/api/store/status', requireAdmin, (req, res) => {
     res.json({ ok: true, status });
 });
 
+// LINE 使用者開啟點餐頁就先登記成會員；尚未下單也會出現在後台會員名單。
+app.post('/api/customers/register', (req, res) => {
+    const profile = {
+        lineUserId: String(req.body.lineUserId || '').trim(),
+        displayName: String(req.body.displayName || '').trim(),
+        name: String(req.body.name || '').trim(),
+        phone: String(req.body.phone || '').trim()
+    };
+    if (!profile.lineUserId && !profile.phone) {
+        return res.status(400).json({ message: '缺少會員識別資料' });
+    }
+
+    const customers = readCustomers();
+    const customer = upsertCustomerProfile(customers, profile);
+    writeCustomers(customers);
+    res.json({ ok: true, memberId: customer && customer.id });
+});
+
 app.post('/api/orders', async (req, res) => {
     const storeStatus = readStoreStatus();
 
@@ -1062,7 +1116,7 @@ app.post('/api/orders', async (req, res) => {
             updatedAt: new Date().toISOString()
         };
         writeOrders(orders);
-        return res.json({ ok: true, order: orders[existingIndex] });
+        return res.json({ ok: true, order: decorateOrderCustomer(orders[existingIndex]) });
     }
 
     // LINE App 內建瀏覽器下單維持原本由前端 liff.sendMessages() 以使用者身份發送。
@@ -1097,7 +1151,7 @@ app.post('/api/orders', async (req, res) => {
     // 未接單會依設定持續重送，直到接單或達重送上限。
     startOrderReminder(order);
 
-    res.status(201).json({ ok: true, order });
+    res.status(201).json({ ok: true, order: decorateOrderCustomer(order) });
 });
 
 app.get('/api/orders', (req, res) => {
@@ -1126,7 +1180,19 @@ app.get('/api/orders', (req, res) => {
         orders = orders.filter(order => getOrderDate(order) <= to);
     }
 
-    res.json({ orders });
+    res.json({ orders: decorateOrdersCustomer(orders) });
+});
+
+app.get('/api/admin/customers', requireAdmin, (req, res) => {
+    const search = String(req.query.search || '').trim().toLowerCase();
+    let customers = readCustomers().map(safeCustomer);
+
+    if (search) {
+        customers = customers.filter(customer => [customer.name, customer.displayName, customer.phone]
+            .some(value => String(value || '').toLowerCase().includes(search)));
+    }
+
+    res.json({ customers });
 });
 
 app.get('/api/admin/summary', requireAdmin, (req, res) => {
@@ -2096,8 +2162,27 @@ app.get('/api/linepay/confirm', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    readUsers();              // 首次啟動時建立預設帳號
-    rearmPendingReminders();  // 重啟前還沒接的單要繼續提醒
-});
+
+async function startServer() {
+    try {
+        const result = await hydrateNormalizedStateFiles(__dirname);
+        if (result.hydrated) {
+            console.log(`[Supabase] 已從正規化資料表還原 ${result.hydrated} 個資料區塊`);
+        } else {
+            const legacyResult = await hydrateStateFiles(__dirname);
+            if (legacyResult.hydrated) {
+                console.log(`[Supabase] 已從備份總表還原 ${legacyResult.hydrated} 個資料區塊`);
+            }
+        }
+    } catch (error) {
+        console.error('[Supabase] 啟動還原失敗，繼續使用本機 JSON:', error.message);
+    }
+
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+        readUsers();              // 首次啟動時建立預設帳號
+        rearmPendingReminders();  // 重啟前還沒接的單要繼續提醒
+    });
+}
+
+startServer();

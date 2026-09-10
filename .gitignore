@@ -1,3 +1,6 @@
+node_modules/
+.env
+
 orders.json
 store-status.json
 vapid-keys.json
@@ -5,3 +8,4 @@ push-subscriptions.json
 users.json
 order-counter.json
 print-queue.json
+customers.json

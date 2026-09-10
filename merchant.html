@@ -574,6 +574,10 @@
   .pill.out { background: var(--danger-soft); color: #b91c1c; }
   .pill.warn{ background: var(--warn-soft); color: #c2410c; }
 
+  .customer-membership { margin-top: 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .customer-membership .hint { margin: 0; }
+  .member-name { font-weight: 800; }
+
   /* ==========================================================
      Switch
      ========================================================== */
@@ -1461,6 +1465,38 @@
         <div class="orders section-gap" id="orders"></div>
       </section>
 
+      <!-- ---------------- 會員名單 ---------------- -->
+      <section class="view" id="view-customers">
+        <div class="toolbar">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input class="field" id="customer-search" placeholder="搜尋會員姓名或電話" />
+          </div>
+          <button class="btn btn-soft btn-sm" id="customer-refresh">重新整理</button>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">會員名單</div>
+              <div class="card-sub">只要完成會員登記就是會員，沒有下單也會保留在這裡</div>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>會員</th><th>電話</th><th>訂購次數</th><th>已完成</th><th>累計消費</th><th>最後訂購</th></tr>
+              </thead>
+              <tbody id="customers-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="customers-empty" style="display:none;">
+            <div class="ico" data-icon="users"></div>
+            <div>目前還沒有會員</div>
+          </div>
+        </div>
+      </section>
+
       <!-- ---------------- 菜單 ---------------- -->
       <section class="view" id="view-menu">
         <div class="toolbar">
@@ -1906,6 +1942,7 @@
   const VIEWS = [
     { id: 'dashboard', name: '儀表板', icon: 'dashboard', group: 'main' },
     { id: 'orders', name: '訂單管理', icon: 'orders', badge: true, group: 'main' },
+    { id: 'customers', name: '會員名單', icon: 'users', group: 'main' },
     { id: 'menu', name: '菜單管理', icon: 'menu', group: 'main' },
     { id: 'stock', name: '庫存', icon: 'stock', group: 'main' },
     { id: 'reports', name: '報表', icon: 'reports', group: 'main' },
@@ -1947,6 +1984,7 @@
   let takeoverOrderId = null;
   let takeoverSwapping = false;
   let orderTypeFilter = 'all';
+  let customerSearch = '';
 
   /* ---------------- helpers ---------------- */
   const authHeaders = () => (token ? { Authorization: `Bearer ${token}` } : {});
@@ -2133,6 +2171,7 @@
 
   const VIEW_SKELETON_TARGETS = {
     orders: 'orders',
+    customers: 'customers-tbody',
     menu: 'menu-tbody',
     stock: 'stock-tbody',
     users: 'users-tbody',
@@ -2154,6 +2193,7 @@
       if (viewId === 'reports') await fetchReport();
       if (viewId === 'settings') await fetchSettings();
       if (viewId === 'push-test') await fetchPushDevices();
+      if (viewId === 'customers') await fetchCustomers();
       if (viewId === 'users') await fetchUsers();
       if (viewId === 'audit') await fetchAudit();
     } catch (error) {
@@ -2381,6 +2421,41 @@
     else stopAlarm();
   }
 
+  function customerBadge(order) {
+    if (order.isTest) return '';
+    const count = Number(order.customerOrderCount || 0);
+    if (order.customerIsNew || count === 0) return '<span class="pill warn">新顧客</span>';
+    return `<span class="pill on">訂購 ${count} 次</span>`;
+  }
+
+  async function fetchCustomers() {
+    const params = new URLSearchParams();
+    if (customerSearch) params.set('search', customerSearch);
+    const data = await requestJson(`${BACKEND_BASE_URL}/api/admin/customers?${params}`, { cache: 'no-store' });
+    const customers = data.customers || [];
+    const body = $('customers-tbody');
+    const empty = $('customers-empty');
+
+    empty.style.display = customers.length ? 'none' : 'flex';
+    body.innerHTML = customers.map((customer, index) => {
+      const count = Number(customer.orderCount || 0);
+      const orderLabel = count ? `<span class="pill on">訂購 ${count} 次</span>` : '<span class="pill warn">新顧客</span>';
+      return `
+        <tr style="opacity:0; animation: fadeUp .35s var(--ease-out) ${Math.min(index, 15) * 35}ms forwards;">
+          <td class="cell-primary">
+            <div class="member-name">${escapeHtml(customer.name || customer.displayName || '未命名會員')}</div>
+            <div class="cell-meta">會員 · ${customer.lineUserId ? 'LINE 已連結' : '電話會員'}</div>
+          </td>
+          <td data-label="電話">${escapeHtml(customer.phone || '未提供')}</td>
+          <td data-label="訂購次數">${orderLabel}</td>
+          <td data-label="已完成">${Number(customer.completedOrderCount || 0)} 次</td>
+          <td data-label="累計消費">${money(customer.totalSpent)}</td>
+          <td data-label="最後訂購" class="cell-meta">${customer.lastOrderAt ? `${formatTime(customer.lastOrderAt)}${customer.lastOrderNumber ? ` · #${escapeHtml(customer.lastOrderNumber)}` : ''}` : '尚未下單'}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
   function renderOrderTabs() {
     const counts = orders.reduce((result, order) => {
       result[order.status] = (result[order.status] || 0) + 1;
@@ -2442,7 +2517,7 @@
     if (orderTypeFilter !== 'all') {
       visible = visible.filter(order => (order.orderType || 'instant') === orderTypeFilter);
     }
-    const signature = JSON.stringify(visible.map(order => [order.id, order.status, order.updatedAt, order.adminNote]));
+    const signature = JSON.stringify(visible.map(order => [order.id, order.status, order.updatedAt, order.adminNote, order.customerOrderCount, order.customerIsNew]));
 
     // 每 3 秒輪詢一次，資料沒變就不重繪，避免動畫一直重跑
     if (signature === lastOrdersSignature) return;
@@ -2487,6 +2562,7 @@
             <div><div class="kv-label">取餐時間</div><div class="kv-value">${escapeHtml(order.pickupTime)}</div></div>
             <div><div class="kv-label">付款</div><div class="kv-value">${order.paymentMethod === 'cash' ? '現金' : escapeHtml(order.paymentMethod)}</div></div>
           </div>
+          <div class="customer-membership">${customerBadge(order)}${order.customerOrderCount ? '<span class="hint">這位客人的歷史訂單統計</span>' : ''}</div>
 
           <ul class="items">${itemRows}</ul>
           ${order.notes ? `<div class="note-box customer-note"><strong>客人備註：</strong>${escapeHtml(order.notes)}</div>` : ''}
@@ -2548,6 +2624,7 @@
         <div><div class="kv-label">取餐</div><div class="kv-value">${escapeHtml(order.pickupTime)}</div></div>
         <div><div class="kv-label">狀態</div><div class="kv-value">${STATUS_LABELS[order.status]}</div></div>
       </div>
+      <div class="customer-membership">${customerBadge(order)}${order.customerOrderCount ? `<span class="hint">累計訂購 ${order.customerOrderCount} 次</span>` : ''}</div>
 
       <ul class="items">
         ${(order.items || []).map(item => `
@@ -3469,6 +3546,7 @@
         <div><div class="kv-label">取餐時間</div><div class="kv-value">${escapeHtml(order.pickupTime)}</div></div>
         <div><div class="kv-label">付款</div><div class="kv-value">${order.paymentMethod === 'cash' ? '現金' : escapeHtml(order.paymentMethod)}</div></div>
       </div>
+      <div class="customer-membership">${customerBadge(order)}</div>
 
       <ul class="takeover-items">
         ${(order.items || []).map(item => `
@@ -3960,6 +4038,18 @@
     orderSearch = orderFrom = orderTo = '';
     lastOrdersSignature = '';
     fetchOrders().catch(error => toast(error.message, 'error'));
+  });
+
+  let customerSearchTimer = null;
+  $('customer-search').addEventListener('input', event => {
+    clearTimeout(customerSearchTimer);
+    customerSearchTimer = setTimeout(() => {
+      customerSearch = event.target.value.trim();
+      fetchCustomers().catch(error => toast(error.message, 'error'));
+    }, 300);
+  });
+  $('customer-refresh').addEventListener('click', () => {
+    runAction($('customer-refresh'), () => fetchCustomers());
   });
 
   $('orders').addEventListener('click', event => {
