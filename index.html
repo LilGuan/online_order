@@ -30,6 +30,21 @@
       text-align: center;
     }
     h2 { margin: 0; color: #ff6b6b; font-size: 1.5rem; }
+    .history-link {
+      position: absolute;
+      top: 50%;
+      right: 14px;
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      color: #333;
+      border-radius: 50%;
+      text-decoration: none;
+    }
+    .history-link:active { background: #f1f3f5; transform: translateY(-50%) scale(.94); }
+    .history-link { transform: translateY(-50%); }
+    .history-link svg { width: 22px; height: 22px; }
 
     /* 分類導覽列 (新增) */
     .category-tabs {
@@ -303,6 +318,9 @@
 
 <header>
   <h2>邱媽媽美食</h2>
+  <a class="history-link" href="order-detail.html" aria-label="查看訂單紀錄" title="訂單紀錄">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v6h6"/><path d="M12 7v5l3 2"/></svg>
+  </a>
 </header>
 
 <!-- 分類導覽列（由後台菜單設定動態產生） -->

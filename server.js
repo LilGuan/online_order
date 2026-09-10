@@ -14,6 +14,7 @@ const { hydrateNormalizedStateFiles, queueNormalizedSync } = require('./supabase
 const {
     buildCustomersFromOrders,
     customerStatsForOrder,
+    normalizePhone,
     safeCustomer,
     upsertCustomerProfile
 } = require('./customer-utils');
@@ -36,7 +37,10 @@ const PRINT_QUEUE_FILE = path.join(__dirname, 'print-queue.json');
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 const LINE_CHANNEL_ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN || 'UOk7R1DiDvRXXUxHwy/nDjspTVgC3ZzAYYRTWMO96rHgOycTbmPXUV/qtLwNa0r5+lCXvBGCcc3WHVHesgHxUd8gxwaoPMwaQuPuOT/PpzyCVMCgQdAboLV8waAZHmIXPRaeq6iMYHuECM+WY2jghQdB04t89/1O/w1cDnyilFU=';
+const LINE_LOGIN_CHANNEL_ID = String(process.env.LINE_LOGIN_CHANNEL_ID || '2007831775').trim();
+const LINE_LIFF_ID = String(process.env.LINE_LIFF_ID || '2007831775-ojeB1qbw').trim();
 const adminSessions = new Map(); // token -> { username, role }
+const lineCustomerSessions = new Map(); // LINE ID token -> { userId, displayName, expiresAt }
 
 app.use(cors());
 // 菜單照片是以 base64 夾在 JSON 裡上傳，所以要放寬預設的 100kb 上限
@@ -838,6 +842,102 @@ async function pushLineMessages(lineUserId, messages) {
     return result;
 }
 
+async function verifyLineCustomer(req, res, next) {
+    const authorization = String(req.headers.authorization || '');
+    const idToken = authorization.startsWith('Bearer ') ? authorization.slice(7).trim() : '';
+
+    if (!idToken) {
+        return res.status(401).json({ message: '請先使用 LINE 登入' });
+    }
+
+    const cached = lineCustomerSessions.get(idToken);
+    if (cached && cached.expiresAt > Date.now()) {
+        req.lineCustomer = { userId: cached.userId, displayName: cached.displayName };
+        next();
+        return;
+    }
+
+    try {
+        const params = new URLSearchParams({
+            id_token: idToken,
+            client_id: LINE_LOGIN_CHANNEL_ID
+        });
+        const response = await axios.post('https://api.line.me/oauth2/v2.1/verify', params.toString(), {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            timeout: 10000
+        });
+
+        if (!response.data || !response.data.sub) {
+            return res.status(401).json({ message: 'LINE 登入資料無效，請重新登入' });
+        }
+
+        req.lineCustomer = {
+            userId: String(response.data.sub),
+            displayName: String(response.data.name || '')
+        };
+        const tokenExpiresAt = Number(response.data.exp || 0) * 1000;
+        lineCustomerSessions.set(idToken, {
+            ...req.lineCustomer,
+            expiresAt: tokenExpiresAt > Date.now() ? tokenExpiresAt : Date.now() + 5 * 60 * 1000
+        });
+        if (lineCustomerSessions.size > 500) {
+            for (const [token, session] of lineCustomerSessions) {
+                if (session.expiresAt <= Date.now()) lineCustomerSessions.delete(token);
+            }
+            while (lineCustomerSessions.size > 500) {
+                lineCustomerSessions.delete(lineCustomerSessions.keys().next().value);
+            }
+        }
+        next();
+    } catch (error) {
+        const isRejectedToken = Boolean(error.response && error.response.status >= 400 && error.response.status < 500);
+        console.error('[LINE Login] ID token 驗證失敗:', error.response?.data?.error_description || error.message);
+        res.status(isRejectedToken ? 401 : 502).json({
+            message: isRejectedToken ? 'LINE 登入已失效，請重新開啟頁面' : '暫時無法驗證 LINE 登入，請稍後再試'
+        });
+    }
+}
+
+function customerOrderView(order) {
+    return {
+        id: String(order.id || ''),
+        orderNumber: String(order.orderNumber || ''),
+        orderDate: String(order.orderDate || ''),
+        orderType: order.orderType === 'reserve' ? 'reserve' : 'instant',
+        pickupTime: String(order.pickupTime || ''),
+        paymentMethod: String(order.paymentMethod || 'cash'),
+        notes: String(order.notes || ''),
+        items: Array.isArray(order.items) ? order.items.map(item => ({
+            key: String(item.key || ''),
+            name: String(item.name || ''),
+            qty: Number(item.qty || 0),
+            price: Number(item.price || 0),
+            subtotal: Number(item.subtotal || 0)
+        })) : [],
+        totalAmount: Number(order.totalAmount || 0),
+        status: String(order.status || 'pending'),
+        statusHistory: Array.isArray(order.statusHistory) ? order.statusHistory.map(entry => ({
+            status: String(entry.status || ''),
+            note: String(entry.note || ''),
+            at: String(entry.at || '')
+        })) : [],
+        createdAt: String(order.createdAt || ''),
+        updatedAt: String(order.updatedAt || ''),
+        completedAt: String(order.completedAt || ''),
+        cancelledAt: String(order.cancelledAt || '')
+    };
+}
+
+function orderBelongsToCustomer(order, customer) {
+    if (customer.lineUserId && order.lineUserId === customer.lineUserId) return true;
+    const customerPhone = normalizePhone(customer.phone);
+    return Boolean(customerPhone && customerPhone === normalizePhone(order.phone));
+}
+
+function orderDetailUrl(order) {
+    return `https://liff.line.me/${LINE_LIFF_ID}/order-detail.html?order=${encodeURIComponent(String(order.id || ''))}`;
+}
+
 async function notifyCustomer(order, message) {
     if (!message) {
         return { at: new Date().toISOString(), message, sent: false, reason: '沒有通知內容' };
@@ -852,60 +952,56 @@ async function notifyCustomer(order, message) {
 
 function buildOrderFlexMessage(order) {
     const items = Array.isArray(order.items) ? order.items : [];
-
-    const itemRows = items.map(item => ({
-        type: 'box',
-        layout: 'horizontal',
-        margin: 'sm',
-        contents: [
-            { type: 'text', text: String(item.name || ''), size: 'sm', color: '#333333', flex: 5, wrap: true },
-            { type: 'text', text: `x${item.qty}`, size: 'sm', color: '#666666', flex: 2, align: 'center' },
-            { type: 'text', text: `$${item.subtotal}`, size: 'sm', color: '#111111', flex: 3, align: 'end' }
-        ]
-    }));
-
-    const paymentText = order.paymentMethod === 'cash' ? '現金' : order.paymentMethod;
-
-    const bodyContents = [
-        ...itemRows,
-        { type: 'separator', margin: 'md' },
-        {
-            type: 'box',
-            layout: 'horizontal',
-            margin: 'md',
-            contents: [
-                { type: 'text', text: '合計', weight: 'bold', flex: 5 },
-                { type: 'text', text: `$${order.totalAmount}`, weight: 'bold', align: 'end', flex: 5, color: '#D93025' }
-            ]
-        },
-        { type: 'text', text: `⏰ ${order.pickupTime || ''}`, size: 'sm', color: '#666666', margin: 'md' },
-        { type: 'text', text: `付款方式：${paymentText}`, size: 'sm', color: '#666666' }
-    ];
-
-    if (order.notes) {
-        bodyContents.push({ type: 'text', text: `備註：${order.notes}`, size: 'sm', color: '#666666', wrap: true });
-    }
+    const totalQty = items.reduce((sum, item) => sum + Number(item.qty || 0), 0);
+    const itemSummary = items.slice(0, 2).map(item => `${item.name} x${item.qty}`).join('、');
+    const remainingCount = Math.max(0, items.length - 2);
 
     return {
         type: 'flex',
-        altText: `訂單 #${order.orderNumber} 已送出，總金額 $${order.totalAmount}`,
+        altText: `訂單 #${order.orderNumber}｜總金額 $${order.totalAmount}｜等待店家接單`,
         contents: {
             type: 'bubble',
             header: {
                 type: 'box',
-                layout: 'vertical',
-                backgroundColor: '#FF6B6B',
-                paddingAll: '16px',
+                layout: 'horizontal',
+                backgroundColor: '#FFF4F2',
+                paddingAll: '14px',
                 contents: [
-                    { type: 'text', text: '邱媽媽美食', color: '#FFFFFF', weight: 'bold', size: 'lg' },
-                    { type: 'text', text: `訂單 #${order.orderNumber}`, color: '#FFFFFF', size: 'sm', margin: 'sm' }
+                    { type: 'text', text: '邱媽媽美食', color: '#222222', weight: 'bold', size: 'md', flex: 7 },
+                    { type: 'text', text: '等待接單', color: '#D94F4F', weight: 'bold', size: 'sm', align: 'end', flex: 5 }
                 ]
             },
             body: {
                 type: 'box',
                 layout: 'vertical',
-                spacing: 'sm',
-                contents: bodyContents
+                paddingAll: '18px',
+                contents: [
+                    { type: 'text', text: '訂單編號', size: 'xs', color: '#777777' },
+                    { type: 'text', text: `#${order.orderNumber}`, size: 'xxl', weight: 'bold', color: '#202020', margin: 'xs' },
+                    { type: 'separator', margin: 'lg', color: '#EEEEEE' },
+                    {
+                        type: 'box', layout: 'horizontal', margin: 'lg', alignItems: 'flex-end', contents: [
+                            { type: 'text', text: `${items.length} 項／${totalQty} 份`, size: 'sm', color: '#666666', flex: 5 },
+                            { type: 'text', text: `$${order.totalAmount}`, size: 'xxl', weight: 'bold', color: '#D94F4F', align: 'end', flex: 7 }
+                        ]
+                    },
+                    { type: 'text', text: itemSummary + (remainingCount ? `，另 ${remainingCount} 項` : ''), size: 'sm', color: '#444444', wrap: true, margin: 'lg', maxLines: 2 },
+                    { type: 'text', text: order.pickupTime || '取餐時間待確認', size: 'sm', color: '#777777', margin: 'md', wrap: true }
+                ]
+            },
+            footer: {
+                type: 'box',
+                layout: 'vertical',
+                paddingAll: '14px',
+                contents: [
+                    {
+                        type: 'button',
+                        style: 'primary',
+                        color: '#D94F4F',
+                        height: 'sm',
+                        action: { type: 'uri', label: '查看訂單狀態', uri: orderDetailUrl(order) }
+                    }
+                ]
             }
         }
     };
@@ -1084,6 +1180,98 @@ app.post('/api/customers/register', (req, res) => {
     res.json({ ok: true, memberId: customer && customer.id });
 });
 
+app.post('/api/customer/orders/history', verifyLineCustomer, (req, res) => {
+    const orders = readRealOrders()
+        .filter(order => order.lineUserId === req.lineCustomer.userId)
+        .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+        .map(customerOrderView);
+
+    res.json({
+        customer: { displayName: req.lineCustomer.displayName },
+        orders
+    });
+});
+
+app.post('/api/customer/orders/:orderId/reorder-preview', verifyLineCustomer, (req, res) => {
+    const order = findOrder(readRealOrders(), req.params.orderId);
+    if (!order || order.lineUserId !== req.lineCustomer.userId) {
+        return res.status(404).json({ message: '找不到這筆訂單' });
+    }
+
+    const menu = readMenu();
+    const settings = readSettings();
+    const cart = {};
+    const unavailable = [];
+    const adjustments = [];
+
+    (order.items || []).forEach(orderItem => {
+        const menuId = menuItemIdFromOrderItem(orderItem, menu.items);
+        const menuItem = menuId === null ? null : menu.items.find(item => item.id === menuId);
+        const oldName = String(orderItem.name || '原訂單商品');
+
+        if (!menuItem) {
+            unavailable.push({ name: oldName, reason: '商品已刪除' });
+            return;
+        }
+        if (menuItem.status !== 'available') {
+            unavailable.push({ name: oldName, reason: '商品已下架' });
+            return;
+        }
+        if (!isItemOrderable(menuItem)) {
+            unavailable.push({ name: oldName, reason: '商品目前已售完' });
+            return;
+        }
+
+        const tokens = String(orderItem.key || '').split('-').slice(1);
+        const selectedOptions = [
+            { token: 'large', key: 'large', label: '加大' },
+            { token: 'egg', key: 'doubleEgg', label: '雙蛋' },
+            { token: 'shrimp', key: 'doubleShrimp', label: '加蝦' }
+        ].filter(option => tokens.includes(option.token));
+        const disabledOption = selectedOptions.find(option => !menuItem.options?.[option.key]);
+
+        if (disabledOption) {
+            unavailable.push({ name: oldName, reason: `${disabledOption.label}加購目前未供應` });
+            return;
+        }
+
+        const requestedQty = Math.max(1, Number(orderItem.qty || 1));
+        const remaining = menuItem.dailyStock
+            ? Math.max(0, Number(menuItem.dailyStock) - Number(menuItem.soldToday || 0))
+            : requestedQty;
+        const qty = Math.min(requestedQty, remaining);
+
+        if (qty <= 0) {
+            unavailable.push({ name: oldName, reason: '商品目前已售完' });
+            return;
+        }
+        if (qty < requestedQty) {
+            adjustments.push({ name: menuItem.name, message: `庫存只剩 ${qty} 份，數量已調整` });
+        }
+
+        const optionKey = selectedOptions.map(option => option.token).join('-');
+        const key = optionKey ? `${menuItem.id}-${optionKey}` : `${menuItem.id}-normal`;
+        cart[key] = Number(cart[key] || 0) + qty;
+
+        const currentPrice = Number(menuItem.price || 0) + selectedOptions.reduce(
+            (sum, option) => sum + Number(settings.optionPrices?.[option.key] || 0),
+            0
+        );
+        if (Number(orderItem.price || 0) !== currentPrice) {
+            adjustments.push({ name: menuItem.name, message: `價格已更新為 $${currentPrice}` });
+        }
+    });
+
+    res.json({
+        sourceOrderId: order.id,
+        cart,
+        notes: String(order.notes || ''),
+        unavailable,
+        adjustments,
+        availableCount: Object.keys(cart).length
+    });
+});
+
 app.post('/api/orders', async (req, res) => {
     const storeStatus = readStoreStatus();
 
@@ -1129,14 +1317,6 @@ app.post('/api/orders', async (req, res) => {
         return res.json({ ok: true, order: decorateOrderCustomer(orders[existingIndex]) });
     }
 
-    // LINE App 內建瀏覽器下單維持原本由前端 liff.sendMessages() 以使用者身份發送。
-    // 網頁版無法使用 liff.sendMessages()（LINE 平台限制），改由官方帳號主動推播訂單卡片給客人，
-    // 避免 LINE App 內的客人重複收到兩則通知。
-    if (!req.body.isInClient) {
-        const cardNotification = await pushOrderCard(order);
-        order.customerNotifications.push(cardNotification);
-    }
-
     // 到這裡才確定是全新的訂單，配一個當日流水號。
     // 顯示用的是每天從 1 重新開始的號碼；唯一鍵另外用「日期-序號」，
     // 否則今天的 #1 會跟昨天的 #1 撞在一起。
@@ -1157,6 +1337,15 @@ app.post('/api/orders', async (req, res) => {
     writeOrders(orders);
     applyStockForOrder(order);
 
+    // LINE App 內建瀏覽器由前端以使用者身份把卡片送進官方帳號聊天室。
+    // 外部瀏覽器無法呼叫 liff.sendMessages()，改由官方帳號推播同款卡片給客人。
+    // 一定要等正式流水號與 id 建立後再送，卡片連結才能精準開到這筆訂單。
+    if (!req.body.isInClient) {
+        const cardNotification = await pushOrderCard(order);
+        order.customerNotifications.push(cardNotification);
+        writeOrders(orders);
+    }
+
     // 通知店家：手機切到背景或鎖屏時，後台頁面的鈴聲不會響，只有這個推播叫得動手機。
     // 未接單會依設定持續重送，直到接單或達重送上限。
     startOrderReminder(order);
@@ -1164,7 +1353,7 @@ app.post('/api/orders', async (req, res) => {
     res.status(201).json({ ok: true, order: decorateOrderCustomer(order) });
 });
 
-app.get('/api/orders', (req, res) => {
+app.get('/api/orders', requireAdmin, (req, res) => {
     const status = req.query.status;
     let orders = readOrders();
 
@@ -1203,6 +1392,18 @@ app.get('/api/admin/customers', requireAdmin, (req, res) => {
     }
 
     res.json({ customers });
+});
+
+app.get('/api/admin/customers/:customerId/orders', requireAdmin, (req, res) => {
+    const customer = readCustomers().find(entry => entry.id === req.params.customerId);
+    if (!customer) return res.status(404).json({ message: '找不到會員' });
+
+    const orders = readRealOrders()
+        .filter(order => orderBelongsToCustomer(order, customer))
+        .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+        .map(customerOrderView);
+
+    res.json({ customer: safeCustomer(customer), orders });
 });
 
 app.get('/api/admin/summary', requireAdmin, (req, res) => {
@@ -2195,4 +2396,10 @@ async function startServer() {
     });
 }
 
-startServer();
+if (require.main === module) startServer();
+
+module.exports = {
+    app,
+    buildOrderFlexMessage,
+    customerOrderView
+};

@@ -23,25 +23,6 @@
   ],
   "items": [
     {
-      "id": 5,
-      "name": "蝦仁炒飯",
-      "image": "images/shrimp_rice.png",
-      "price": 130,
-      "status": "available",
-      "options": {
-        "large": true,
-        "doubleEgg": true,
-        "doubleShrimp": true
-      },
-      "soldOut": false,
-      "category": "rice",
-      "soldToday": 0,
-      "sortOrder": 5,
-      "stockDate": "2026-09-10",
-      "dailyStock": null,
-      "description": ""
-    },
-    {
       "id": 1,
       "name": "蛋炒飯",
       "image": "images/egg_rice.jpg",
@@ -58,7 +39,7 @@
       "sortOrder": 1,
       "stockDate": "2026-09-10",
       "dailyStock": null,
-      "description": ""
+      "description": "使用鄰近宏昇畜牧養殖的有機蛋拌炒米飯，簡單耐吃。"
     },
     {
       "id": 2,
@@ -77,7 +58,7 @@
       "sortOrder": 2,
       "stockDate": "2026-09-10",
       "dailyStock": null,
-      "description": ""
+      "description": "肉絲搭配鄰近宏昇畜牧養殖的有機蛋拌炒米飯，香氣十足。"
     },
     {
       "id": 3,
@@ -96,7 +77,7 @@
       "sortOrder": 3,
       "stockDate": "2026-09-10",
       "dailyStock": null,
-      "description": ""
+      "description": "肉絲搭配炒麵，鹹香飽足。"
     },
     {
       "id": 4,
@@ -115,45 +96,26 @@
       "sortOrder": 4,
       "stockDate": "2026-09-10",
       "dailyStock": null,
-      "description": ""
+      "description": "香腸搭配鄰近宏昇畜牧養殖的有機蛋拌炒米飯，鹹香夠味。"
     },
     {
-      "id": 10,
-      "name": "海帶芽蛋花湯",
-      "image": "images/soup.png",
-      "price": 25,
-      "status": "available",
-      "options": {
-        "large": false,
-        "doubleEgg": false,
-        "doubleShrimp": false
-      },
-      "soldOut": false,
-      "category": "soup",
-      "soldToday": 1,
-      "sortOrder": 10,
-      "stockDate": "2026-09-10",
-      "dailyStock": null,
-      "description": ""
-    },
-    {
-      "id": 6,
-      "name": "蝦仁炒麵",
-      "image": "images/shrimp_noodle.png",
+      "id": 5,
+      "name": "蝦仁炒飯",
+      "image": "images/shrimp_rice.png",
       "price": 130,
       "status": "available",
       "options": {
         "large": true,
-        "doubleEgg": false,
+        "doubleEgg": true,
         "doubleShrimp": true
       },
       "soldOut": false,
-      "category": "noodle",
+      "category": "rice",
       "soldToday": 0,
-      "sortOrder": 6,
+      "sortOrder": 5,
       "stockDate": "2026-09-10",
       "dailyStock": null,
-      "description": ""
+      "description": "使用親戚養殖、急速冷凍保存的蝦仁，邱媽媽親手逐隻篩選剝殼，搭配鄰近宏昇畜牧養殖的有機蛋拌炒米飯。"
     },
     {
       "id": 7,
@@ -172,7 +134,45 @@
       "sortOrder": 7,
       "stockDate": "2026-09-10",
       "dailyStock": null,
-      "description": ""
+      "description": "使用親戚養殖、急速冷凍保存的蝦仁，邱媽媽親手逐隻篩選剝殼，搭配米苔目拌炒。"
+    },
+    {
+      "id": 10,
+      "name": "海帶芽蛋花湯",
+      "image": "images/soup.png",
+      "price": 25,
+      "status": "available",
+      "options": {
+        "large": false,
+        "doubleEgg": false,
+        "doubleShrimp": false
+      },
+      "soldOut": false,
+      "category": "soup",
+      "soldToday": 1,
+      "sortOrder": 10,
+      "stockDate": "2026-09-10",
+      "dailyStock": null,
+      "description": "海帶芽與蛋花的熱湯，清爽順口。"
+    },
+    {
+      "id": 6,
+      "name": "蝦仁炒麵",
+      "image": "images/shrimp_noodle.png",
+      "price": 130,
+      "status": "available",
+      "options": {
+        "large": true,
+        "doubleEgg": false,
+        "doubleShrimp": true
+      },
+      "soldOut": false,
+      "category": "noodle",
+      "soldToday": 0,
+      "sortOrder": 6,
+      "stockDate": "2026-09-10",
+      "dailyStock": null,
+      "description": "使用親戚養殖、急速冷凍保存的蝦仁，邱媽媽親手逐隻篩選剝殼，搭配炒麵現點現炒。"
     },
     {
       "id": 8,
@@ -191,7 +191,7 @@
       "sortOrder": 8,
       "stockDate": "2026-09-10",
       "dailyStock": null,
-      "description": ""
+      "description": "鹹豬肉搭配白飯，鹹香下飯。"
     },
     {
       "id": 9,
@@ -210,7 +210,7 @@
       "sortOrder": 9,
       "stockDate": "2026-09-10",
       "dailyStock": 20,
-      "description": ""
+      "description": "鹹香鹹豬肉，適合分享或搭配白飯享用。"
     }
   ]
 }

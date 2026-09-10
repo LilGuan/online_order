@@ -1485,7 +1485,7 @@
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th>會員</th><th>電話</th><th>訂購次數</th><th>已完成</th><th>累計消費</th><th>最後訂購</th></tr>
+                <tr><th>會員</th><th>電話</th><th>訂購次數</th><th>已完成</th><th>累計消費</th><th>最後訂購</th><th>操作</th></tr>
               </thead>
               <tbody id="customers-tbody"></tbody>
             </table>
@@ -2451,9 +2451,49 @@
           <td data-label="已完成">${Number(customer.completedOrderCount || 0)} 次</td>
           <td data-label="累計消費">${money(customer.totalSpent)}</td>
           <td data-label="最後訂購" class="cell-meta">${customer.lastOrderAt ? `${formatTime(customer.lastOrderAt)}${customer.lastOrderNumber ? ` · #${escapeHtml(customer.lastOrderNumber)}` : ''}` : '尚未下單'}</td>
+          <td data-label="操作"><button class="btn btn-soft btn-sm member-orders" data-customer-id="${escapeHtml(customer.id)}">訂單紀錄</button></td>
         </tr>
       `;
     }).join('');
+  }
+
+  async function openCustomerOrders(customerId) {
+    openModal('會員訂單紀錄', '<div class="skeleton sk-row" style="height:90px;"></div>', [
+      { label: '關閉', className: 'btn-soft', onClick: closeModal }
+    ]);
+
+    try {
+      const data = await requestJson(`${BACKEND_BASE_URL}/api/admin/customers/${encodeURIComponent(customerId)}/orders`, { cache: 'no-store' });
+      const customer = data.customer || {};
+      const history = data.orders || [];
+      $('modal-title').textContent = `${customer.name || customer.displayName || '會員'}的訂單紀錄`;
+
+      $('modal-body').innerHTML = `
+        <div class="customer" style="margin-top:0;">
+          <div><div class="kv-label">電話</div><div class="kv-value">${escapeHtml(customer.phone || '未提供')}</div></div>
+          <div><div class="kv-label">訂購次數</div><div class="kv-value">${Number(customer.orderCount || 0)} 次</div></div>
+          <div><div class="kv-label">已完成</div><div class="kv-value">${Number(customer.completedOrderCount || 0)} 次</div></div>
+          <div><div class="kv-label">累計消費</div><div class="kv-value">${money(customer.totalSpent)}</div></div>
+        </div>
+        <div class="orders">
+          ${history.length ? history.map((order, index) => `
+            <article class="order-card ${escapeHtml(order.status)}" style="animation:fadeUp .35s var(--ease-out) ${Math.min(index, 8) * 40}ms both;">
+              <div class="order-top">
+                <div><div class="order-no">#${escapeHtml(order.orderNumber)}</div><div class="order-time">${formatTime(order.createdAt)}</div></div>
+                <span class="badge ${escapeHtml(order.status)}">${escapeHtml(STATUS_LABELS[order.status] || order.status)}</span>
+              </div>
+              <ul class="items" style="margin-top:12px;">
+                ${(order.items || []).map(item => `<li><span>${escapeHtml(item.name)}</span><span class="qty">x${Number(item.qty || 0)}</span><span class="price">${money(item.subtotal)}</span></li>`).join('')}
+              </ul>
+              ${order.notes ? `<div class="note-box customer-note"><strong>備註：</strong>${escapeHtml(order.notes)}</div>` : ''}
+              <div class="order-bottom"><span class="cell-meta">${escapeHtml(order.pickupTime || '')}</span><span class="total">${money(order.totalAmount)}</span></div>
+            </article>
+          `).join('') : '<div class="empty"><div class="ico">' + ICONS.clipboard + '</div><div>這位會員尚未下單</div></div>'}
+        </div>`;
+    } catch (error) {
+      closeModal();
+      toast(error.message || '讀取會員訂單失敗', 'error');
+    }
   }
 
   function renderOrderTabs() {
@@ -4051,6 +4091,10 @@
   });
   $('customer-refresh').addEventListener('click', () => {
     runAction($('customer-refresh'), () => fetchCustomers());
+  });
+  $('customers-tbody').addEventListener('click', event => {
+    const button = event.target.closest('.member-orders');
+    if (button) openCustomerOrders(button.dataset.customerId);
   });
 
   $('orders').addEventListener('click', event => {

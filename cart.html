@@ -297,6 +297,18 @@
     margin-bottom: 14px;
     font-weight: 700;
   }
+  .reorder-banner {
+    display: none;
+    margin-bottom: 14px;
+    padding: 12px 14px;
+    border-left: 4px solid #2474c7;
+    border-radius: 6px;
+    color: #174f87;
+    background: #eef6ff;
+    font-size: .86rem;
+    font-weight: 600;
+    line-height: 1.55;
+  }
 
 </style>
 </head>
@@ -310,6 +322,7 @@
 
 <div class="container">
   <div class="closed-banner" id="closed-banner">店家目前未開放點餐，請稍後再試。</div>
+  <div class="reorder-banner" id="reorder-banner"></div>
   
   <div id="cart-items">
     <!-- 購物車項目將由 JS 渲染 -->
@@ -684,6 +697,8 @@
   document.getElementById('clear-cart').addEventListener('click', () => {
     if (confirm('確定要清空購物車嗎？')) {
       localStorage.removeItem('cart');
+      localStorage.removeItem('reorderDraft');
+      document.getElementById('reorder-banner').style.display = 'none';
       renderCart();
     }
   });
@@ -870,10 +885,27 @@
         pickupTimeSelect.appendChild(option);
     });
   }
+  function applyReorderDraft() {
+    let draft = null;
+    try { draft = JSON.parse(localStorage.getItem('reorderDraft') || 'null'); } catch (error) { draft = null; }
+    if (!draft) return;
+
+    const notesInput = document.getElementById('notes');
+    if (draft.notes && !notesInput.value) notesInput.value = draft.notes;
+
+    const banner = document.getElementById('reorder-banner');
+    const noticeCount = Array.isArray(draft.notices) ? draft.notices.length : 0;
+    banner.textContent = noticeCount
+      ? `已將可購買的餐點加入購物車，另有 ${noticeCount} 項異動，請確認品項、價格與備註後再送出。`
+      : '已將上次訂單加入購物車，請確認品項、價格與備註後再送出。';
+    banner.style.display = 'block';
+  }
+
   // 頁面載入執行：菜單與門店設定要先載入，價格計算與營業時段才會正確
   (async function init() {
     await fetchMenuAndSettings();
     renderCart();
+    applyReorderDraft();
     initMode();
     initLiff();
     initStoreStatus();
@@ -965,7 +997,7 @@
     // 取得付款方式
     const paymentMethod = document.getElementById('payment-method').value;
 
-    const isInClient = liff.isInClient();
+    const isInClient = liff.isInClient() && liff.isApiAvailable('sendMessages');
     const orderData = { name, phone, cart, notes, paymentMethod, orderNumber, pickupTime: finalPickupTime, lineUserId, isInClient, orderType: currentMode };
     localStorage.setItem('orderData', JSON.stringify(orderData));
     localStorage.setItem('userPhone', phone); 
@@ -1072,11 +1104,15 @@
     submitBtn.style.opacity = '0.6';
     submitBtn.style.pointerEvents = 'none';
 
+    let savedOrder = null;
     try {
       // 編號改由伺服器指派每日流水號（1、2、3…），回寫本地暫存讓訂單詳情頁顯示一致
       const saved = await saveOrderToBackend(orderData);
       if (saved && saved.order && saved.order.orderNumber) {
+        savedOrder = saved.order;
         orderData.orderNumber = saved.order.orderNumber;
+        orderData.orderId = saved.order.id;
+        orderData.status = saved.order.status;
         localStorage.setItem('orderData', JSON.stringify(orderData));
       }
     } catch (error) {
@@ -1089,8 +1125,16 @@
       return;
     }
 
-    const flexMessage = createOrderFlexMessage(orderData, menuItems);
-    sendOrderMessage(flexMessage);
+    if (!savedOrder) {
+      alert('訂單已送出，但讀不到訂單明細，請從訂單紀錄確認。');
+      window.location.href = 'order-detail.html';
+      return;
+    }
+
+    localStorage.removeItem('cart');
+    localStorage.removeItem('reorderDraft');
+    const flexMessage = createOrderFlexMessage(savedOrder);
+    sendOrderMessage(flexMessage, savedOrder);
   });
 
   function getOrderItemsAndTotal(cart) {
@@ -1137,11 +1181,9 @@
       })
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    return response.json();
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.message || `訂單送出失敗（${response.status}）`);
+    return data;
   }
 
   function generateOrderNumber() {
@@ -1158,7 +1200,7 @@
   }
 
   // Flex Message 產生函式 (排版已優化 & 支援新邏輯)
-  function createOrderFlexMessage(orderData, menuItems) {
+  function createLegacyOrderFlexMessage(orderData, menuItems) {
     const cart = orderData.cart;
     const items = [];
     let total = 0;
@@ -1382,11 +1424,59 @@
     };
   }
 
-  function sendOrderMessage(flexMessage) {
-    if (!liff.isInClient()) {
+  function createOrderFlexMessage(order) {
+    const items = Array.isArray(order.items) ? order.items : [];
+    const totalQty = items.reduce((sum, item) => sum + Number(item.qty || 0), 0);
+    const itemSummary = items.slice(0, 2).map(item => `${item.name} x${item.qty}`).join('、');
+    const remainingCount = Math.max(0, items.length - 2);
+    const detailUrl = `${ORDER_DETAIL_URL}?order=${encodeURIComponent(order.id || '')}`;
+
+    return {
+      type: 'flex',
+      altText: `訂單 #${order.orderNumber}｜總金額 $${order.totalAmount}｜等待店家接單`,
+      contents: {
+        type: 'bubble',
+        header: {
+          type: 'box', layout: 'horizontal', backgroundColor: '#FFF4F2', paddingAll: '14px',
+          contents: [
+            { type: 'text', text: BRAND_NAME, color: '#222222', weight: 'bold', size: 'md', flex: 7 },
+            { type: 'text', text: '等待接單', color: '#D94F4F', weight: 'bold', size: 'sm', align: 'end', flex: 5 }
+          ]
+        },
+        body: {
+          type: 'box', layout: 'vertical', paddingAll: '18px',
+          contents: [
+            { type: 'text', text: '訂單編號', size: 'xs', color: '#777777' },
+            { type: 'text', text: `#${order.orderNumber}`, size: 'xxl', weight: 'bold', color: '#202020', margin: 'xs' },
+            { type: 'separator', margin: 'lg', color: '#EEEEEE' },
+            {
+              type: 'box', layout: 'horizontal', margin: 'lg', alignItems: 'flex-end',
+              contents: [
+                { type: 'text', text: `${items.length} 項／${totalQty} 份`, size: 'sm', color: '#666666', flex: 5 },
+                { type: 'text', text: `$${order.totalAmount}`, size: 'xxl', weight: 'bold', color: '#D94F4F', align: 'end', flex: 7 }
+              ]
+            },
+            { type: 'text', text: itemSummary + (remainingCount ? `，另 ${remainingCount} 項` : ''), size: 'sm', color: '#444444', wrap: true, margin: 'lg', maxLines: 2 },
+            { type: 'text', text: order.pickupTime || '取餐時間待確認', size: 'sm', color: '#777777', margin: 'md', wrap: true }
+          ]
+        },
+        footer: {
+          type: 'box', layout: 'vertical', paddingAll: '14px',
+          contents: [{
+            type: 'button', style: 'primary', color: '#D94F4F', height: 'sm',
+            action: { type: 'uri', label: '查看訂單狀態', uri: detailUrl }
+          }]
+        }
+      }
+    };
+  }
+
+  function sendOrderMessage(flexMessage, order) {
+    const detailPage = `order-detail.html?order=${encodeURIComponent(order.id || '')}`;
+    if (!liff.isInClient() || !liff.isApiAvailable('sendMessages')) {
       // 網頁版（非 LINE App 內建瀏覽器）無法用 liff.sendMessages() 以使用者身份發送，
       // 改由後端在儲存訂單後透過官方帳號主動推播訂單卡片給客人（見 saveOrderToBackend 的 isInClient 參數）。
-      window.location.href = 'order-detail.html?method=cash';
+      window.location.href = detailPage;
       return;
     }
 
@@ -1396,12 +1486,12 @@
     }
     liff.sendMessages([flexMessage])
       .then(() => {
-        window.location.href = 'order-detail.html';
+        window.location.href = detailPage;
       })
       .catch((err) => {
         console.error('Error sending message:', err);
         alert('訂單已送到店家接單後台，但 LINE 訊息發送失敗。');
-        window.location.href = 'order-detail.html?method=cash';
+        window.location.href = detailPage;
       });
   }
 
