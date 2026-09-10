@@ -23,6 +23,25 @@
   ],
   "items": [
     {
+      "id": 5,
+      "name": "蝦仁炒飯",
+      "image": "images/shrimp_rice.png",
+      "price": 130,
+      "status": "available",
+      "options": {
+        "large": true,
+        "doubleEgg": true,
+        "doubleShrimp": true
+      },
+      "soldOut": false,
+      "category": "rice",
+      "soldToday": 0,
+      "sortOrder": 5,
+      "stockDate": "2026-09-10",
+      "dailyStock": null,
+      "description": ""
+    },
+    {
       "id": 1,
       "name": "蛋炒飯",
       "image": "images/egg_rice.jpg",
@@ -94,25 +113,6 @@
       "category": "rice",
       "soldToday": 0,
       "sortOrder": 4,
-      "stockDate": "2026-09-10",
-      "dailyStock": null,
-      "description": ""
-    },
-    {
-      "id": 5,
-      "name": "蝦仁炒飯",
-      "image": "images/shrimp_rice.png",
-      "price": 130,
-      "status": "available",
-      "options": {
-        "large": true,
-        "doubleEgg": true,
-        "doubleShrimp": true
-      },
-      "soldOut": false,
-      "category": "rice",
-      "soldToday": 0,
-      "sortOrder": 5,
       "stockDate": "2026-09-10",
       "dailyStock": null,
       "description": ""
@@ -206,7 +206,7 @@
       },
       "soldOut": false,
       "category": "soup",
-      "soldToday": 0,
+      "soldToday": 1,
       "sortOrder": 10,
       "stockDate": "2026-09-10",
       "dailyStock": null,

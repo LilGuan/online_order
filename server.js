@@ -1097,6 +1097,16 @@ app.post('/api/orders', async (req, res) => {
         return res.status(400).json({ message: '訂單資料不完整' });
     }
 
+    const minOrderAmount = Number(readSettings().minOrderAmount || 0);
+    if (minOrderAmount > 0 && order.totalAmount < minOrderAmount) {
+        return res.status(400).json({
+            code: 'MIN_ORDER_NOT_MET',
+            message: `最低消費為 $${minOrderAmount}，目前訂單金額為 $${order.totalAmount}，還差 $${minOrderAmount - order.totalAmount}`,
+            minOrderAmount,
+            totalAmount: order.totalAmount
+        });
+    }
+
     const orders = readOrders();
     // 用前端的隨機碼去重（例如網路重試重送同一張單），流水號每天重複不能當去重依據
     const existingIndex = order.clientRef
