@@ -88,7 +88,9 @@
       display: flex;
       flex-direction: column;
       transition: transform 0.2s;
+      cursor: pointer;
     }
+    .item:active { transform: scale(.985); }
     
     /* 餐點圖片區 */
     .item-image-wrapper {
@@ -238,6 +240,59 @@
       pointer-events: none; z-index: 2000; white-space: nowrap;
     }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* 商品詳情 */
+    #item-detail-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 1500;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      background: rgba(15, 23, 42, .5);
+      padding: 0;
+    }
+    #item-detail-modal.show { display: flex; }
+    .item-detail-sheet {
+      width: min(560px, 100%);
+      max-height: min(88vh, 720px);
+      overflow-y: auto;
+      background: #fff;
+      border-radius: 24px 24px 0 0;
+      box-shadow: 0 -10px 35px rgba(0,0,0,.2);
+      animation: detailIn .24s ease-out;
+    }
+    @keyframes detailIn { from { transform: translateY(20px); opacity: .4; } to { transform: translateY(0); opacity: 1; } }
+    .item-detail-image-wrap { position: relative; aspect-ratio: 16 / 10; background: #f1f3f5; }
+    .item-detail-image { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .item-detail-close {
+      position: absolute; top: 12px; right: 12px; width: 38px; height: 38px;
+      border: 0; border-radius: 50%; background: rgba(255,255,255,.92); color: #333;
+      font-size: 1.5rem; line-height: 1; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.15);
+    }
+    .item-detail-body { padding: 20px 18px 10px; }
+    .item-detail-name { margin: 0 0 4px; color: #2d3436; font-size: 1.35rem; font-weight: 800; }
+    .item-detail-price { color: #ff6b6b; font-size: 1.25rem; font-weight: 800; }
+    .item-detail-description { min-height: 24px; margin: 12px 0 18px; color: #636e72; line-height: 1.65; white-space: pre-wrap; }
+    .detail-section-title { margin: 0 0 8px; color: #2d3436; font-size: .95rem; font-weight: 800; }
+    .detail-option-list { display: grid; gap: 8px; }
+    .detail-option {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 11px 12px; border: 1px solid #e9ecef; border-radius: 10px; background: #f8f9fa; color: #495057;
+    }
+    .detail-option label { display: flex; align-items: center; gap: 8px; flex: 1; cursor: pointer; }
+    .detail-option input { width: 19px; height: 19px; accent-color: #ff6b6b; }
+    .detail-option-price { color: #ff6b6b; font-weight: 700; }
+    .detail-bottom { display: flex; align-items: center; gap: 12px; padding: 14px 18px calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid #eee; background: #fff; position: sticky; bottom: 0; }
+    .detail-qty { flex: 0 0 auto; display: flex; align-items: center; gap: 12px; padding: 4px; background: #f1f3f5; border-radius: 22px; }
+    .detail-qty button { width: 34px; height: 34px; border: 0; border-radius: 50%; background: #fff; color: #ff6b6b; font-size: 1.2rem; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,.1); }
+    .detail-qty span { min-width: 20px; text-align: center; font-weight: 800; }
+    .detail-add { flex: 1; min-height: 44px; border: 0; border-radius: 11px; background: #ff6b6b; color: #fff; font-size: 1rem; font-weight: 800; cursor: pointer; }
+    .detail-add:disabled { background: #adb5bd; cursor: not-allowed; }
+    @media (min-width: 600px) {
+      #item-detail-modal { align-items: center; padding: 20px; }
+      .item-detail-sheet { border-radius: 24px; }
+    }
     
     .pop-anim { animation: pop 0.3s ease; }
     @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
@@ -267,6 +322,29 @@
 </div>
 
 <div id="toast">已加入購物車</div>
+
+<div id="item-detail-modal" aria-hidden="true">
+  <section class="item-detail-sheet" role="dialog" aria-modal="true" aria-labelledby="detail-name">
+    <div class="item-detail-image-wrap">
+      <img class="item-detail-image" id="detail-image" alt="" />
+      <button class="item-detail-close" id="detail-close" aria-label="關閉商品詳情">×</button>
+    </div>
+    <div class="item-detail-body">
+      <h3 class="item-detail-name" id="detail-name"></h3>
+      <div class="item-detail-price" id="detail-price"></div>
+      <div class="item-detail-description" id="detail-description"></div>
+      <div id="detail-options"></div>
+    </div>
+    <div class="detail-bottom">
+      <div class="detail-qty" aria-label="商品數量">
+        <button id="detail-qty-minus" type="button" aria-label="減少數量">−</button>
+        <span id="detail-qty">1</span>
+        <button id="detail-qty-plus" type="button" aria-label="增加數量">＋</button>
+      </div>
+      <button class="detail-add" id="detail-add" type="button">加入購物車</button>
+    </div>
+  </section>
+</div>
 
 <script>
   // 營業時段由後台「門店設定」提供，讀不到時退回預設時段
@@ -360,6 +438,7 @@
         name: item.name,
         price: item.price,
         image: item.image,
+        description: item.description || '',
         category: item.category,
         soldOut: Boolean(item.soldOut),
         hasLarge: Boolean(item.options && item.options.large),
@@ -480,6 +559,10 @@
           <button class="add-to-cart" onclick="addToCart(${item.id})" ${canOrder ? '' : 'disabled'}>${buttonLabel}</button>
         </div>
       `;
+      div.addEventListener('click', event => {
+        if (event.target.closest('button, input, label')) return;
+        openItemDetail(item.id);
+      });
       menuDiv.appendChild(div);
     });
   }
@@ -559,6 +642,19 @@
     const isLarge = document.getElementById(`large-${id}`)?.checked || false;
     const isDoubleEgg = document.getElementById(`egg-${id}`)?.checked || false;
     const isDoubleShrimp = document.getElementById(`shrimp-${id}`)?.checked || false;
+    addConfiguredItemToCart(menuItem, qty, { isLarge, isDoubleEgg, isDoubleShrimp });
+
+    // 重置卡片上的選項與數量
+    menuQuantities[id] = 1;
+    if (document.getElementById(`menu-qty-${id}`)) document.getElementById(`menu-qty-${id}`).innerText = '1';
+    if (document.getElementById(`large-${id}`)) document.getElementById(`large-${id}`).checked = false;
+    if (document.getElementById(`egg-${id}`)) document.getElementById(`egg-${id}`).checked = false;
+    if (document.getElementById(`shrimp-${id}`)) document.getElementById(`shrimp-${id}`).checked = false;
+    updateItemPrice(id);
+  };
+
+  function addConfiguredItemToCart(item, qty, options) {
+    const { isLarge, isDoubleEgg, isDoubleShrimp } = options;
     // Key 格式: ID-large-egg (如果沒有就不加)
     const optionsKey = [
       isLarge ? 'large' : '',
@@ -566,38 +662,106 @@
       isDoubleShrimp ? 'shrimp' : ''
     ].filter(Boolean).join('-');
 
-    const key = optionsKey ? `${id}-${optionsKey}` : `${id}-normal`;
+    const key = optionsKey ? `${item.id}-${optionsKey}` : `${item.id}-normal`;
 
     const cart = JSON.parse(localStorage.getItem('cart') || '{}');
     cart[key] = (cart[key] || 0) + qty;
     localStorage.setItem('cart', JSON.stringify(cart));
-
-    // 重置
-    menuQuantities[id] = 1;
-    if (document.getElementById(`menu-qty-${id}`)) document.getElementById(`menu-qty-${id}`).innerText = '1';
-    if (document.getElementById(`large-${id}`)) document.getElementById(`large-${id}`).checked = false;
-    if (document.getElementById(`egg-${id}`)) document.getElementById(`egg-${id}`).checked = false;
-    if (document.getElementById(`shrimp-${id}`)) document.getElementById(`shrimp-${id}`).checked = false;
-
-    updateCartBadge();
-    
-    const item = menuItems.find(i => i.id === id);
     let optText = [];
     if (isLarge) optText.push('加大');
     if (isDoubleEgg) optText.push('雙蛋');
     if (isDoubleShrimp) optText.push('加蝦');
     const optString = optText.length > 0 ? `(${optText.join('、')})` : '';
 
-    if (document.getElementById(`shrimp-${id}`)) document.getElementById(`shrimp-${id}`).checked = false;
-
-    // ★★★ 新增：重置後，更新價格顯示回原價 ★★★
-    updateItemPrice(id); 
-
     updateCartBadge();
 
     showToast(`已加入 ${qty} 份 ${item.name} ${optString}`);
     if (navigator.vibrate) navigator.vibrate(50);
-  };
+  }
+
+  let detailItem = null;
+  let detailQuantity = 1;
+
+  function escapeHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+  }
+
+  function detailOptionDefinitions(item) {
+    return [
+      { key: 'isLarge', itemKey: 'hasLarge', label: '加大', price: optionPrices.large },
+      { key: 'isDoubleEgg', itemKey: 'hasDoubleEgg', label: '雙蛋', price: optionPrices.doubleEgg },
+      { key: 'isDoubleShrimp', itemKey: 'hasDoubleShrimp', label: '加蝦', price: optionPrices.doubleShrimp }
+    ].filter(option => item[option.itemKey]);
+  }
+
+  function updateDetailPrice() {
+    if (!detailItem) return;
+    let price = Number(detailItem.price || 0);
+    detailOptionDefinitions(detailItem).forEach(option => {
+      if (document.getElementById(`detail-${option.key}`)?.checked) price += Number(option.price || 0);
+    });
+    document.getElementById('detail-price').textContent = `$${price * detailQuantity}`;
+    const addButton = document.getElementById('detail-add');
+    addButton.textContent = isStoreOpen && !detailItem.soldOut ? `加入購物車 $${price * detailQuantity}` : (detailItem.soldOut ? '已售完' : '暫停點餐');
+    addButton.disabled = !isStoreOpen || detailItem.soldOut;
+  }
+
+  function openItemDetail(id) {
+    const item = menuItems.find(entry => entry.id === id);
+    if (!item) return;
+    detailItem = item;
+    detailQuantity = 1;
+    document.getElementById('detail-image').src = assetUrl(item.image);
+    document.getElementById('detail-image').alt = item.name;
+    document.getElementById('detail-name').textContent = item.name;
+    document.getElementById('detail-description').textContent = item.description || '美味現做，歡迎選擇加購搭配。';
+    document.getElementById('detail-qty').textContent = '1';
+    document.getElementById('detail-options').innerHTML = detailOptionDefinitions(item).length
+      ? `<div class="detail-section-title">加購選項</div><div class="detail-option-list">${detailOptionDefinitions(item).map(option => `
+          <div class="detail-option">
+            <label for="detail-${option.key}"><input type="checkbox" id="detail-${option.key}" />${escapeHtml(option.label)}</label>
+            <span class="detail-option-price">+$${Number(option.price || 0)}</span>
+          </div>`).join('')}</div>`
+      : '<div class="detail-section-title">此商品目前沒有加購選項</div>';
+    document.querySelectorAll('#detail-options input').forEach(input => input.addEventListener('change', updateDetailPrice));
+    updateDetailPrice();
+    const modal = document.getElementById('item-detail-modal');
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeItemDetail() {
+    const modal = document.getElementById('item-detail-modal');
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    detailItem = null;
+  }
+
+  document.getElementById('detail-qty-minus').addEventListener('click', () => {
+    detailQuantity = Math.max(1, detailQuantity - 1);
+    document.getElementById('detail-qty').textContent = detailQuantity;
+    updateDetailPrice();
+  });
+  document.getElementById('detail-qty-plus').addEventListener('click', () => {
+    detailQuantity += 1;
+    document.getElementById('detail-qty').textContent = detailQuantity;
+    updateDetailPrice();
+  });
+  document.getElementById('detail-add').addEventListener('click', () => {
+    if (!detailItem || !isStoreOpen || detailItem.soldOut) return;
+    const options = Object.fromEntries(detailOptionDefinitions(detailItem).map(option => [option.key, document.getElementById(`detail-${option.key}`)?.checked || false]));
+    addConfiguredItemToCart(detailItem, detailQuantity, options);
+    closeItemDetail();
+  });
+  document.getElementById('detail-close').addEventListener('click', closeItemDetail);
+  document.getElementById('item-detail-modal').addEventListener('click', event => {
+    if (event.target.id === 'item-detail-modal') closeItemDetail();
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') closeItemDetail();
+  });
 
   function updateCartBadge() {
     const cart = JSON.parse(localStorage.getItem('cart') || '{}');

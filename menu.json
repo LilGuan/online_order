@@ -118,6 +118,25 @@
       "description": ""
     },
     {
+      "id": 10,
+      "name": "海帶芽蛋花湯",
+      "image": "images/soup.png",
+      "price": 25,
+      "status": "available",
+      "options": {
+        "large": false,
+        "doubleEgg": false,
+        "doubleShrimp": false
+      },
+      "soldOut": false,
+      "category": "soup",
+      "soldToday": 1,
+      "sortOrder": 10,
+      "stockDate": "2026-09-10",
+      "dailyStock": null,
+      "description": ""
+    },
+    {
       "id": 6,
       "name": "蝦仁炒麵",
       "image": "images/shrimp_noodle.png",
@@ -191,25 +210,6 @@
       "sortOrder": 9,
       "stockDate": "2026-09-10",
       "dailyStock": 20,
-      "description": ""
-    },
-    {
-      "id": 10,
-      "name": "海帶芽蛋花湯",
-      "image": "images/soup.png",
-      "price": 25,
-      "status": "available",
-      "options": {
-        "large": false,
-        "doubleEgg": false,
-        "doubleShrimp": false
-      },
-      "soldOut": false,
-      "category": "soup",
-      "soldToday": 1,
-      "sortOrder": 10,
-      "stockDate": "2026-09-10",
-      "dailyStock": null,
       "description": ""
     }
   ]
