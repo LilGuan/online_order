@@ -23,25 +23,6 @@
   ],
   "items": [
     {
-      "id": 1,
-      "name": "蛋炒飯",
-      "image": "images/egg_rice.jpg",
-      "price": 90,
-      "status": "available",
-      "options": {
-        "large": true,
-        "doubleEgg": true,
-        "doubleShrimp": false
-      },
-      "soldOut": false,
-      "category": "rice",
-      "soldToday": 0,
-      "sortOrder": 1,
-      "stockDate": "2026-09-10",
-      "dailyStock": null,
-      "description": "使用鄰近宏昇畜牧養殖的有機蛋拌炒米飯，簡單耐吃。"
-    },
-    {
       "id": 2,
       "name": "肉絲炒飯",
       "image": "images/beef_rice.png",
@@ -59,6 +40,25 @@
       "stockDate": "2026-09-10",
       "dailyStock": null,
       "description": "肉絲搭配鄰近宏昇畜牧養殖的有機蛋拌炒米飯，香氣十足。"
+    },
+    {
+      "id": 1,
+      "name": "蛋炒飯",
+      "image": "images/egg_rice.jpg",
+      "price": 90,
+      "status": "available",
+      "options": {
+        "large": true,
+        "doubleEgg": true,
+        "doubleShrimp": false
+      },
+      "soldOut": false,
+      "category": "rice",
+      "soldToday": 0,
+      "sortOrder": 1,
+      "stockDate": "2026-09-10",
+      "dailyStock": null,
+      "description": "使用鄰近宏昇畜牧養殖的有機蛋拌炒米飯，簡單耐吃。"
     },
     {
       "id": 3,
@@ -116,25 +116,6 @@
       "stockDate": "2026-09-10",
       "dailyStock": null,
       "description": "使用親戚養殖、急速冷凍保存的蝦仁，邱媽媽親手逐隻篩選剝殼，搭配鄰近宏昇畜牧養殖的有機蛋拌炒米飯。"
-    },
-    {
-      "id": 7,
-      "name": "蝦仁米苔目",
-      "image": "images/shrimp_rice_noodle.png",
-      "price": 130,
-      "status": "available",
-      "options": {
-        "large": true,
-        "doubleEgg": false,
-        "doubleShrimp": true
-      },
-      "soldOut": false,
-      "category": "noodle",
-      "soldToday": 0,
-      "sortOrder": 7,
-      "stockDate": "2026-09-10",
-      "dailyStock": null,
-      "description": "使用親戚養殖、急速冷凍保存的蝦仁，邱媽媽親手逐隻篩選剝殼，搭配米苔目拌炒。"
     },
     {
       "id": 10,
@@ -211,6 +192,25 @@
       "stockDate": "2026-09-10",
       "dailyStock": 20,
       "description": "鹹香鹹豬肉，適合分享或搭配白飯享用。"
+    },
+    {
+      "id": 7,
+      "name": "蝦仁米苔目",
+      "image": "images/shrimp_rice_noodle.png",
+      "price": 130,
+      "status": "available",
+      "options": {
+        "large": true,
+        "doubleEgg": false,
+        "doubleShrimp": true
+      },
+      "soldOut": false,
+      "category": "noodle",
+      "soldToday": 0,
+      "sortOrder": 7,
+      "stockDate": "2026-09-10",
+      "dailyStock": null,
+      "description": "使用親戚養殖、急速冷凍保存的蝦仁，邱媽媽親手逐隻篩選剝殼，搭配米苔目拌炒。"
     }
   ]
 }
