@@ -1,5 +1,5 @@
 {
-  "isOpen": false,
+  "isOpen": true,
   "storeName": "邱媽媽美食",
   "phone": "033812828",
   "address": "桃園市大園區皇家六街12號",
@@ -17,7 +17,7 @@
   },
   "prepTimeMinutes": 30,
   "minOrderAmount": 0,
-  "allowReserveOrders": true,
+  "allowReserveOrders": false,
   "optionPrices": {
     "large": 20,
     "doubleEgg": 15,
@@ -35,5 +35,5 @@
     "pushRepeatSeconds": 3,
     "pushRepeatMaxMinutes": 10
   },
-  "updatedAt": "2026-09-10T16:14:09.425Z"
+  "updatedAt": "2026-09-11T02:02:29.672Z"
 }
