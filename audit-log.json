@@ -1,5 +1,21 @@
 [
   {
+    "at": "2026-09-11T05:53:37.426+00:00",
+    "id": "d81fb32c-29b1-4f96-8368-6250388b4086",
+    "user": "admin",
+    "action": "push.renamed",
+    "detail": "重新命名推播裝置",
+    "target": "CXW's iphone 14 pro"
+  },
+  {
+    "at": "2026-09-11T05:53:06.745+00:00",
+    "id": "d3df3e7e-c425-4da1-ba00-c30cb8b0651f",
+    "user": "admin",
+    "action": "push.renamed",
+    "detail": "重新命名推播裝置",
+    "target": "Lilguan's iphone 15 pro max"
+  },
+  {
     "at": "2026-09-11T05:43:40.515+00:00",
     "id": "7246bddb-5aa7-4027-b8ed-388e5613f5a7",
     "user": "admin",
@@ -88,28 +104,20 @@
     "target": "Android"
   },
   {
-    "at": "2026-09-02T06:21:27.722+00:00",
-    "id": "b5041fd1-71e1-423c-9864-8c45fcc87187",
-    "user": "admin",
-    "action": "stock.updated",
-    "detail": "恢復供應",
-    "target": "荷包蛋"
-  },
-  {
-    "at": "2026-09-02T06:20:32.092+00:00",
-    "id": "2b5e82d0-97b0-4695-8e18-ffe445d27c02",
-    "user": "admin",
-    "action": "stock.updated",
-    "detail": "標示為賣完",
-    "target": "荷包蛋"
-  },
-  {
     "at": "2026-09-02T04:10:13.358+00:00",
     "id": "9455824a-7cc9-4dcf-a9ab-30de0e8dc4cc",
     "user": "admin",
     "action": "menu.image_uploaded",
     "detail": "上傳菜單照片（207 KB）",
     "target": "images/uploads/2026-09-02-ed870e18.jpg"
+  },
+  {
+    "at": "2026-09-11T05:09:02.551+00:00",
+    "id": "25dd0cdc-6150-4c97-b630-4252f7838288",
+    "user": "admin",
+    "action": "order.status_changed",
+    "detail": "狀態改為 製作中",
+    "target": "#2"
   },
   {
     "at": "2026-09-04T07:54:33.476+00:00",
@@ -152,68 +160,12 @@
     "target": "荷包蛋"
   },
   {
-    "at": "2026-09-11T05:09:02.551+00:00",
-    "id": "25dd0cdc-6150-4c97-b630-4252f7838288",
-    "user": "admin",
-    "action": "order.status_changed",
-    "detail": "狀態改為 製作中",
-    "target": "#2"
-  },
-  {
     "at": "2026-09-11T02:30:23.525+00:00",
     "id": "baef1aab-e16f-4b6c-95c9-8dba75354b32",
     "user": "admin",
     "action": "settings.updated",
     "detail": "關閉 LINE 訊息通知、調整營業時間",
     "target": "門店設定"
-  },
-  {
-    "at": "2026-09-11T02:30:13.711+00:00",
-    "id": "d1b288c5-a733-4374-ae26-d283c712e2dc",
-    "user": "admin",
-    "action": "order.status_changed",
-    "detail": "狀態改為 已完成",
-    "target": "#2"
-  },
-  {
-    "at": "2026-09-11T02:29:02.441+00:00",
-    "id": "3e472faf-3b3e-4906-90d8-9b7ad0da5493",
-    "user": "admin",
-    "action": "settings.updated",
-    "detail": "調整營業時間",
-    "target": "門店設定"
-  },
-  {
-    "at": "2026-09-11T02:15:08.238+00:00",
-    "id": "199c3d29-24de-467b-ae22-e18ad0b0a030",
-    "user": "admin",
-    "action": "settings.updated",
-    "detail": "低消 $0 → $90、調整營業時間",
-    "target": "門店設定"
-  },
-  {
-    "at": "2026-09-11T02:06:35.114+00:00",
-    "id": "e6310a0f-9b7e-400b-8fcf-03b84e2272c3",
-    "user": "admin",
-    "action": "order.status_changed",
-    "detail": "狀態改為 已取消，已通知客人",
-    "target": "#1"
-  },
-  {
-    "at": "2026-09-04T10:41:14.14+00:00",
-    "id": "c418980e-67ff-4054-934f-c7d4950ad003",
-    "user": "admin",
-    "action": "order.status_changed",
-    "detail": "狀態改為 製作中",
-    "target": "#T20"
-  },
-  {
-    "at": "2026-09-02T17:01:48.621+00:00",
-    "id": "80c7b534-1001-47fe-aa6f-56ac0b027bd4",
-    "user": "admin",
-    "action": "order.status_changed",
-    "detail": "狀態改為 已完成，已通知客人",
-    "target": "#E4C40C"
   },
   {
     "at": "2026-09-04T08:27:09.954+00:00",
@@ -301,14 +253,6 @@
     "user": "admin",
     "action": "settings.updated",
     "detail": "低消 $100 → $0、調整營業時間",
-    "target": "門店設定"
-  },
-  {
-    "at": "2026-09-11T01:51:37.258+00:00",
-    "id": "b6bc2277-78a0-4213-a1dd-78d10d6bae1c",
-    "user": "admin",
-    "action": "settings.updated",
-    "detail": "調整營業時間",
     "target": "門店設定"
   },
   {
@@ -400,22 +344,6 @@
     "target": "#T3"
   },
   {
-    "at": "2026-09-04T08:30:59.909+00:00",
-    "id": "59a94103-3a68-4f7d-9033-69aaf5b29b3f",
-    "user": "admin",
-    "action": "order.status_changed",
-    "detail": "狀態改為 已取消",
-    "target": "#T12"
-  },
-  {
-    "at": "2026-09-04T08:30:56.122+00:00",
-    "id": "03200015-661b-49b6-9e1c-6ecfcaee3578",
-    "user": "admin",
-    "action": "order.test_created",
-    "detail": "推播對象：1 台指定裝置",
-    "target": "#T12"
-  },
-  {
     "at": "2026-09-02T17:07:30.101+00:00",
     "id": "c77e7a88-2457-48e3-aa36-8f81611b6613",
     "user": "admin",
@@ -486,46 +414,6 @@
     "action": "stock.updated",
     "detail": "恢復供應",
     "target": "肉絲炒飯"
-  },
-  {
-    "at": "2026-09-04T07:13:52.219+00:00",
-    "id": "5d889f6b-47be-423c-846b-700aa742edc0",
-    "user": "Chiu960111",
-    "action": "order.status_changed",
-    "detail": "狀態改為 已完成",
-    "target": "#2"
-  },
-  {
-    "at": "2026-09-04T06:45:41.536+00:00",
-    "id": "724f6f7b-8c33-48e6-955f-c311008c4d22",
-    "user": "admin",
-    "action": "order.status_changed",
-    "detail": "狀態改為 已完成",
-    "target": "#2"
-  },
-  {
-    "at": "2026-09-04T04:24:07.044+00:00",
-    "id": "85e4e744-dd70-4195-984e-46aec1fec2b3",
-    "user": "admin",
-    "action": "order.status_changed",
-    "detail": "狀態改為 製作中",
-    "target": "#2"
-  },
-  {
-    "at": "2026-09-02T17:02:52.836+00:00",
-    "id": "00ff9397-6e9e-487b-b41d-4e8ca9bf6100",
-    "user": "admin",
-    "action": "stock.updated",
-    "detail": "標示為賣完",
-    "target": "蝦仁米苔目"
-  },
-  {
-    "at": "2026-09-02T03:40:37.049+00:00",
-    "id": "0dd095b0-8e7e-4f60-86c9-f9c038be9d35",
-    "user": "admin",
-    "action": "settings.updated",
-    "detail": "調整加購價格",
-    "target": "門店設定"
   },
   {
     "at": "2026-09-02T03:40:37.028+00:00",
@@ -616,6 +504,142 @@
     "target": "#T1"
   },
   {
+    "at": "2026-09-11T05:53:51.419+00:00",
+    "id": "c898a78d-dec5-4495-aea1-3d285d08adcc",
+    "user": "admin",
+    "action": "push.renamed",
+    "detail": "重新命名推播裝置",
+    "target": "Uber Android"
+  },
+  {
+    "at": "2026-09-02T06:21:27.722+00:00",
+    "id": "b5041fd1-71e1-423c-9864-8c45fcc87187",
+    "user": "admin",
+    "action": "stock.updated",
+    "detail": "恢復供應",
+    "target": "荷包蛋"
+  },
+  {
+    "at": "2026-09-02T06:20:32.092+00:00",
+    "id": "2b5e82d0-97b0-4695-8e18-ffe445d27c02",
+    "user": "admin",
+    "action": "stock.updated",
+    "detail": "標示為賣完",
+    "target": "荷包蛋"
+  },
+  {
+    "at": "2026-09-11T02:30:13.711+00:00",
+    "id": "d1b288c5-a733-4374-ae26-d283c712e2dc",
+    "user": "admin",
+    "action": "order.status_changed",
+    "detail": "狀態改為 已完成",
+    "target": "#2"
+  },
+  {
+    "at": "2026-09-11T02:29:02.441+00:00",
+    "id": "3e472faf-3b3e-4906-90d8-9b7ad0da5493",
+    "user": "admin",
+    "action": "settings.updated",
+    "detail": "調整營業時間",
+    "target": "門店設定"
+  },
+  {
+    "at": "2026-09-11T02:15:08.238+00:00",
+    "id": "199c3d29-24de-467b-ae22-e18ad0b0a030",
+    "user": "admin",
+    "action": "settings.updated",
+    "detail": "低消 $0 → $90、調整營業時間",
+    "target": "門店設定"
+  },
+  {
+    "at": "2026-09-11T02:06:35.114+00:00",
+    "id": "e6310a0f-9b7e-400b-8fcf-03b84e2272c3",
+    "user": "admin",
+    "action": "order.status_changed",
+    "detail": "狀態改為 已取消，已通知客人",
+    "target": "#1"
+  },
+  {
+    "at": "2026-09-04T10:41:14.14+00:00",
+    "id": "c418980e-67ff-4054-934f-c7d4950ad003",
+    "user": "admin",
+    "action": "order.status_changed",
+    "detail": "狀態改為 製作中",
+    "target": "#T20"
+  },
+  {
+    "at": "2026-09-02T17:01:48.621+00:00",
+    "id": "80c7b534-1001-47fe-aa6f-56ac0b027bd4",
+    "user": "admin",
+    "action": "order.status_changed",
+    "detail": "狀態改為 已完成，已通知客人",
+    "target": "#E4C40C"
+  },
+  {
+    "at": "2026-09-11T01:51:37.258+00:00",
+    "id": "b6bc2277-78a0-4213-a1dd-78d10d6bae1c",
+    "user": "admin",
+    "action": "settings.updated",
+    "detail": "調整營業時間",
+    "target": "門店設定"
+  },
+  {
+    "at": "2026-09-04T08:30:59.909+00:00",
+    "id": "59a94103-3a68-4f7d-9033-69aaf5b29b3f",
+    "user": "admin",
+    "action": "order.status_changed",
+    "detail": "狀態改為 已取消",
+    "target": "#T12"
+  },
+  {
+    "at": "2026-09-04T08:30:56.122+00:00",
+    "id": "03200015-661b-49b6-9e1c-6ecfcaee3578",
+    "user": "admin",
+    "action": "order.test_created",
+    "detail": "推播對象：1 台指定裝置",
+    "target": "#T12"
+  },
+  {
+    "at": "2026-09-04T07:13:52.219+00:00",
+    "id": "5d889f6b-47be-423c-846b-700aa742edc0",
+    "user": "Chiu960111",
+    "action": "order.status_changed",
+    "detail": "狀態改為 已完成",
+    "target": "#2"
+  },
+  {
+    "at": "2026-09-04T06:45:41.536+00:00",
+    "id": "724f6f7b-8c33-48e6-955f-c311008c4d22",
+    "user": "admin",
+    "action": "order.status_changed",
+    "detail": "狀態改為 已完成",
+    "target": "#2"
+  },
+  {
+    "at": "2026-09-04T04:24:07.044+00:00",
+    "id": "85e4e744-dd70-4195-984e-46aec1fec2b3",
+    "user": "admin",
+    "action": "order.status_changed",
+    "detail": "狀態改為 製作中",
+    "target": "#2"
+  },
+  {
+    "at": "2026-09-02T17:02:52.836+00:00",
+    "id": "00ff9397-6e9e-487b-b41d-4e8ca9bf6100",
+    "user": "admin",
+    "action": "stock.updated",
+    "detail": "標示為賣完",
+    "target": "蝦仁米苔目"
+  },
+  {
+    "at": "2026-09-02T03:40:37.049+00:00",
+    "id": "0dd095b0-8e7e-4f60-86c9-f9c038be9d35",
+    "user": "admin",
+    "action": "settings.updated",
+    "detail": "調整加購價格",
+    "target": "門店設定"
+  },
+  {
     "at": "2026-09-02T17:04:04.032+00:00",
     "id": "7e1b3cc2-3fdc-4cf0-8004-78db1ffe1bf8",
     "user": "admin",
@@ -654,14 +678,6 @@
     "action": "order.status_changed",
     "detail": "狀態改為 製作中",
     "target": "#2"
-  },
-  {
-    "at": "2026-09-02T06:21:48.612+00:00",
-    "id": "8bce3436-0651-488f-986a-f2cacb0564d5",
-    "user": "admin",
-    "action": "menu.updated",
-    "detail": "狀態 hidden → available",
-    "target": "荷包蛋"
   },
   {
     "at": "2026-09-02T17:02:59.542+00:00",
@@ -726,6 +742,14 @@
     "action": "order.status_changed",
     "detail": "狀態改為 已取消",
     "target": "#T1"
+  },
+  {
+    "at": "2026-09-04T07:22:07.421+00:00",
+    "id": "25e3e492-dc3d-428e-b08b-9a538638940d",
+    "user": "__qa_temp__",
+    "action": "order.status_changed",
+    "detail": "狀態改為 已取消",
+    "target": "#T3"
   },
   {
     "at": "2026-09-10T05:55:32.814+00:00",
@@ -816,12 +840,12 @@
     "target": "蛋炒飯"
   },
   {
-    "at": "2026-09-04T07:22:07.421+00:00",
-    "id": "25e3e492-dc3d-428e-b08b-9a538638940d",
-    "user": "__qa_temp__",
-    "action": "order.status_changed",
-    "detail": "狀態改為 已取消",
-    "target": "#T3"
+    "at": "2026-09-10T05:54:07.714+00:00",
+    "id": "05199882-87b9-4277-929f-c3bac7861ca7",
+    "user": "admin",
+    "action": "menu.deleted",
+    "detail": "刪除商品，原售價 $99999",
+    "target": "派"
   },
   {
     "at": "2026-09-11T02:30:29.718+00:00",
@@ -912,14 +936,6 @@
     "target": "#B9684D"
   },
   {
-    "at": "2026-09-10T05:54:07.714+00:00",
-    "id": "05199882-87b9-4277-929f-c3bac7861ca7",
-    "user": "admin",
-    "action": "menu.deleted",
-    "detail": "刪除商品，原售價 $99999",
-    "target": "派"
-  },
-  {
     "at": "2026-09-04T07:07:20.489+00:00",
     "id": "80d067f3-0389-40e0-a403-4bd3f42b5afd",
     "user": "Chiu960111",
@@ -934,14 +950,6 @@
     "action": "push.subscribed",
     "detail": "登記背景推播，目前共 2 台裝置",
     "target": "Android"
-  },
-  {
-    "at": "2026-09-04T07:00:38.559+00:00",
-    "id": "5bfdf6ae-c126-43cd-8107-53cf6db358c8",
-    "user": "admin",
-    "action": "user.updated",
-    "detail": "更改密碼、顯示名稱改為 CEO",
-    "target": "admin"
   },
   {
     "at": "2026-09-04T06:59:25.503+00:00",
@@ -1024,22 +1032,6 @@
     "target": "測試裝置"
   },
   {
-    "at": "2026-09-02T17:08:26.458+00:00",
-    "id": "8658b586-7eba-42e2-9cd3-05d7c2e94f5a",
-    "user": "admin",
-    "action": "order.status_changed",
-    "detail": "狀態改為 已完成，已通知客人",
-    "target": "#AE1ADF"
-  },
-  {
-    "at": "2026-09-04T07:01:40.035+00:00",
-    "id": "9762682b-60b7-4db1-9c6f-9d0a429fa7f1",
-    "user": "admin",
-    "action": "user.created",
-    "detail": "新增帳號，權限：員工（僅接單）",
-    "target": "Chiu960111"
-  },
-  {
     "at": "2026-09-02T07:12:01.875+00:00",
     "id": "33cf77b2-c56b-4aea-9c8a-e262428ead72",
     "user": "admin",
@@ -1080,6 +1072,38 @@
     "target": "#81E1AC"
   },
   {
+    "at": "2026-09-10T14:34:13.985+00:00",
+    "id": "1104c3f1-d7c6-4ea8-a45a-e61d5465e770",
+    "user": "admin",
+    "action": "order.status_changed",
+    "detail": "狀態改為 已完成，已通知客人",
+    "target": "#1"
+  },
+  {
+    "at": "2026-09-10T14:32:04.929+00:00",
+    "id": "e60035a5-abe7-4413-aa72-e683b194f333",
+    "user": "admin",
+    "action": "print.order",
+    "detail": "failed：lp: 錯誤 - 沒有預設目標。",
+    "target": "#4"
+  },
+  {
+    "at": "2026-09-04T04:19:45.298+00:00",
+    "id": "a2c13164-438d-4b33-aa1e-533c7667c35e",
+    "user": "admin",
+    "action": "order.status_changed",
+    "detail": "狀態改為 製作中",
+    "target": "#1"
+  },
+  {
+    "at": "2026-09-02T07:08:37.063+00:00",
+    "id": "f1ddb3bb-b788-48a4-8e62-389ce323bd59",
+    "user": "admin",
+    "action": "push.unsubscribed",
+    "detail": "取消背景推播，剩下 0 台裝置",
+    "target": "裝置"
+  },
+  {
     "at": "2026-09-02T03:54:17.684+00:00",
     "id": "cf66771e-72cd-4f18-926b-30e0ba9da90d",
     "user": "admin",
@@ -1118,6 +1142,38 @@
     "action": "order.status_changed",
     "detail": "狀態改為 已取消",
     "target": "#T11"
+  },
+  {
+    "at": "2026-09-08T02:34:27.109+00:00",
+    "id": "7f102694-dfb0-4815-9f0e-76bafce47211",
+    "user": "admin",
+    "action": "order.status_changed",
+    "detail": "狀態改為 已完成",
+    "target": "#T1"
+  },
+  {
+    "at": "2026-09-08T02:34:16.245+00:00",
+    "id": "d83df8d7-b819-4440-bc88-a1624ce0d2a4",
+    "user": "admin",
+    "action": "print.order",
+    "detail": "failed：lp: 錯誤 - 沒有預設目標。",
+    "target": "#T3"
+  },
+  {
+    "at": "2026-09-08T02:34:16.24+00:00",
+    "id": "3a1de2b8-ff9b-41e2-9178-ccde398afb27",
+    "user": "admin",
+    "action": "order.status_changed",
+    "detail": "狀態改為 製作中",
+    "target": "#T3"
+  },
+  {
+    "at": "2026-09-10T05:52:15.076+00:00",
+    "id": "eab2e703-3855-47e4-8ff7-ae5a274e022f",
+    "user": "admin",
+    "action": "push.subscribed",
+    "detail": "登記背景推播，目前共 4 台裝置",
+    "target": "Android（主畫面）"
   },
   {
     "at": "2026-09-04T08:27:27.592+00:00",
@@ -1176,212 +1232,12 @@
     "target": "#2"
   },
   {
-    "at": "2026-09-10T14:34:13.985+00:00",
-    "id": "1104c3f1-d7c6-4ea8-a45a-e61d5465e770",
-    "user": "admin",
-    "action": "order.status_changed",
-    "detail": "狀態改為 已完成，已通知客人",
-    "target": "#1"
-  },
-  {
-    "at": "2026-09-10T14:32:04.929+00:00",
-    "id": "e60035a5-abe7-4413-aa72-e683b194f333",
-    "user": "admin",
-    "action": "print.order",
-    "detail": "failed：lp: 錯誤 - 沒有預設目標。",
-    "target": "#4"
-  },
-  {
-    "at": "2026-09-04T04:19:45.298+00:00",
-    "id": "a2c13164-438d-4b33-aa1e-533c7667c35e",
-    "user": "admin",
-    "action": "order.status_changed",
-    "detail": "狀態改為 製作中",
-    "target": "#1"
-  },
-  {
-    "at": "2026-09-02T07:08:37.063+00:00",
-    "id": "f1ddb3bb-b788-48a4-8e62-389ce323bd59",
-    "user": "admin",
-    "action": "push.unsubscribed",
-    "detail": "取消背景推播，剩下 0 台裝置",
-    "target": "裝置"
-  },
-  {
-    "at": "2026-09-08T08:35:02.591+00:00",
-    "id": "eeb17009-5d17-431e-b18e-896683d188af",
-    "user": "admin",
-    "action": "print.reprint",
-    "detail": "failed：lp: 錯誤 - 沒有預設目標。",
-    "target": "#T4"
-  },
-  {
-    "at": "2026-09-10T08:57:51.329+00:00",
-    "id": "c91097ea-793e-4e25-99e2-72f6ecafb130",
-    "user": "admin",
-    "action": "order.test_cleared",
-    "detail": "清除 8 張測試訂單",
-    "target": "測試訂單"
-  },
-  {
-    "at": "2026-09-04T07:15:39.351+00:00",
-    "id": "3804a5ab-278e-4f45-8449-d11dbc61e055",
-    "user": "__qa_temp__",
-    "action": "order.test_created",
-    "detail": "推播對象：1 台指定裝置",
-    "target": "#T2"
-  },
-  {
-    "at": "2026-09-02T07:13:05.258+00:00",
-    "id": "cddc21d7-b722-43a9-95e6-d0a229d1a9d4",
-    "user": "admin",
-    "action": "menu.updated",
-    "detail": "價格 $800000000000 → $80",
-    "target": "蛋炒飯"
-  },
-  {
-    "at": "2026-09-04T08:23:54.685+00:00",
-    "id": "cb05193b-b43a-4222-b1d3-30d9d6c650d6",
-    "user": "admin",
-    "action": "order.test_created",
-    "detail": "推播對象：全部裝置",
-    "target": "#T8"
-  },
-  {
-    "at": "2026-09-08T02:34:27.109+00:00",
-    "id": "7f102694-dfb0-4815-9f0e-76bafce47211",
-    "user": "admin",
-    "action": "order.status_changed",
-    "detail": "狀態改為 已完成",
-    "target": "#T1"
-  },
-  {
-    "at": "2026-09-08T02:34:16.245+00:00",
-    "id": "d83df8d7-b819-4440-bc88-a1624ce0d2a4",
-    "user": "admin",
-    "action": "print.order",
-    "detail": "failed：lp: 錯誤 - 沒有預設目標。",
-    "target": "#T3"
-  },
-  {
-    "at": "2026-09-08T02:34:16.24+00:00",
-    "id": "3a1de2b8-ff9b-41e2-9178-ccde398afb27",
-    "user": "admin",
-    "action": "order.status_changed",
-    "detail": "狀態改為 製作中",
-    "target": "#T3"
-  },
-  {
-    "at": "2026-09-10T05:52:15.076+00:00",
-    "id": "eab2e703-3855-47e4-8ff7-ae5a274e022f",
-    "user": "admin",
-    "action": "push.subscribed",
-    "detail": "登記背景推播，目前共 4 台裝置",
-    "target": "Android（主畫面）"
-  },
-  {
-    "at": "2026-09-04T08:20:08.432+00:00",
-    "id": "4e74a4b0-e393-45cc-986b-e6f2c5076d24",
-    "user": "admin",
-    "action": "settings.updated",
-    "detail": "調整營業時間",
-    "target": "門店設定"
-  },
-  {
-    "at": "2026-09-02T06:20:11.595+00:00",
-    "id": "ddfc74bd-347e-40c6-8334-34950da3a512",
-    "user": "admin",
-    "action": "stock.updated",
-    "detail": "重設當日已售數量",
-    "target": "蛋炒飯"
-  },
-  {
-    "at": "2026-09-02T06:20:11.535+00:00",
-    "id": "c1e56c8e-0c5a-46af-b3f8-0ee8af9d9c2f",
-    "user": "admin",
-    "action": "stock.updated",
-    "detail": "每日限量設為 1",
-    "target": "蛋炒飯"
-  },
-  {
-    "at": "2026-09-02T06:20:04.328+00:00",
-    "id": "6fe3dc9f-b30c-449d-970b-594fbdca212c",
-    "user": "admin",
-    "action": "stock.updated",
-    "detail": "重設當日已售數量",
-    "target": "蛋炒飯"
-  },
-  {
-    "at": "2026-09-02T06:15:17.133+00:00",
-    "id": "bc171b74-8873-4e37-87c3-9c248a48c4cc",
-    "user": "admin",
-    "action": "order.status_changed",
-    "detail": "狀態改為 製作中，已通知客人",
-    "target": "#7F0140"
-  },
-  {
     "at": "2026-09-09T03:54:04.83+00:00",
     "id": "2853cbb7-2107-4575-bf84-5536f434bedc",
     "user": "admin",
     "action": "stock.updated",
     "detail": "重設當日已售數量",
     "target": "鹹豬肉"
-  },
-  {
-    "at": "2026-09-02T07:11:18.197+00:00",
-    "id": "191616a1-1d4c-446d-ba9d-7dd4cabdf86a",
-    "user": "admin",
-    "action": "menu.updated",
-    "detail": "價格 $80 → $0",
-    "target": "蛋炒飯"
-  },
-  {
-    "at": "2026-09-02T07:09:49.819+00:00",
-    "id": "6ce8dcc8-64aa-4aff-b8db-37093e4cf69b",
-    "user": "admin",
-    "action": "push.subscribed",
-    "detail": "登記背景推播，目前共 1 台裝置",
-    "target": "測試裝置"
-  },
-  {
-    "at": "2026-09-02T04:15:34.295+00:00",
-    "id": "9a05b603-9766-45e5-af66-9ae6910fab1d",
-    "user": "admin",
-    "action": "order.status_changed",
-    "detail": "狀態改為 已完成，已通知客人",
-    "target": "#588FE5"
-  },
-  {
-    "at": "2026-09-10T09:04:50.615+00:00",
-    "id": "44901310-e265-4460-ac2c-4248cc0441ef",
-    "user": "admin",
-    "action": "order.status_changed",
-    "detail": "狀態改為 製作中，已通知客人",
-    "target": "#1"
-  },
-  {
-    "at": "2026-09-04T10:40:27.092+00:00",
-    "id": "fd0a6ade-c67f-477d-a9c4-1694511e857c",
-    "user": "admin",
-    "action": "order.test_created",
-    "detail": "推播對象：1 台指定裝置",
-    "target": "#T20"
-  },
-  {
-    "at": "2026-09-04T08:48:05.132+00:00",
-    "id": "67ff6ac9-27f9-4fd5-9fce-3562a1093b6a",
-    "user": "__qa_temp__",
-    "action": "order.test_cleared",
-    "detail": "清除 8 張測試訂單",
-    "target": "測試訂單"
-  },
-  {
-    "at": "2026-09-04T07:23:09.751+00:00",
-    "id": "509fc1b0-2a22-4c6f-8a5a-5cc35bdd9961",
-    "user": "__qa_temp__",
-    "action": "order.test_cleared",
-    "detail": "清除 2 張測試訂單",
-    "target": "測試訂單"
   },
   {
     "at": "2026-09-04T08:47:50.271+00:00",
@@ -1398,6 +1254,30 @@
     "action": "order.test_created",
     "detail": "推播對象：1 台指定裝置",
     "target": "#T16"
+  },
+  {
+    "at": "2026-09-11T05:53:56.135+00:00",
+    "id": "939e9d24-c822-4b86-8cd4-95fef2223975",
+    "user": "admin",
+    "action": "push.renamed",
+    "detail": "重新命名推播裝置",
+    "target": "Uber eats Android"
+  },
+  {
+    "at": "2026-09-02T06:21:48.612+00:00",
+    "id": "8bce3436-0651-488f-986a-f2cacb0564d5",
+    "user": "admin",
+    "action": "menu.updated",
+    "detail": "狀態 hidden → available",
+    "target": "荷包蛋"
+  },
+  {
+    "at": "2026-09-04T07:00:38.559+00:00",
+    "id": "5bfdf6ae-c126-43cd-8107-53cf6db358c8",
+    "user": "admin",
+    "action": "user.updated",
+    "detail": "更改密碼、顯示名稱改為 CEO",
+    "target": "admin"
   },
   {
     "at": "2026-09-04T08:42:03.875+00:00",
@@ -1456,6 +1336,22 @@
     "target": "#AE1ADF"
   },
   {
+    "at": "2026-09-02T17:08:26.458+00:00",
+    "id": "8658b586-7eba-42e2-9cd3-05d7c2e94f5a",
+    "user": "admin",
+    "action": "order.status_changed",
+    "detail": "狀態改為 已完成，已通知客人",
+    "target": "#AE1ADF"
+  },
+  {
+    "at": "2026-09-04T07:01:40.035+00:00",
+    "id": "9762682b-60b7-4db1-9c6f-9d0a429fa7f1",
+    "user": "admin",
+    "action": "user.created",
+    "detail": "新增帳號，權限：員工（僅接單）",
+    "target": "Chiu960111"
+  },
+  {
     "at": "2026-09-04T08:23:50.027+00:00",
     "id": "c2d8a30e-8ad5-4b9a-92e8-a6ebb25b60b1",
     "user": "admin",
@@ -1488,12 +1384,92 @@
     "target": "#4"
   },
   {
-    "at": "2026-09-10T05:54:54.163+00:00",
-    "id": "a6fd1a8f-56c9-4c9f-aed8-6667f5ef949b",
+    "at": "2026-09-08T08:35:02.591+00:00",
+    "id": "eeb17009-5d17-431e-b18e-896683d188af",
+    "user": "admin",
+    "action": "print.reprint",
+    "detail": "failed：lp: 錯誤 - 沒有預設目標。",
+    "target": "#T4"
+  },
+  {
+    "at": "2026-09-10T08:57:51.329+00:00",
+    "id": "c91097ea-793e-4e25-99e2-72f6ecafb130",
+    "user": "admin",
+    "action": "order.test_cleared",
+    "detail": "清除 8 張測試訂單",
+    "target": "測試訂單"
+  },
+  {
+    "at": "2026-09-04T07:15:39.351+00:00",
+    "id": "3804a5ab-278e-4f45-8449-d11dbc61e055",
+    "user": "__qa_temp__",
+    "action": "order.test_created",
+    "detail": "推播對象：1 台指定裝置",
+    "target": "#T2"
+  },
+  {
+    "at": "2026-09-02T07:13:05.258+00:00",
+    "id": "cddc21d7-b722-43a9-95e6-d0a229d1a9d4",
     "user": "admin",
     "action": "menu.updated",
-    "detail": "價格 $110 → $130",
-    "target": "蝦仁炒飯"
+    "detail": "價格 $800000000000 → $80",
+    "target": "蛋炒飯"
+  },
+  {
+    "at": "2026-09-04T08:23:54.685+00:00",
+    "id": "cb05193b-b43a-4222-b1d3-30d9d6c650d6",
+    "user": "admin",
+    "action": "order.test_created",
+    "detail": "推播對象：全部裝置",
+    "target": "#T8"
+  },
+  {
+    "at": "2026-09-04T08:20:08.432+00:00",
+    "id": "4e74a4b0-e393-45cc-986b-e6f2c5076d24",
+    "user": "admin",
+    "action": "settings.updated",
+    "detail": "調整營業時間",
+    "target": "門店設定"
+  },
+  {
+    "at": "2026-09-02T06:20:11.595+00:00",
+    "id": "ddfc74bd-347e-40c6-8334-34950da3a512",
+    "user": "admin",
+    "action": "stock.updated",
+    "detail": "重設當日已售數量",
+    "target": "蛋炒飯"
+  },
+  {
+    "at": "2026-09-02T06:20:11.535+00:00",
+    "id": "c1e56c8e-0c5a-46af-b3f8-0ee8af9d9c2f",
+    "user": "admin",
+    "action": "stock.updated",
+    "detail": "每日限量設為 1",
+    "target": "蛋炒飯"
+  },
+  {
+    "at": "2026-09-02T06:20:04.328+00:00",
+    "id": "6fe3dc9f-b30c-449d-970b-594fbdca212c",
+    "user": "admin",
+    "action": "stock.updated",
+    "detail": "重設當日已售數量",
+    "target": "蛋炒飯"
+  },
+  {
+    "at": "2026-09-02T06:15:17.133+00:00",
+    "id": "bc171b74-8873-4e37-87c3-9c248a48c4cc",
+    "user": "admin",
+    "action": "order.status_changed",
+    "detail": "狀態改為 製作中，已通知客人",
+    "target": "#7F0140"
+  },
+  {
+    "at": "2026-09-02T07:11:18.197+00:00",
+    "id": "191616a1-1d4c-446d-ba9d-7dd4cabdf86a",
+    "user": "admin",
+    "action": "menu.updated",
+    "detail": "價格 $80 → $0",
+    "target": "蛋炒飯"
   },
   {
     "at": "2026-09-10T05:54:46.252+00:00",
@@ -1528,12 +1504,60 @@
     "target": "蛋炒飯"
   },
   {
-    "at": "2026-09-08T02:34:08.6+00:00",
-    "id": "be978c1d-3ca7-4f72-8457-220fd6b0d335",
+    "at": "2026-09-02T07:09:49.819+00:00",
+    "id": "6ce8dcc8-64aa-4aff-b8db-37093e4cf69b",
     "user": "admin",
-    "action": "print.order",
-    "detail": "failed：lp: 錯誤 - 沒有預設目標。",
-    "target": "#T2"
+    "action": "push.subscribed",
+    "detail": "登記背景推播，目前共 1 台裝置",
+    "target": "測試裝置"
+  },
+  {
+    "at": "2026-09-02T04:15:34.295+00:00",
+    "id": "9a05b603-9766-45e5-af66-9ae6910fab1d",
+    "user": "admin",
+    "action": "order.status_changed",
+    "detail": "狀態改為 已完成，已通知客人",
+    "target": "#588FE5"
+  },
+  {
+    "at": "2026-09-10T09:04:50.615+00:00",
+    "id": "44901310-e265-4460-ac2c-4248cc0441ef",
+    "user": "admin",
+    "action": "order.status_changed",
+    "detail": "狀態改為 製作中，已通知客人",
+    "target": "#1"
+  },
+  {
+    "at": "2026-09-04T10:40:27.092+00:00",
+    "id": "fd0a6ade-c67f-477d-a9c4-1694511e857c",
+    "user": "admin",
+    "action": "order.test_created",
+    "detail": "推播對象：1 台指定裝置",
+    "target": "#T20"
+  },
+  {
+    "at": "2026-09-04T08:48:05.132+00:00",
+    "id": "67ff6ac9-27f9-4fd5-9fce-3562a1093b6a",
+    "user": "__qa_temp__",
+    "action": "order.test_cleared",
+    "detail": "清除 8 張測試訂單",
+    "target": "測試訂單"
+  },
+  {
+    "at": "2026-09-04T07:23:09.751+00:00",
+    "id": "509fc1b0-2a22-4c6f-8a5a-5cc35bdd9961",
+    "user": "__qa_temp__",
+    "action": "order.test_cleared",
+    "detail": "清除 2 張測試訂單",
+    "target": "測試訂單"
+  },
+  {
+    "at": "2026-09-10T05:54:54.163+00:00",
+    "id": "a6fd1a8f-56c9-4c9f-aed8-6667f5ef949b",
+    "user": "admin",
+    "action": "menu.updated",
+    "detail": "價格 $110 → $130",
+    "target": "蝦仁炒飯"
   },
   {
     "at": "2026-09-08T02:34:08.598+00:00",
@@ -1584,36 +1608,12 @@
     "target": "#T21"
   },
   {
-    "at": "2026-09-02T03:22:59.037+00:00",
-    "id": "f0f6de72-4e78-446e-98e4-24c8bd9c1a2d",
+    "at": "2026-09-08T02:34:08.6+00:00",
+    "id": "be978c1d-3ca7-4f72-8457-220fd6b0d335",
     "user": "admin",
-    "action": "stock.auto_sold_out",
-    "detail": "達每日限量，訂單 #STOCKTEST1 後自動標示賣完",
-    "target": "蛋炒飯"
-  },
-  {
-    "at": "2026-09-02T03:22:44.763+00:00",
-    "id": "efb1630b-03ae-423d-8e23-68e95fc93ce7",
-    "user": "admin",
-    "action": "stock.updated",
-    "detail": "每日限量設為 2",
-    "target": "蛋炒飯"
-  },
-  {
-    "at": "2026-09-10T08:55:22.795+00:00",
-    "id": "0d605414-4112-425f-8434-0deb0a91f3a8",
-    "user": "admin",
-    "action": "order.status_changed",
-    "detail": "狀態改為 已取消",
-    "target": "#T1"
-  },
-  {
-    "at": "2026-09-08T02:34:15.103+00:00",
-    "id": "07a0e3ac-ae8b-46a8-94eb-42a44f2b5ffd",
-    "user": "admin",
-    "action": "order.test_created",
-    "detail": "推播對象：1 台指定裝置",
-    "target": "#T3"
+    "action": "print.order",
+    "detail": "failed：lp: 錯誤 - 沒有預設目標。",
+    "target": "#T2"
   },
   {
     "at": "2026-09-02T03:30:42.239+00:00",
@@ -1656,6 +1656,46 @@
     "target": "蛋炒飯"
   },
   {
+    "at": "2026-09-02T03:22:59.037+00:00",
+    "id": "f0f6de72-4e78-446e-98e4-24c8bd9c1a2d",
+    "user": "admin",
+    "action": "stock.auto_sold_out",
+    "detail": "達每日限量，訂單 #STOCKTEST1 後自動標示賣完",
+    "target": "蛋炒飯"
+  },
+  {
+    "at": "2026-09-02T03:22:44.763+00:00",
+    "id": "efb1630b-03ae-423d-8e23-68e95fc93ce7",
+    "user": "admin",
+    "action": "stock.updated",
+    "detail": "每日限量設為 2",
+    "target": "蛋炒飯"
+  },
+  {
+    "at": "2026-09-10T08:55:22.795+00:00",
+    "id": "0d605414-4112-425f-8434-0deb0a91f3a8",
+    "user": "admin",
+    "action": "order.status_changed",
+    "detail": "狀態改為 已取消",
+    "target": "#T1"
+  },
+  {
+    "at": "2026-09-08T02:34:15.103+00:00",
+    "id": "07a0e3ac-ae8b-46a8-94eb-42a44f2b5ffd",
+    "user": "admin",
+    "action": "order.test_created",
+    "detail": "推播對象：1 台指定裝置",
+    "target": "#T3"
+  },
+  {
+    "at": "2026-09-02T03:34:03.852+00:00",
+    "id": "b06b1123-41ea-47db-a8a9-5d1a7fee92f0",
+    "user": "admin",
+    "action": "stock.updated",
+    "detail": "標示為賣完",
+    "target": "荷包蛋"
+  },
+  {
     "at": "2026-09-02T03:40:26.982+00:00",
     "id": "fbe604e1-33ce-4e28-9b7c-209e6acb3de1",
     "user": "admin",
@@ -1694,13 +1734,5 @@
     "action": "order.status_changed",
     "detail": "狀態改為 製作中，已通知客人",
     "target": "#E0DF39"
-  },
-  {
-    "at": "2026-09-02T03:34:03.852+00:00",
-    "id": "b06b1123-41ea-47db-a8a9-5d1a7fee92f0",
-    "user": "admin",
-    "action": "stock.updated",
-    "detail": "標示為賣完",
-    "target": "荷包蛋"
   }
 ]

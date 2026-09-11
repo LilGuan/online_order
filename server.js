@@ -268,6 +268,7 @@ function receiptText(order, kind = 'accept') {
         ['取餐時間', order.pickupTime || '未指定'],
         ['姓　　名', order.name || ''],
         ['電　　話', order.phone || ''],
+        ['餐　　具', order.utensils === 'yes' ? '需要餐具' : '不需要餐具'],
         ['付款方式', paymentReceiptLabel(order)],
         ['下單時間', formatReceiptTime(order.createdAt)]
     ];
@@ -1013,6 +1014,7 @@ function customerOrderView(order) {
         pickupTime: String(order.pickupTime || ''),
         paymentMethod: String(order.paymentMethod || 'cash'),
         notes: String(order.notes || ''),
+        utensils: order.utensils === 'yes' ? 'yes' : 'none',
         items: Array.isArray(order.items) ? order.items.map(item => ({
             key: String(item.key || ''),
             name: String(item.name || ''),
@@ -1092,7 +1094,8 @@ function buildOrderFlexMessage(order) {
                         ]
                     },
                     { type: 'text', text: itemSummary + (remainingCount ? `，另 ${remainingCount} 項` : ''), size: 'sm', color: '#444444', wrap: true, margin: 'lg', maxLines: 2 },
-                    { type: 'text', text: order.pickupTime || '取餐時間待確認', size: 'sm', color: '#777777', margin: 'md', wrap: true }
+                    { type: 'text', text: order.pickupTime || '取餐時間待確認', size: 'sm', color: '#777777', margin: 'md', wrap: true },
+                    { type: 'text', text: order.utensils === 'yes' ? '餐具：需要' : '餐具：不需要', size: 'sm', color: '#777777', margin: 'sm', wrap: true }
                 ]
             },
             footer: {
@@ -1222,6 +1225,7 @@ function normalizeOrder(body) {
         pickupTime: String(body.pickupTime || '').trim(),
         paymentMethod: String(body.paymentMethod || 'cash').trim(),
         notes: String(body.notes || '').trim(),
+        utensils: body.utensils === 'yes' ? 'yes' : 'none',
         lineUserId: String(body.lineUserId || '').trim(),
         items,
         totalAmount,
@@ -1336,6 +1340,7 @@ app.post('/api/customer/orders/:orderId/reorder-preview', verifyLineCustomer, (r
             { token: 'egg', key: 'doubleEgg', label: '雙蛋' },
             { token: 'shrimp', key: 'doubleShrimp', label: '加蝦' }
         ].filter(option => tokens.includes(option.token));
+        const spiceToken = tokens.find(token => /^spicy_(none|trace|mild|hot)$/.test(token)) || 'spicy_none';
         const disabledOption = selectedOptions.find(option => !menuItem.options?.[option.key]);
 
         if (disabledOption) {
@@ -1357,7 +1362,7 @@ app.post('/api/customer/orders/:orderId/reorder-preview', verifyLineCustomer, (r
             adjustments.push({ name: menuItem.name, message: `庫存只剩 ${qty} 份，數量已調整` });
         }
 
-        const optionKey = selectedOptions.map(option => option.token).join('-');
+        const optionKey = [...selectedOptions.map(option => option.token), spiceToken].join('-');
         const key = optionKey ? `${menuItem.id}-${optionKey}` : `${menuItem.id}-normal`;
         cart[key] = Number(cart[key] || 0) + qty;
 

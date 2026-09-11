@@ -546,6 +546,7 @@
         '<div><div class="meta-label">下單時間</div><div class="meta-value">' + escapeHtml(formatTime(order.createdAt)) + '</div></div>' +
         '<div><div class="meta-label">取餐時間</div><div class="meta-value">' + escapeHtml(order.pickupTime || "待確認") + '</div></div>' +
         '<div><div class="meta-label">訂單類型</div><div class="meta-value">' + (order.orderType === "reserve" ? "預約單" : "即時單") + '</div></div>' +
+        '<div><div class="meta-label">餐具</div><div class="meta-value">' + (order.utensils === "yes" ? "需要餐具" : "不需要餐具") + '</div></div>' +
         '<div><div class="meta-label">付款方式</div><div class="meta-value">' + escapeHtml(paymentLabel(order.paymentMethod)) + '</div></div>';
 
       document.getElementById("current-items").innerHTML = order.items.map(function(item) {

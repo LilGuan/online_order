@@ -172,6 +172,16 @@
       height: 18px;
       accent-color: #ff6b6b;
     }
+    .options select {
+      width: 100%;
+      border: 0;
+      background: #f8f9fa;
+      padding: 7px 8px;
+      border-radius: 8px;
+      color: #2d3436;
+      font-weight: 700;
+      outline: none;
+    }
 
     /* 數量控制區 */
     .controls {
@@ -297,6 +307,7 @@
     }
     .detail-option label { display: flex; align-items: center; gap: 8px; flex: 1; cursor: pointer; }
     .detail-option input { width: 19px; height: 19px; accent-color: #ff6b6b; }
+    .detail-option select { width: 100%; border: 0; background: transparent; color: #2d3436; font-size: .95rem; font-weight: 800; outline: none; }
     .detail-option-price { color: #ff6b6b; font-weight: 700; }
     .detail-bottom { display: flex; align-items: center; gap: 12px; padding: 14px 18px calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid #eee; background: #fff; position: sticky; bottom: 0; }
     .detail-qty { flex: 0 0 auto; display: flex; align-items: center; gap: 12px; padding: 4px; background: #f1f3f5; border-radius: 22px; }
@@ -539,6 +550,14 @@
           
           
           <div class="options-container">
+            <div class="options">
+              <select id="spice-${item.id}" aria-label="${item.name} 辣度">
+                <option value="none">不辣</option>
+                <option value="trace">微辣</option>
+                <option value="mild">小辣</option>
+                <option value="hot">大辣</option>
+              </select>
+            </div>
             ${item.hasLarge ? `
               <div class="options">
                 <label>
@@ -578,7 +597,7 @@
         </div>
       `;
       div.addEventListener('click', event => {
-        if (event.target.closest('button, input, label')) return;
+        if (event.target.closest('button, input, label, select')) return;
         openItemDetail(item.id);
       });
       menuDiv.appendChild(div);
@@ -660,11 +679,13 @@
     const isLarge = document.getElementById(`large-${id}`)?.checked || false;
     const isDoubleEgg = document.getElementById(`egg-${id}`)?.checked || false;
     const isDoubleShrimp = document.getElementById(`shrimp-${id}`)?.checked || false;
-    addConfiguredItemToCart(menuItem, qty, { isLarge, isDoubleEgg, isDoubleShrimp });
+    const spiceLevel = document.getElementById(`spice-${id}`)?.value || 'none';
+    addConfiguredItemToCart(menuItem, qty, { isLarge, isDoubleEgg, isDoubleShrimp, spiceLevel });
 
     // 重置卡片上的選項與數量
     menuQuantities[id] = 1;
     if (document.getElementById(`menu-qty-${id}`)) document.getElementById(`menu-qty-${id}`).innerText = '1';
+    if (document.getElementById(`spice-${id}`)) document.getElementById(`spice-${id}`).value = 'none';
     if (document.getElementById(`large-${id}`)) document.getElementById(`large-${id}`).checked = false;
     if (document.getElementById(`egg-${id}`)) document.getElementById(`egg-${id}`).checked = false;
     if (document.getElementById(`shrimp-${id}`)) document.getElementById(`shrimp-${id}`).checked = false;
@@ -672,12 +693,13 @@
   };
 
   function addConfiguredItemToCart(item, qty, options) {
-    const { isLarge, isDoubleEgg, isDoubleShrimp } = options;
+    const { isLarge, isDoubleEgg, isDoubleShrimp, spiceLevel = 'none' } = options;
     // Key 格式: ID-large-egg (如果沒有就不加)
     const optionsKey = [
       isLarge ? 'large' : '',
       isDoubleEgg ? 'egg' : '',
-      isDoubleShrimp ? 'shrimp' : ''
+      isDoubleShrimp ? 'shrimp' : '',
+      `spicy_${spiceLevel}`
     ].filter(Boolean).join('-');
 
     const key = optionsKey ? `${item.id}-${optionsKey}` : `${item.id}-normal`;
@@ -689,6 +711,7 @@
     if (isLarge) optText.push('加大');
     if (isDoubleEgg) optText.push('雙蛋');
     if (isDoubleShrimp) optText.push('加蝦');
+    optText.push({ none: '不辣', trace: '微辣', mild: '小辣', hot: '大辣' }[spiceLevel] || '不辣');
     const optString = optText.length > 0 ? `(${optText.join('、')})` : '';
 
     updateCartBadge();
@@ -739,8 +762,8 @@
           <div class="detail-option">
             <label for="detail-${option.key}"><input type="checkbox" id="detail-${option.key}" />${escapeHtml(option.label)}</label>
             <span class="detail-option-price">+$${Number(option.price || 0)}</span>
-          </div>`).join('')}</div>`
-      : '<div class="detail-section-title">此商品目前沒有加購選項</div>';
+          </div>`).join('')}</div><div class="detail-section-title">辣度</div><div class="detail-option"><select id="detail-spice" class="detail-spice-select"><option value="none">不辣</option><option value="trace">微辣</option><option value="mild">小辣</option><option value="hot">大辣</option></select></div>`
+      : '<div class="detail-section-title">辣度</div><div class="detail-option"><select id="detail-spice" class="detail-spice-select"><option value="none">不辣</option><option value="trace">微辣</option><option value="mild">小辣</option><option value="hot">大辣</option></select></div>';
     document.querySelectorAll('#detail-options input').forEach(input => input.addEventListener('change', updateDetailPrice));
     updateDetailPrice();
     const modal = document.getElementById('item-detail-modal');
@@ -770,6 +793,7 @@
   document.getElementById('detail-add').addEventListener('click', () => {
     if (!detailItem || !isStoreOpen || detailItem.soldOut) return;
     const options = Object.fromEntries(detailOptionDefinitions(detailItem).map(option => [option.key, document.getElementById(`detail-${option.key}`)?.checked || false]));
+    options.spiceLevel = document.getElementById('detail-spice')?.value || 'none';
     addConfiguredItemToCart(detailItem, detailQuantity, options);
     closeItemDetail();
   });

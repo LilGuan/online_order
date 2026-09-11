@@ -431,6 +431,14 @@
     </div>
 
     <div class="form-group">
+      <label class="form-label" for="utensils">餐具</label>
+      <select id="utensils" class="form-select">
+        <option value="none" selected>不需要餐具</option>
+        <option value="yes">需要餐具</option>
+      </select>
+    </div>
+
+    <div class="form-group">
       <label class="form-label" for="notes">備註</label>
       <textarea id="notes" class="form-textarea" rows="2" placeholder="例如：不要辣、少油..."></textarea>
     </div>
@@ -672,6 +680,13 @@
   }
 
   // ★★★ 新增：解析 Key 的函式 (整合雙蛋價格) ★★★
+  const SPICE_LABELS = { none: '不辣', trace: '微辣', mild: '小辣', hot: '大辣' };
+  function spiceLabelFromOptions(options) {
+    const token = options.find(option => option.startsWith('spicy_'));
+    const value = token ? token.replace('spicy_', '') : 'none';
+    return SPICE_LABELS[value] || '不辣';
+  }
+
   function parseCartItem(key) {
     // Key 格式: ID-option1-option2... (例如: 1-large-egg)
     const parts = key.split('-');
@@ -696,6 +711,7 @@
       finalPrice += optionPrices.doubleShrimp;
       nameSuffix.push('加蝦');
     }
+    nameSuffix.push(spiceLabelFromOptions(options));
 
     const displayName = item.name + (nameSuffix.length > 0 ? ` (${nameSuffix.join('、')})` : '');
 
@@ -1171,11 +1187,12 @@
     })();
 
     const notes = document.getElementById('notes').value.trim();
+    const utensils = document.getElementById('utensils').value === 'yes' ? 'yes' : 'none';
     // 取得付款方式
     const paymentMethod = document.getElementById('payment-method').value;
 
     const isInClient = liffCan('sendMessages');
-    const orderData = { name, phone, cart, notes, paymentMethod, orderNumber, pickupTime: finalPickupTime, lineUserId, isInClient, orderType: currentMode };
+    const orderData = { name, phone, cart, notes, utensils, paymentMethod, orderNumber, pickupTime: finalPickupTime, lineUserId, isInClient, orderType: currentMode };
     localStorage.setItem('orderData', JSON.stringify(orderData));
     localStorage.setItem('userPhone', phone); 
 
@@ -1350,6 +1367,7 @@
         pickupTime: orderData.pickupTime,
         paymentMethod: orderData.paymentMethod,
         notes: orderData.notes,
+        utensils: orderData.utensils,
         lineUserId: orderData.lineUserId,
         isInClient: orderData.isInClient,
         orderType: orderData.orderType,
@@ -1399,6 +1417,7 @@
       if (options.includes('large')) { price += optionPrices.large; nameSuffix.push('加大'); }
       if (options.includes('egg')) { price += optionPrices.doubleEgg; nameSuffix.push('雙蛋'); }
       if (options.includes('shrimp')) { price += optionPrices.doubleShrimp; nameSuffix.push('加蝦'); }
+      nameSuffix.push(spiceLabelFromOptions(options));
 
 
       const name = item.name + (nameSuffix.length > 0 ? ` (${nameSuffix.join('、')})` : '');
@@ -1634,7 +1653,8 @@
               ]
             },
             { type: 'text', text: itemSummary + (remainingCount ? `，另 ${remainingCount} 項` : ''), size: 'sm', color: '#444444', wrap: true, margin: 'lg', maxLines: 2 },
-            { type: 'text', text: order.pickupTime || '取餐時間待確認', size: 'sm', color: '#777777', margin: 'md', wrap: true }
+            { type: 'text', text: order.pickupTime || '取餐時間待確認', size: 'sm', color: '#777777', margin: 'md', wrap: true },
+            { type: 'text', text: order.utensils === 'yes' ? '餐具：需要' : '餐具：不需要', size: 'sm', color: '#777777', margin: 'sm', wrap: true }
           ]
         },
         footer: {

@@ -2633,6 +2633,7 @@
             <div><div class="kv-label">電話</div><div class="kv-value">${escapeHtml(order.phone)}</div></div>
             <div><div class="kv-label">取餐時間</div><div class="kv-value">${escapeHtml(order.pickupTime)}</div></div>
             <div><div class="kv-label">付款</div><div class="kv-value">${order.paymentMethod === 'cash' ? '現金' : escapeHtml(order.paymentMethod)}</div></div>
+            <div><div class="kv-label">餐具</div><div class="kv-value">${order.utensils === 'yes' ? '需要' : '不需要'}</div></div>
           </div>
           <div class="customer-membership">${customerBadge(order)}${order.customerOrderCount ? '<span class="hint">這位客人的歷史訂單統計</span>' : ''}</div>
 
@@ -2694,6 +2695,7 @@
         <div><div class="kv-label">姓名</div><div class="kv-value">${escapeHtml(order.name)}</div></div>
         <div><div class="kv-label">電話</div><div class="kv-value">${escapeHtml(order.phone)}</div></div>
         <div><div class="kv-label">取餐</div><div class="kv-value">${escapeHtml(order.pickupTime)}</div></div>
+        <div><div class="kv-label">餐具</div><div class="kv-value">${order.utensils === 'yes' ? '需要' : '不需要'}</div></div>
         <div><div class="kv-label">狀態</div><div class="kv-value">${STATUS_LABELS[order.status]}</div></div>
       </div>
       <div class="customer-membership">${customerBadge(order)}${order.customerOrderCount ? `<span class="hint">累計訂購 ${order.customerOrderCount} 次</span>` : ''}</div>
@@ -3670,6 +3672,7 @@
         <div><div class="kv-label">電話</div><div class="kv-value">${escapeHtml(order.phone)}</div></div>
         <div><div class="kv-label">取餐時間</div><div class="kv-value">${escapeHtml(order.pickupTime)}</div></div>
         <div><div class="kv-label">付款</div><div class="kv-value">${order.paymentMethod === 'cash' ? '現金' : escapeHtml(order.paymentMethod)}</div></div>
+        <div><div class="kv-label">餐具</div><div class="kv-value">${order.utensils === 'yes' ? '需要' : '不需要'}</div></div>
       </div>
       <div class="customer-membership">${customerBadge(order)}</div>
 
