@@ -162,5 +162,5 @@ module.exports = {
     findCustomer,
     normalizePhone,
     safeCustomer,
-    upsertCustomerProfile
+    upsertCustomerProfile  
 };

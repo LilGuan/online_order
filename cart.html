@@ -432,15 +432,15 @@
 
     <div class="form-group">
       <label class="form-label" for="utensils">餐具</label>
-      <select id="utensils" class="form-select">
-        <option value="none" selected>不需要餐具</option>
-        <option value="yes">需要餐具</option>
-      </select>
+      <label class="form-select" style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+        <input type="checkbox" id="utensils" style="width:18px; height:18px; accent-color:#ff6b6b;" />
+        <span>需要餐具</span>
+      </label>
     </div>
 
     <div class="form-group">
       <label class="form-label" for="notes">備註</label>
-      <textarea id="notes" class="form-textarea" rows="2" placeholder="例如：不要辣、少油..."></textarea>
+      <textarea id="notes" class="form-textarea" rows="2" placeholder="例如：少油、飯少一點..."></textarea>
     </div>
   </div>
 
@@ -680,11 +680,11 @@
   }
 
   // ★★★ 新增：解析 Key 的函式 (整合雙蛋價格) ★★★
-  const SPICE_LABELS = { none: '不辣', trace: '微辣', mild: '小辣', hot: '大辣' };
+  const SPICE_LABELS = { none: '', packet: '辣包', trace: '辣包', mild: '辣包', hot: '辣包' };
   function spiceLabelFromOptions(options) {
     const token = options.find(option => option.startsWith('spicy_'));
     const value = token ? token.replace('spicy_', '') : 'none';
-    return SPICE_LABELS[value] || '不辣';
+    return SPICE_LABELS[value] || '';
   }
 
   function parseCartItem(key) {
@@ -711,7 +711,8 @@
       finalPrice += optionPrices.doubleShrimp;
       nameSuffix.push('加蝦');
     }
-    nameSuffix.push(spiceLabelFromOptions(options));
+    const spiceLabel = spiceLabelFromOptions(options);
+    if (spiceLabel) nameSuffix.push(spiceLabel);
 
     const displayName = item.name + (nameSuffix.length > 0 ? ` (${nameSuffix.join('、')})` : '');
 
@@ -1187,7 +1188,7 @@
     })();
 
     const notes = document.getElementById('notes').value.trim();
-    const utensils = document.getElementById('utensils').value === 'yes' ? 'yes' : 'none';
+    const utensils = document.getElementById('utensils').checked ? 'yes' : 'none';
     // 取得付款方式
     const paymentMethod = document.getElementById('payment-method').value;
 
@@ -1417,7 +1418,8 @@
       if (options.includes('large')) { price += optionPrices.large; nameSuffix.push('加大'); }
       if (options.includes('egg')) { price += optionPrices.doubleEgg; nameSuffix.push('雙蛋'); }
       if (options.includes('shrimp')) { price += optionPrices.doubleShrimp; nameSuffix.push('加蝦'); }
-      nameSuffix.push(spiceLabelFromOptions(options));
+      const spiceLabel = spiceLabelFromOptions(options);
+      if (spiceLabel) nameSuffix.push(spiceLabel);
 
 
       const name = item.name + (nameSuffix.length > 0 ? ` (${nameSuffix.join('、')})` : '');

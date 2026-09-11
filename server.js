@@ -1340,7 +1340,7 @@ app.post('/api/customer/orders/:orderId/reorder-preview', verifyLineCustomer, (r
             { token: 'egg', key: 'doubleEgg', label: '雙蛋' },
             { token: 'shrimp', key: 'doubleShrimp', label: '加蝦' }
         ].filter(option => tokens.includes(option.token));
-        const spiceToken = tokens.find(token => /^spicy_(none|trace|mild|hot)$/.test(token)) || 'spicy_none';
+        const spiceToken = tokens.find(token => /^spicy_(none|packet|trace|mild|hot)$/.test(token)) || 'spicy_none';
         const disabledOption = selectedOptions.find(option => !menuItem.options?.[option.key]);
 
         if (disabledOption) {
