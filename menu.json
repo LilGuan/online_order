@@ -23,25 +23,6 @@
   ],
   "items": [
     {
-      "id": 4,
-      "name": "香腸炒飯",
-      "image": "images/sausage_rice.png",
-      "price": 120,
-      "status": "available",
-      "options": {
-        "large": true,
-        "doubleEgg": true,
-        "doubleShrimp": false
-      },
-      "soldOut": false,
-      "category": "rice",
-      "soldToday": 0,
-      "sortOrder": 4,
-      "stockDate": "2026-09-11",
-      "dailyStock": null,
-      "description": "香腸搭配鄰近宏昇畜牧養殖的有機蛋炒飯，鹹香夠味。"
-    },
-    {
       "id": 2,
       "name": "肉絲炒飯",
       "image": "images/beef_rice.png",
@@ -118,23 +99,23 @@
       "description": "肉絲搭配炒麵，鹹香飽足。"
     },
     {
-      "id": 9,
-      "name": "鹹豬肉",
-      "image": "images/salted_pork.png",
-      "price": 240,
+      "id": 4,
+      "name": "香腸炒飯",
+      "image": "images/sausage_rice.png",
+      "price": 120,
       "status": "available",
       "options": {
-        "large": false,
-        "doubleEgg": false,
+        "large": true,
+        "doubleEgg": true,
         "doubleShrimp": false
       },
       "soldOut": false,
-      "category": "alacarte",
+      "category": "rice",
       "soldToday": 0,
-      "sortOrder": 9,
+      "sortOrder": 4,
       "stockDate": "2026-09-11",
-      "dailyStock": 20,
-      "description": "鹹香鹹豬肉，適合分享或搭配飯享用。"
+      "dailyStock": null,
+      "description": "香腸搭配鄰近宏昇畜牧養殖的有機蛋炒飯，鹹香夠味。"
     },
     {
       "id": 7,
@@ -149,7 +130,7 @@
       },
       "soldOut": false,
       "category": "noodle",
-      "soldToday": 0,
+      "soldToday": 1,
       "sortOrder": 7,
       "stockDate": "2026-09-11",
       "dailyStock": null,
@@ -211,6 +192,25 @@
       "stockDate": "2026-09-11",
       "dailyStock": null,
       "description": "鹹豬肉搭配炒飯，鹹香下飯。"
+    },
+    {
+      "id": 9,
+      "name": "鹹豬肉",
+      "image": "images/salted_pork.png",
+      "price": 240,
+      "status": "available",
+      "options": {
+        "large": false,
+        "doubleEgg": false,
+        "doubleShrimp": false
+      },
+      "soldOut": false,
+      "category": "alacarte",
+      "soldToday": 0,
+      "sortOrder": 9,
+      "stockDate": "2026-09-11",
+      "dailyStock": 20,
+      "description": "鹹香鹹豬肉，適合分享或搭配飯享用。"
     }
   ]
 }

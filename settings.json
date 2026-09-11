@@ -10,7 +10,7 @@
   "isOpen": true,
   "address": "桃園市大園區皇家六街12號",
   "storeName": "邱媽媽美食",
-  "updatedAt": "2026-09-11T02:15:08.231Z",
+  "updatedAt": "2026-09-11T05:43:40.508Z",
   "optionLabels": {
     "large": "加大",
     "doubleEgg": "雙蛋",
@@ -35,5 +35,9 @@
   },
   "minOrderAmount": 90,
   "prepTimeMinutes": 30,
+  "lineNotifications": {
+    "enabled": true,
+    "autoDisableThreshold": 10
+  },
   "allowReserveOrders": false
 }

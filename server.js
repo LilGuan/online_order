@@ -1270,10 +1270,12 @@ app.patch('/api/store/status', requireAdmin, (req, res) => {
 
 // LINE 使用者開啟點餐頁就先登記成會員；尚未下單也會出現在後台會員名單。
 app.post('/api/customers/register', (req, res) => {
+    const displayName = String(req.body.displayName || '').trim();
+    const name = String(req.body.name || '').trim();
     const profile = {
         lineUserId: String(req.body.lineUserId || '').trim(),
-        displayName: String(req.body.displayName || '').trim(),
-        name: String(req.body.name || '').trim(),
+        displayName,
+        name: name || displayName,
         phone: String(req.body.phone || '').trim()
     };
     if (!profile.lineUserId && !profile.phone) {

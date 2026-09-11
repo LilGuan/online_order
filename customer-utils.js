@@ -43,7 +43,27 @@ function createCustomer(profile, now) {
 }
 
 function upsertCustomerProfile(customers, profile, now = new Date().toISOString()) {
-    let customer = findCustomer(customers, profile);
+    const lineUserId = String(profile.lineUserId || '').trim();
+    const phone = String(profile.phone || '').trim();
+    const normalizedPhone = normalizePhone(phone);
+    const lineCustomer = customers.find(customer => lineUserId && customer.lineUserId === lineUserId);
+    const phoneCustomer = customers.find(customer => normalizedPhone && normalizePhone(customer.phone) === normalizedPhone);
+    let customer = lineCustomer || phoneCustomer || null;
+
+    if (lineCustomer && phoneCustomer && lineCustomer !== phoneCustomer) {
+        customer = lineCustomer;
+        ['name', 'displayName', 'phone', 'memberSince', 'firstOrderId', 'lastOrderAt', 'lastOrderNumber', 'status'].forEach(field => {
+            if (!customer[field] && phoneCustomer[field]) customer[field] = phoneCustomer[field];
+        });
+        customer.orderCount = Math.max(Number(customer.orderCount || 0), Number(phoneCustomer.orderCount || 0));
+        customer.completedOrderCount = Math.max(Number(customer.completedOrderCount || 0), Number(phoneCustomer.completedOrderCount || 0));
+        customer.cancelledOrderCount = Math.max(Number(customer.cancelledOrderCount || 0), Number(phoneCustomer.cancelledOrderCount || 0));
+        customer.totalSpent = Math.max(Number(customer.totalSpent || 0), Number(phoneCustomer.totalSpent || 0));
+
+        const duplicateIndex = customers.indexOf(phoneCustomer);
+        if (duplicateIndex >= 0) customers.splice(duplicateIndex, 1);
+    }
+
     if (!customer) {
         customer = createCustomer(profile, now);
         if (!customer) return null;
@@ -52,8 +72,6 @@ function upsertCustomerProfile(customers, profile, now = new Date().toISOString(
 
     const name = String(profile.name || '').trim();
     const displayName = String(profile.displayName || '').trim();
-    const phone = String(profile.phone || '').trim();
-    const lineUserId = String(profile.lineUserId || '').trim();
 
     if (name) customer.name = name;
     if (displayName) customer.displayName = displayName;

@@ -614,6 +614,7 @@
   let isClosedForToday = false; // 是否已過今日營業時間 (打烊)
   let isStoreOpen = true;
   let lineUserId = '';
+  let lineDisplayName = '';
   let isSubmitting = false;      // 正在送出，避免重複下單
   let menuLoaded = false;        // 菜單/門店設定是否成功載入
   let submitBlockReason = '';    // 目前不能送出的原因；空字串代表可以送出
@@ -866,15 +867,16 @@
   });
   
   // 初始化 LIFF (包含自動填入電話)
-  function registerCustomerProfile() {
+  async function registerCustomerProfile() {
     const phone = document.getElementById('phone').value.trim();
-    const name = document.getElementById('name').value.trim();
+    const typedName = document.getElementById('name').value.trim();
+    const name = typedName || lineDisplayName;
     if (!lineUserId && !phone) return;
 
-    fetch(`${BACKEND_BASE_URL}/api/customers/register`, {
+    return fetch(`${BACKEND_BASE_URL}/api/customers/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lineUserId, name, phone, displayName: name })
+      body: JSON.stringify({ lineUserId, name, phone, displayName: lineDisplayName || name })
     }).catch(() => { /* 會員登記失敗不阻擋客人結帳 */ });
   }
 
@@ -884,14 +886,12 @@
       if (liff.isLoggedIn()) {
         const profile = await liff.getProfile();
         lineUserId = profile.userId || '';
+        lineDisplayName = profile.displayName || '';
 
-        // 只要 LINE 使用者開啟結帳頁就登記會員，即使最後沒有下單也會出現在店家會員名單。
-        registerCustomerProfile();
-        
         // 1. 自動填入姓名
         const nameInput = document.getElementById('name');
-        if (!nameInput.value) {
-          nameInput.value = profile.displayName; 
+        if (!nameInput.value && lineDisplayName) {
+          nameInput.value = lineDisplayName;
         }
 
         // 2. ★★★ 自動填入上次使用的電話 ★★★
@@ -900,12 +900,16 @@
         if (savedPhone && !phoneInput.value) {
           phoneInput.value = savedPhone;
         }
+
+        // 只要 LINE 使用者開啟結帳頁就登記會員；要等姓名 / 上次電話填完後再寫入。
+        registerCustomerProfile();
       }
     } catch (err) {
       console.error(err);
     }
   }
 
+  document.getElementById('name').addEventListener('blur', registerCustomerProfile);
   document.getElementById('phone').addEventListener('blur', registerCustomerProfile);
   // ====== 時段邏輯處理 ======
 
@@ -1158,6 +1162,7 @@
     if (!isValid) return; // 驗證未通過則停止
 
     if (name.length <= 5) name += ' 先生/小姐';
+    await registerCustomerProfile();
 
     const orderNumber = (() => {
         const chars = 'ABCDEF0123456789';
