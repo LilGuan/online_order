@@ -23,25 +23,6 @@
   ],
   "items": [
     {
-      "id": 5,
-      "name": "蝦仁炒飯",
-      "image": "images/shrimp_rice.png",
-      "price": 130,
-      "status": "available",
-      "options": {
-        "large": true,
-        "doubleEgg": true,
-        "doubleShrimp": true
-      },
-      "soldOut": false,
-      "category": "rice",
-      "soldToday": 0,
-      "sortOrder": 5,
-      "stockDate": "2026-09-11",
-      "dailyStock": null,
-      "description": "使用親戚養殖、急速冷凍保存的蝦仁，邱媽媽親手逐隻篩選剝殼，搭配鄰近宏昇畜牧養殖的有機蛋炒飯。"
-    },
-    {
       "id": 1,
       "name": "蛋炒飯",
       "image": "images/egg_rice.jpg",
@@ -54,7 +35,7 @@
       },
       "soldOut": false,
       "category": "rice",
-      "soldToday": 1,
+      "soldToday": 4,
       "sortOrder": 1,
       "stockDate": "2026-09-11",
       "dailyStock": null,
@@ -73,7 +54,7 @@
       },
       "soldOut": false,
       "category": "noodle",
-      "soldToday": 0,
+      "soldToday": 1,
       "sortOrder": 3,
       "stockDate": "2026-09-11",
       "dailyStock": null,
@@ -118,23 +99,23 @@
       "description": "肉絲搭配鄰近宏昇畜牧養殖的有機蛋炒飯，香氣十足。"
     },
     {
-      "id": 10,
-      "name": "海帶芽蛋花湯",
-      "image": "images/soup.png",
-      "price": 25,
+      "id": 5,
+      "name": "蝦仁炒飯",
+      "image": "images/shrimp_rice.png",
+      "price": 130,
       "status": "available",
       "options": {
-        "large": false,
-        "doubleEgg": false,
-        "doubleShrimp": false
+        "large": true,
+        "doubleEgg": true,
+        "doubleShrimp": true
       },
       "soldOut": false,
-      "category": "soup",
+      "category": "rice",
       "soldToday": 0,
-      "sortOrder": 10,
+      "sortOrder": 5,
       "stockDate": "2026-09-11",
       "dailyStock": null,
-      "description": "海帶芽與蛋花的熱湯，清爽順口。"
+      "description": "使用親戚養殖、急速冷凍保存的蝦仁，邱媽媽親手逐隻篩選剝殼，搭配鄰近宏昇畜牧養殖的有機蛋炒飯。"
     },
     {
       "id": 6,
@@ -211,6 +192,25 @@
       "stockDate": "2026-09-11",
       "dailyStock": null,
       "description": "使用親戚養殖、急速冷凍保存的蝦仁，邱媽媽親手逐隻篩選剝殼，搭配米苔目拌炒。"
+    },
+    {
+      "id": 10,
+      "name": "海帶芽蛋花湯",
+      "image": "images/soup.png",
+      "price": 25,
+      "status": "available",
+      "options": {
+        "large": false,
+        "doubleEgg": false,
+        "doubleShrimp": false
+      },
+      "soldOut": false,
+      "category": "soup",
+      "soldToday": 0,
+      "sortOrder": 10,
+      "stockDate": "2026-09-11",
+      "dailyStock": null,
+      "description": "海帶芽與蛋花的熱湯，清爽順口。"
     }
   ]
 }

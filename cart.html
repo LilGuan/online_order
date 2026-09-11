@@ -1045,7 +1045,7 @@
     
     // ★★★ 設定緩衝時間 (15分鐘) ★★★
     // 只有當預約時間 > (現在時間 + 15分鐘) 才是有效預約
-    const bufferMinutes = 15;
+    const bufferMinutes = 30;
     const minValidTime = currentMinutes + bufferMinutes;
 
     // 如果是打烊後預約 (選擇了未來日期)，則所有時段都開放
@@ -1186,7 +1186,7 @@
         // ★★★ 修正這裡：即時模式也要設定 finalPickupTime ★★★
         // 自動計算 現在 + 15 分
         const now = new Date();
-        now.setMinutes(now.getMinutes() + 15);
+        now.setMinutes(now.getMinutes() + 30);
         finalPickupTime = `約 ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} 取餐`;
     }
 
@@ -1405,7 +1405,7 @@
 
   function getPickupTime() {
     const now = new Date();
-    now.setMinutes(now.getMinutes() + 15);
+    now.setMinutes(now.getMinutes() + 30);
     return `約 ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} 取餐`;
   }
 
