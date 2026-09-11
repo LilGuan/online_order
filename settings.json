@@ -1,8 +1,26 @@
 {
-  "isOpen": true,
-  "storeName": "邱媽媽美食",
   "phone": "033812828",
+  "alerts": {
+    "takeoverEnabled": true,
+    "pushRepeatEnabled": true,
+    "pushRepeatSeconds": 3,
+    "soundRepeatSeconds": 3,
+    "pushRepeatMaxMinutes": 10
+  },
+  "isOpen": true,
   "address": "桃園市大園區皇家六街12號",
+  "storeName": "邱媽媽美食",
+  "updatedAt": "2026-09-11T02:02:29.672Z",
+  "optionLabels": {
+    "large": "加大",
+    "doubleEgg": "雙蛋",
+    "doubleShrimp": "加蝦"
+  },
+  "optionPrices": {
+    "large": 20,
+    "doubleEgg": 15,
+    "doubleShrimp": 35
+  },
   "businessHours": {
     "lunch": {
       "end": "14:00",
@@ -15,25 +33,7 @@
       "enabled": true
     }
   },
-  "prepTimeMinutes": 30,
   "minOrderAmount": 0,
-  "allowReserveOrders": false,
-  "optionPrices": {
-    "large": 20,
-    "doubleEgg": 15,
-    "doubleShrimp": 35
-  },
-  "optionLabels": {
-    "large": "加大",
-    "doubleEgg": "雙蛋",
-    "doubleShrimp": "加蝦"
-  },
-  "alerts": {
-    "takeoverEnabled": true,
-    "soundRepeatSeconds": 3,
-    "pushRepeatEnabled": true,
-    "pushRepeatSeconds": 3,
-    "pushRepeatMaxMinutes": 10
-  },
-  "updatedAt": "2026-09-11T02:02:29.672Z"
+  "prepTimeMinutes": 30,
+  "allowReserveOrders": false
 }
