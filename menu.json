@@ -37,7 +37,7 @@
       "category": "rice",
       "soldToday": 0,
       "sortOrder": 2,
-      "stockDate": "2026-09-10",
+      "stockDate": "2026-09-11",
       "dailyStock": null,
       "description": "肉絲搭配鄰近宏昇畜牧養殖的有機蛋拌炒米飯，香氣十足。"
     },
@@ -56,7 +56,7 @@
       "category": "rice",
       "soldToday": 0,
       "sortOrder": 1,
-      "stockDate": "2026-09-10",
+      "stockDate": "2026-09-11",
       "dailyStock": null,
       "description": "使用鄰近宏昇畜牧養殖的有機蛋拌炒米飯，簡單耐吃。"
     },
@@ -75,7 +75,7 @@
       "category": "noodle",
       "soldToday": 0,
       "sortOrder": 3,
-      "stockDate": "2026-09-10",
+      "stockDate": "2026-09-11",
       "dailyStock": null,
       "description": "肉絲搭配炒麵，鹹香飽足。"
     },
@@ -92,9 +92,9 @@
       },
       "soldOut": false,
       "category": "rice",
-      "soldToday": 1,
+      "soldToday": 0,
       "sortOrder": 4,
-      "stockDate": "2026-09-10",
+      "stockDate": "2026-09-11",
       "dailyStock": null,
       "description": "香腸搭配鄰近宏昇畜牧養殖的有機蛋拌炒米飯，鹹香夠味。"
     },
@@ -111,9 +111,9 @@
       },
       "soldOut": false,
       "category": "rice",
-      "soldToday": 1,
+      "soldToday": 0,
       "sortOrder": 5,
-      "stockDate": "2026-09-10",
+      "stockDate": "2026-09-11",
       "dailyStock": null,
       "description": "使用親戚養殖、急速冷凍保存的蝦仁，邱媽媽親手逐隻篩選剝殼，搭配鄰近宏昇畜牧養殖的有機蛋拌炒米飯。"
     },
@@ -130,9 +130,9 @@
       },
       "soldOut": false,
       "category": "soup",
-      "soldToday": 1,
+      "soldToday": 0,
       "sortOrder": 10,
-      "stockDate": "2026-09-10",
+      "stockDate": "2026-09-11",
       "dailyStock": null,
       "description": "海帶芽與蛋花的熱湯，清爽順口。"
     },
@@ -151,7 +151,7 @@
       "category": "noodle",
       "soldToday": 0,
       "sortOrder": 6,
-      "stockDate": "2026-09-10",
+      "stockDate": "2026-09-11",
       "dailyStock": null,
       "description": "使用親戚養殖、急速冷凍保存的蝦仁，邱媽媽親手逐隻篩選剝殼，搭配炒麵現點現炒。"
     },
@@ -170,7 +170,7 @@
       "category": "rice",
       "soldToday": 0,
       "sortOrder": 8,
-      "stockDate": "2026-09-10",
+      "stockDate": "2026-09-11",
       "dailyStock": null,
       "description": "鹹豬肉搭配白飯，鹹香下飯。"
     },
@@ -189,7 +189,7 @@
       "category": "alacarte",
       "soldToday": 0,
       "sortOrder": 9,
-      "stockDate": "2026-09-10",
+      "stockDate": "2026-09-11",
       "dailyStock": 20,
       "description": "鹹香鹹豬肉，適合分享或搭配白飯享用。"
     },
@@ -208,7 +208,7 @@
       "category": "noodle",
       "soldToday": 0,
       "sortOrder": 7,
-      "stockDate": "2026-09-10",
+      "stockDate": "2026-09-11",
       "dailyStock": null,
       "description": "使用親戚養殖、急速冷凍保存的蝦仁，邱媽媽親手逐隻篩選剝殼，搭配米苔目拌炒。"
     }

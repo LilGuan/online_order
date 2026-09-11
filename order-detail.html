@@ -633,10 +633,10 @@
     }
 
     function mergeCart(nextCart) {
-      let cart = {};
-      try { cart = JSON.parse(localStorage.getItem("cart") || "{}"); } catch (error) { cart = {}; }
+      const cart = {};
       Object.entries(nextCart).forEach(function(entry) {
-        cart[entry[0]] = Number(cart[entry[0]] || 0) + Number(entry[1] || 0);
+        const quantity = Number(entry[1] || 0);
+        if (quantity > 0) cart[entry[0]] = quantity;
       });
       localStorage.setItem("cart", JSON.stringify(cart));
     }

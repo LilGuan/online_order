@@ -223,6 +223,16 @@
   .mode-switch.reserve .mode-bg {
     transform: translateX(100%);
   }
+  .mode-switch.instant-only {
+    width: 64px;
+    cursor: default;
+  }
+  .mode-switch.instant-only .mode-bg {
+    width: calc(100% - 4px);
+  }
+  .mode-switch.instant-only #mode-reserve {
+    display: none;
+  }
   /* 底部固定結帳區 */
   .checkout-bar {
     position: fixed;
@@ -600,6 +610,10 @@
   let menuLoaded = false;        // 菜單/門店設定是否成功載入
   let submitBlockReason = '';    // 目前不能送出的原因；空字串代表可以送出
 
+  function reserveOrdersEnabled() {
+    return !storeSettings || storeSettings.allowReserveOrders !== false;
+  }
+
   // LIFF SDK 也是從 CDN 載入的，載入失敗時 liff 會是 undefined。
   // 任何用到 liff 的地方都要走這裡，避免整個送單流程被一個 ReferenceError 打斷。
   function liffCan(api) {
@@ -885,6 +899,17 @@
     // 超過最後一個時段的結束時間就是今日已打烊
     isClosedForToday = currentMinutes >= lastClosingMinutes();
 
+    if (!reserveOrdersEnabled()) {
+      setMode('instant');
+      modeSwitch.classList.add('instant-only');
+      modeSwitch.style.pointerEvents = 'none';
+      modeSwitch.style.opacity = '1';
+      updateTimeSlots();
+      return;
+    }
+
+    modeSwitch.classList.remove('instant-only');
+
     if (!isBusinessHours) {
       // 非營業時間，強制切換到預約模式並鎖定
       setMode('reserve');
@@ -907,6 +932,7 @@
   }
 
   function setMode(mode) {
+    if (mode === 'reserve' && !reserveOrdersEnabled()) mode = 'instant';
     currentMode = mode;
     if (mode === 'instant') {
       modeSwitch.classList.remove('reserve');
@@ -928,6 +954,7 @@
 
   // 點擊切換模式
   modeSwitch.addEventListener('click', () => {
+    if (!reserveOrdersEnabled()) return;
     // 如果被鎖定 (非營業時間)，不執行切換
     if (modeSwitch.style.pointerEvents === 'none') return;
     
@@ -1089,6 +1116,7 @@
 
     // 驗證時間與賦值
     let finalPickupTime = "";
+    if (!reserveOrdersEnabled()) currentMode = 'instant';
     
     if (currentMode === 'reserve') {
         // 預約模式：必須選時間

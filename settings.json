@@ -17,6 +17,7 @@
   },
   "prepTimeMinutes": 30,
   "minOrderAmount": 0,
+  "allowReserveOrders": true,
   "optionPrices": {
     "large": 20,
     "doubleEgg": 15,
@@ -34,5 +35,5 @@
     "pushRepeatSeconds": 3,
     "pushRepeatMaxMinutes": 10
   },
-  "updatedAt": "2026-09-10T14:27:24.698Z"
+  "updatedAt": "2026-09-10T16:14:09.425Z"
 }

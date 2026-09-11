@@ -1614,6 +1614,11 @@
             <label for="set-min">最低消費金額</label>
             <input class="field" type="number" id="set-min" min="0" />
             <div class="hint">設 0 表示不限制</div>
+            <div class="check-row" style="margin-top:14px;">
+              <label class="switch"><input type="checkbox" id="set-reserve-on"><span class="slider"></span></label>
+              <span>開放預約單</span>
+            </div>
+            <div class="hint">關閉後，客人前台只會看到即時單。</div>
           </div>
 
           <div class="card">
@@ -3143,6 +3148,7 @@
     $('set-address').value = settings.address || '';
     $('set-prep').value = settings.prepTimeMinutes ?? 15;
     $('set-min').value = settings.minOrderAmount ?? 0;
+    $('set-reserve-on').checked = settings.allowReserveOrders !== false;
 
     $('set-lunch-on').checked = Boolean(settings.businessHours.lunch.enabled);
     $('set-lunch-start').value = settings.businessHours.lunch.start;
@@ -3174,6 +3180,7 @@
           address: $('set-address').value.trim(),
           prepTimeMinutes: Number($('set-prep').value),
           minOrderAmount: Number($('set-min').value),
+          allowReserveOrders: $('set-reserve-on').checked,
           businessHours: {
             lunch: { enabled: $('set-lunch-on').checked, start: $('set-lunch-start').value, end: $('set-lunch-end').value },
             dinner: { enabled: $('set-dinner-on').checked, start: $('set-dinner-start').value, end: $('set-dinner-end').value }

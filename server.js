@@ -415,6 +415,7 @@ const DEFAULT_SETTINGS = {
     },
     prepTimeMinutes: 15,
     minOrderAmount: 0,
+    allowReserveOrders: true,
     optionPrices: { large: 20, doubleEgg: 15, doubleShrimp: 35 },
     optionLabels: { large: '加大', doubleEgg: '雙蛋', doubleShrimp: '加蝦' },
     alerts: {
@@ -1273,7 +1274,8 @@ app.post('/api/customer/orders/:orderId/reorder-preview', verifyLineCustomer, (r
 });
 
 app.post('/api/orders', async (req, res) => {
-    const storeStatus = readStoreStatus();
+    const settings = readSettings();
+    const storeStatus = { isOpen: settings.isOpen, updatedAt: settings.updatedAt };
 
     if (!storeStatus.isOpen) {
         return res.status(403).json({ message: '店家目前未開放點餐' });
@@ -1281,11 +1283,15 @@ app.post('/api/orders', async (req, res) => {
 
     const order = normalizeOrder(req.body);
 
+    if (order.orderType === 'reserve' && !settings.allowReserveOrders) {
+        return res.status(400).json({ message: '目前未開放預約單，請改用即時單' });
+    }
+
     if (!order.name || !order.phone || order.items.length === 0 || order.totalAmount <= 0) {
         return res.status(400).json({ message: '訂單資料不完整' });
     }
 
-    const minOrderAmount = Number(readSettings().minOrderAmount || 0);
+    const minOrderAmount = Number(settings.minOrderAmount || 0);
     if (minOrderAmount > 0 && order.totalAmount < minOrderAmount) {
         return res.status(400).json({
             code: 'MIN_ORDER_NOT_MET',
@@ -1615,6 +1621,7 @@ app.get('/api/settings/public', (req, res) => {
         businessHours: settings.businessHours,
         prepTimeMinutes: settings.prepTimeMinutes,
         minOrderAmount: settings.minOrderAmount,
+        allowReserveOrders: settings.allowReserveOrders,
         optionPrices: settings.optionPrices,
         optionLabels: settings.optionLabels
     });
@@ -1650,6 +1657,12 @@ app.patch('/api/admin/settings', requireAdmin, requireOwner, (req, res) => {
             if (value !== settings.minOrderAmount) changes.push(`低消 $${settings.minOrderAmount} → $${value}`);
             settings.minOrderAmount = value;
         }
+    }
+
+    if (req.body.allowReserveOrders !== undefined) {
+        const value = Boolean(req.body.allowReserveOrders);
+        if (value !== settings.allowReserveOrders) changes.push(value ? '開啟預約單' : '關閉預約單');
+        settings.allowReserveOrders = value;
     }
 
     if (req.body.businessHours) {
