@@ -1,5 +1,13 @@
 [
   {
+    "at": "2026-09-11T02:06:35.114+00:00",
+    "id": "e6310a0f-9b7e-400b-8fcf-03b84e2272c3",
+    "user": "admin",
+    "action": "order.status_changed",
+    "detail": "狀態改為 已取消，已通知客人",
+    "target": "#1"
+  },
+  {
     "at": "2026-09-11T02:02:29.673+00:00",
     "id": "a2d8b17e-5f81-475b-9dc4-629410b37c45",
     "user": "admin",
@@ -288,6 +296,14 @@
     "target": "#588FE5"
   },
   {
+    "at": "2026-09-02T17:03:48.339+00:00",
+    "id": "27f01213-15c9-45bd-8e7f-3fff75560a84",
+    "user": "admin",
+    "action": "stock.updated",
+    "detail": "標示為賣完",
+    "target": "蝦仁炒飯"
+  },
+  {
     "at": "2026-09-02T03:40:37.049+00:00",
     "id": "0dd095b0-8e7e-4f60-86c9-f9c038be9d35",
     "user": "admin",
@@ -358,14 +374,6 @@
     "action": "order.status_changed",
     "detail": "狀態改為 製作中",
     "target": "#T8"
-  },
-  {
-    "at": "2026-09-02T17:03:48.339+00:00",
-    "id": "27f01213-15c9-45bd-8e7f-3fff75560a84",
-    "user": "admin",
-    "action": "stock.updated",
-    "detail": "標示為賣完",
-    "target": "蝦仁炒飯"
   },
   {
     "at": "2026-09-02T17:03:35.878+00:00",

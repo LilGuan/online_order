@@ -571,6 +571,14 @@
     return windows.length ? Math.max(...windows.map(window => window.end)) : 1200;
   }
 
+  function refreshBusinessHoursState() {
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    isBusinessHours = isWithinBusinessHours(currentMinutes);
+    isClosedForToday = currentMinutes >= lastClosingMinutes();
+    return isBusinessHours;
+  }
+
   // 元素選取
   const cartContainer = document.getElementById('cart-items');
   const totalPriceEl = document.getElementById('total-price');
@@ -753,6 +761,7 @@
     const totalValue = Number(total || 0);
     const belowMinimum = totalValue > 0 && minOrderAmount > 0 && totalValue < minOrderAmount;
     const hint = document.getElementById('min-order-hint');
+    const openInBusinessHours = refreshBusinessHoursState();
 
     if (hint) {
       if (belowMinimum) {
@@ -771,6 +780,8 @@
       submitBlockReason = '購物車是空的，請先回菜單選擇餐點。';
     } else if (!canSubmit) {
       submitBlockReason = '店家目前未開放點餐，請稍後再試或直接電話聯絡店家。';
+    } else if (!openInBusinessHours) {
+      submitBlockReason = '目前非營業時間，暫停接單，請於營業時間內再下單。';
     } else if (belowMinimum) {
       submitBlockReason = `最低消費為 $${minOrderAmount}，目前為 $${totalValue}，還差 $${minOrderAmount - totalValue}。`;
     } else {
@@ -801,7 +812,16 @@
 
       const status = await response.json();
       isStoreOpen = Boolean(status.isOpen);
-      closedBanner.style.display = isStoreOpen ? 'none' : 'block';
+      refreshBusinessHoursState();
+      if (!isStoreOpen) {
+        closedBanner.textContent = '店家目前未開放點餐，請稍後再試。';
+        closedBanner.style.display = 'block';
+      } else if (!isBusinessHours) {
+        closedBanner.textContent = '目前非營業時間，暫停接單。';
+        closedBanner.style.display = 'block';
+      } else {
+        closedBanner.style.display = 'none';
+      }
       renderCart();
     } catch (error) {
       console.error('讀取店鋪狀態失敗:', error);
@@ -890,14 +910,7 @@
   // ====== 時段邏輯處理 ======
 
   function initMode() {
-    const now = new Date();
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-    // 營業時間依後台「門店設定」的午餐 / 晚餐時段判斷
-    isBusinessHours = isWithinBusinessHours(currentMinutes);
-
-    // 超過最後一個時段的結束時間就是今日已打烊
-    isClosedForToday = currentMinutes >= lastClosingMinutes();
+    refreshBusinessHoursState();
 
     if (!reserveOrdersEnabled()) {
       setMode('instant');
@@ -911,15 +924,10 @@
     modeSwitch.classList.remove('instant-only');
 
     if (!isBusinessHours) {
-      // 非營業時間，強制切換到預約模式並鎖定
-      setMode('reserve');
+      // 非營業時間不接單，固定顯示即時單並鎖定切換
+      setMode('instant');
       modeSwitch.style.pointerEvents = 'none'; // 禁用切換
       modeSwitch.style.opacity = '0.7'; // 稍微變淡提示不可用
-      
-      // 如果已打烊，顯示日期選擇
-      if (isClosedForToday) {
-        initDateSelect();
-      }
     } else {
       // 營業時間內，預設即時，可切換
       setMode('instant');
@@ -1054,9 +1062,9 @@
   // 頁面載入執行：菜單與門店設定要先載入，價格計算與營業時段才會正確
   (async function init() {
     await fetchMenuAndSettings();
+    initMode();
     renderCart();
     applyReorderDraft();
-    initMode();
     initLiff();
     initStoreStatus();
   })();
@@ -1071,6 +1079,11 @@
     // 絕對不會再出現點了完全沒反應的狀況。
     if (submitBlockReason) {
       showSubmitToast(submitBlockReason);
+      return;
+    }
+    if (!refreshBusinessHoursState()) {
+      renderCart();
+      showSubmitToast('目前非營業時間，暫停接單，請於營業時間內再下單。');
       return;
     }
 

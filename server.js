@@ -468,6 +468,26 @@ function writeStoreStatus(status) {
     writeSettings(settings);
 }
 
+function timeToMinutes(value) {
+    const [hour, minute] = String(value || '').split(':').map(Number);
+    return (Number.isFinite(hour) ? hour : 0) * 60 + (Number.isFinite(minute) ? minute : 0);
+}
+
+function businessWindowsFromSettings(settings) {
+    const hours = settings && settings.businessHours;
+    if (!hours) return [];
+    return ['lunch', 'dinner']
+        .map(slot => hours[slot])
+        .filter(slot => slot && slot.enabled)
+        .map(slot => ({ start: timeToMinutes(slot.start), end: timeToMinutes(slot.end) }))
+        .filter(slot => slot.end > slot.start);
+}
+
+function isBusinessHoursOpen(settings, at = new Date()) {
+    const minutes = at.getHours() * 60 + at.getMinutes();
+    return businessWindowsFromSettings(settings).some(window => minutes >= window.start && minutes < window.end);
+}
+
 function todayKey() {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -1279,6 +1299,10 @@ app.post('/api/orders', async (req, res) => {
 
     if (!storeStatus.isOpen) {
         return res.status(403).json({ message: '店家目前未開放點餐' });
+    }
+
+    if (!isBusinessHoursOpen(settings)) {
+        return res.status(403).json({ message: '目前非營業時間，暫停接單' });
     }
 
     const order = normalizeOrder(req.body);
