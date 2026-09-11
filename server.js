@@ -418,6 +418,10 @@ const DEFAULT_SETTINGS = {
     allowReserveOrders: true,
     optionPrices: { large: 20, doubleEgg: 15, doubleShrimp: 35 },
     optionLabels: { large: '加大', doubleEgg: '雙蛋', doubleShrimp: '加蝦' },
+    lineNotifications: {
+        enabled: true,
+        autoDisableThreshold: 10
+    },
     alerts: {
         // 新訂單未接單時的提醒行為
         takeoverEnabled: true,        // 後台跳出滿版接單卡片
@@ -446,6 +450,7 @@ function readSettings() {
     return {
         ...DEFAULT_SETTINGS,
         ...settings,
+        lineNotifications: { ...DEFAULT_SETTINGS.lineNotifications, ...(settings.lineNotifications || {}) },
         alerts: { ...DEFAULT_SETTINGS.alerts, ...(settings.alerts || {}) }
     };
 }
@@ -834,6 +839,20 @@ async function pushLineMessages(lineUserId, messages) {
         reason: ''
     };
 
+    const settings = readSettings();
+    const lineNotifications = settings.lineNotifications || {};
+
+    if (!lineNotifications.enabled) {
+        result.reason = 'LINE 訊息通知已關閉';
+        return result;
+    }
+
+    const quota = await enforceLineNotificationQuota(settings);
+    if (quota && quota.remaining !== null && quota.remaining < Number(lineNotifications.autoDisableThreshold || 10)) {
+        result.reason = `LINE 訊息額度不足 ${lineNotifications.autoDisableThreshold || 10} 則已自動關閉`;
+        return result;
+    }
+
     if (!lineUserId) {
         result.reason = '訂單沒有 LINE userId';
         return result;
@@ -861,6 +880,72 @@ async function pushLineMessages(lineUserId, messages) {
     }
 
     return result;
+}
+
+async function fetchLineMessageQuota() {
+    const result = {
+        ok: false,
+        unlimited: false,
+        limit: null,
+        used: null,
+        remaining: null,
+        percentUsed: 0,
+        message: '',
+        checkedAt: new Date().toISOString()
+    };
+
+    if (!LINE_CHANNEL_ACCESS_TOKEN) {
+        result.message = '尚未設定 LINE_CHANNEL_ACCESS_TOKEN';
+        return result;
+    }
+
+    try {
+        const headers = { Authorization: `Bearer ${LINE_CHANNEL_ACCESS_TOKEN}` };
+        const [quotaResponse, consumptionResponse] = await Promise.all([
+            axios.get('https://api.line.me/v2/bot/message/quota', { headers }),
+            axios.get('https://api.line.me/v2/bot/message/quota/consumption', { headers })
+        ]);
+
+        const quota = quotaResponse.data || {};
+        const consumption = consumptionResponse.data || {};
+        const used = Number(consumption.totalUsage || 0);
+        const isUnlimited = quota.type === 'unlimited';
+        const limit = isUnlimited ? null : Number(quota.value);
+        const remaining = isUnlimited || !Number.isFinite(limit) ? null : Math.max(0, limit - used);
+
+        result.ok = true;
+        result.unlimited = isUnlimited;
+        result.limit = Number.isFinite(limit) ? limit : null;
+        result.used = used;
+        result.remaining = remaining;
+        result.percentUsed = result.limit ? Math.min(100, Math.round((used / result.limit) * 100)) : 0;
+        result.message = isUnlimited ? 'LINE 訊息額度無上限' : '';
+    } catch (error) {
+        result.message = error.response ? JSON.stringify(error.response.data) : error.message;
+        console.error('[LINE Quota] 查詢失敗:', result.message);
+    }
+
+    return result;
+}
+
+async function enforceLineNotificationQuota(existingSettings) {
+    const settings = existingSettings || readSettings();
+    const quota = await fetchLineMessageQuota();
+    const threshold = Number(settings.lineNotifications?.autoDisableThreshold || 10);
+
+    if (quota.ok && quota.remaining !== null && quota.remaining < threshold && settings.lineNotifications?.enabled) {
+        settings.lineNotifications = {
+            ...settings.lineNotifications,
+            enabled: false,
+            disabledReason: `LINE 訊息剩餘 ${quota.remaining} 則，低於 ${threshold} 則自動關閉`,
+            disabledAt: new Date().toISOString()
+        };
+        settings.updatedAt = new Date().toISOString();
+        writeSettings(settings);
+        logAudit('settings.updated', 'LINE 訊息通知', settings.lineNotifications.disabledReason, 'system');
+    }
+
+    return quota;
 }
 
 async function verifyLineCustomer(req, res, next) {
@@ -1651,11 +1736,13 @@ app.get('/api/settings/public', (req, res) => {
     });
 });
 
-app.get('/api/admin/settings', requireAdmin, (req, res) => {
-    res.json({ settings: readSettings() });
+app.get('/api/admin/settings', requireAdmin, async (req, res) => {
+    const settings = readSettings();
+    const lineQuota = await enforceLineNotificationQuota(settings);
+    res.json({ settings: readSettings(), lineQuota });
 });
 
-app.patch('/api/admin/settings', requireAdmin, requireOwner, (req, res) => {
+app.patch('/api/admin/settings', requireAdmin, requireOwner, async (req, res) => {
     const settings = readSettings();
     const changes = [];
 
@@ -1687,6 +1774,24 @@ app.patch('/api/admin/settings', requireAdmin, requireOwner, (req, res) => {
         const value = Boolean(req.body.allowReserveOrders);
         if (value !== settings.allowReserveOrders) changes.push(value ? '開啟預約單' : '關閉預約單');
         settings.allowReserveOrders = value;
+    }
+
+    if (req.body.lineNotifications) {
+        const incoming = req.body.lineNotifications;
+        const next = { ...settings.lineNotifications };
+
+        if (incoming.enabled !== undefined) {
+            next.enabled = Boolean(incoming.enabled);
+            if (next.enabled) {
+                delete next.disabledReason;
+                delete next.disabledAt;
+            }
+        }
+
+        if (JSON.stringify(next) !== JSON.stringify(settings.lineNotifications)) {
+            changes.push(next.enabled ? '開啟 LINE 訊息通知' : '關閉 LINE 訊息通知');
+        }
+        settings.lineNotifications = next;
     }
 
     if (req.body.businessHours) {
@@ -1737,7 +1842,8 @@ app.patch('/api/admin/settings', requireAdmin, requireOwner, (req, res) => {
     settings.updatedAt = new Date().toISOString();
     writeSettings(settings);
     if (changes.length) logAudit('settings.updated', '門店設定', changes.join('、'), req.session && req.session.username);
-    res.json({ ok: true, settings });
+    const lineQuota = await enforceLineNotificationQuota(readSettings());
+    res.json({ ok: true, settings: readSettings(), lineQuota });
 });
 
 // ==========================================

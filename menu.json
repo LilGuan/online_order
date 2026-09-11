@@ -23,6 +23,82 @@
   ],
   "items": [
     {
+      "id": 4,
+      "name": "香腸炒飯",
+      "image": "images/sausage_rice.png",
+      "price": 120,
+      "status": "available",
+      "options": {
+        "large": true,
+        "doubleEgg": true,
+        "doubleShrimp": false
+      },
+      "soldOut": false,
+      "category": "rice",
+      "soldToday": 0,
+      "sortOrder": 4,
+      "stockDate": "2026-09-11",
+      "dailyStock": null,
+      "description": "香腸搭配鄰近宏昇畜牧養殖的有機蛋炒飯，鹹香夠味。"
+    },
+    {
+      "id": 2,
+      "name": "肉絲炒飯",
+      "image": "images/beef_rice.png",
+      "price": 110,
+      "status": "available",
+      "options": {
+        "large": true,
+        "doubleEgg": true,
+        "doubleShrimp": false
+      },
+      "soldOut": false,
+      "category": "rice",
+      "soldToday": 1,
+      "sortOrder": 2,
+      "stockDate": "2026-09-11",
+      "dailyStock": null,
+      "description": "肉絲搭配鄰近宏昇畜牧養殖的有機蛋炒飯，香氣十足。"
+    },
+    {
+      "id": 5,
+      "name": "蝦仁炒飯",
+      "image": "images/shrimp_rice.png",
+      "price": 130,
+      "status": "available",
+      "options": {
+        "large": true,
+        "doubleEgg": true,
+        "doubleShrimp": true
+      },
+      "soldOut": false,
+      "category": "rice",
+      "soldToday": 0,
+      "sortOrder": 5,
+      "stockDate": "2026-09-11",
+      "dailyStock": null,
+      "description": "使用親戚養殖、急速冷凍保存的蝦仁，邱媽媽親手逐隻篩選剝殼，搭配鄰近宏昇畜牧養殖的有機蛋炒飯。"
+    },
+    {
+      "id": 1,
+      "name": "蛋炒飯",
+      "image": "images/egg_rice.jpg",
+      "price": 90,
+      "status": "available",
+      "options": {
+        "large": true,
+        "doubleEgg": true,
+        "doubleShrimp": false
+      },
+      "soldOut": false,
+      "category": "rice",
+      "soldToday": 1,
+      "sortOrder": 1,
+      "stockDate": "2026-09-11",
+      "dailyStock": null,
+      "description": "使用鄰近宏昇畜牧養殖的有機蛋炒飯，簡單美味。"
+    },
+    {
       "id": 3,
       "name": "肉絲炒麵",
       "image": "images/beef_noodle.jpg",
@@ -42,101 +118,6 @@
       "description": "肉絲搭配炒麵，鹹香飽足。"
     },
     {
-      "id": 4,
-      "name": "香腸炒飯",
-      "image": "images/sausage_rice.png",
-      "price": 120,
-      "status": "available",
-      "options": {
-        "large": true,
-        "doubleEgg": true,
-        "doubleShrimp": false
-      },
-      "soldOut": false,
-      "category": "rice",
-      "soldToday": 0,
-      "sortOrder": 4,
-      "stockDate": "2026-09-11",
-      "dailyStock": null,
-      "description": "香腸搭配鄰近宏昇畜牧養殖的有機蛋拌炒米飯，鹹香夠味。"
-    },
-    {
-      "id": 2,
-      "name": "肉絲炒飯",
-      "image": "images/beef_rice.png",
-      "price": 110,
-      "status": "available",
-      "options": {
-        "large": true,
-        "doubleEgg": true,
-        "doubleShrimp": false
-      },
-      "soldOut": false,
-      "category": "rice",
-      "soldToday": 1,
-      "sortOrder": 2,
-      "stockDate": "2026-09-11",
-      "dailyStock": null,
-      "description": "肉絲搭配鄰近宏昇畜牧養殖的有機蛋拌炒米飯，香氣十足。"
-    },
-    {
-      "id": 5,
-      "name": "蝦仁炒飯",
-      "image": "images/shrimp_rice.png",
-      "price": 130,
-      "status": "available",
-      "options": {
-        "large": true,
-        "doubleEgg": true,
-        "doubleShrimp": true
-      },
-      "soldOut": false,
-      "category": "rice",
-      "soldToday": 0,
-      "sortOrder": 5,
-      "stockDate": "2026-09-11",
-      "dailyStock": null,
-      "description": "使用親戚養殖、急速冷凍保存的蝦仁，邱媽媽親手逐隻篩選剝殼，搭配鄰近宏昇畜牧養殖的有機蛋拌炒米飯。"
-    },
-    {
-      "id": 1,
-      "name": "蛋炒飯",
-      "image": "images/egg_rice.jpg",
-      "price": 90,
-      "status": "available",
-      "options": {
-        "large": true,
-        "doubleEgg": true,
-        "doubleShrimp": false
-      },
-      "soldOut": false,
-      "category": "rice",
-      "soldToday": 1,
-      "sortOrder": 1,
-      "stockDate": "2026-09-11",
-      "dailyStock": null,
-      "description": "使用鄰近宏昇畜牧養殖的有機蛋拌炒米飯，簡單耐吃。"
-    },
-    {
-      "id": 8,
-      "name": "鹹豬肉蓋飯",
-      "image": "images/salted_pork_rice.png",
-      "price": 140,
-      "status": "available",
-      "options": {
-        "large": true,
-        "doubleEgg": true,
-        "doubleShrimp": false
-      },
-      "soldOut": false,
-      "category": "rice",
-      "soldToday": 0,
-      "sortOrder": 8,
-      "stockDate": "2026-09-11",
-      "dailyStock": null,
-      "description": "鹹豬肉搭配白飯，鹹香下飯。"
-    },
-    {
       "id": 9,
       "name": "鹹豬肉",
       "image": "images/salted_pork.png",
@@ -153,7 +134,7 @@
       "sortOrder": 9,
       "stockDate": "2026-09-11",
       "dailyStock": 20,
-      "description": "鹹香鹹豬肉，適合分享或搭配白飯享用。"
+      "description": "鹹香鹹豬肉，適合分享或搭配飯享用。"
     },
     {
       "id": 7,
@@ -211,6 +192,25 @@
       "stockDate": "2026-09-11",
       "dailyStock": null,
       "description": "使用親戚養殖、急速冷凍保存的蝦仁，邱媽媽親手逐隻篩選剝殼，搭配炒麵現點現炒。"
+    },
+    {
+      "id": 8,
+      "name": "鹹豬肉蓋飯",
+      "image": "images/salted_pork_rice.png",
+      "price": 140,
+      "status": "available",
+      "options": {
+        "large": true,
+        "doubleEgg": true,
+        "doubleShrimp": false
+      },
+      "soldOut": false,
+      "category": "rice",
+      "soldToday": 0,
+      "sortOrder": 8,
+      "stockDate": "2026-09-11",
+      "dailyStock": null,
+      "description": "鹹豬肉搭配炒飯，鹹香下飯。"
     }
   ]
 }

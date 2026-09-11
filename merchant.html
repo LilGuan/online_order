@@ -1692,6 +1692,32 @@
             </div>
             <div class="hint">間隔太短手機會很耗電，也可能被推播服務限流；建議 10 秒以上。</div>
           </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">LINE 客人通知</div>
+                <div class="card-sub">訂單狀態更新時推送給客人</div>
+              </div>
+            </div>
+
+            <div class="check-row">
+              <label class="switch"><input type="checkbox" id="set-line-notify"><span class="slider"></span></label>
+              <span>傳送 LINE 訊息通知</span>
+            </div>
+            <div class="hint" id="line-notify-hint">額度低於 10 則時會自動關閉。</div>
+
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:14px;">
+              <div>
+                <div style="font-weight:900;">訊息額度</div>
+                <div class="hint" id="line-quota-text" style="margin-top:2px;">讀取中...</div>
+              </div>
+              <button class="btn btn-ghost btn-sm" id="line-quota-refresh" type="button">重新整理</button>
+            </div>
+            <div class="progress" style="height:10px; margin-top:10px;">
+              <div class="progress-fill" id="line-quota-fill"></div>
+            </div>
+          </div>
         </div>
 
         <div style="display:flex; justify-content:flex-end; margin-top:16px;">
@@ -1986,6 +2012,7 @@
   let pushSubscribed = false;
   let currentUser = null;
   let alertSettings = { takeoverEnabled: true, soundRepeatSeconds: 3, pushRepeatEnabled: true, pushRepeatSeconds: 3, pushRepeatMaxMinutes: 10 };
+  let lineQuota = null;
   let takeoverOrderId = null;
   let takeoverSwapping = false;
   let orderTypeFilter = 'all';
@@ -3139,9 +3166,54 @@
   }
 
   /* ---------------- 設定 ---------------- */
+  function renderLineQuota() {
+    const fill = $('line-quota-fill');
+    const text = $('line-quota-text');
+    const hint = $('line-notify-hint');
+    if (!fill || !text || !hint) return;
+
+    fill.classList.remove('warn', 'full');
+
+    if (!lineQuota) {
+      text.textContent = '讀取中...';
+      fill.style.width = '0%';
+      hint.textContent = '額度低於 10 則時會自動關閉。';
+      return;
+    }
+
+    if (!lineQuota.ok) {
+      text.textContent = lineQuota.message ? `查詢失敗：${lineQuota.message}` : '無法查詢額度';
+      fill.style.width = '0%';
+      fill.classList.add('full');
+      hint.textContent = '額度低於 10 則時會自動關閉。';
+      return;
+    }
+
+    if (lineQuota.unlimited) {
+      text.textContent = `本月已使用 ${lineQuota.used ?? 0} 則，帳號額度無上限`;
+      fill.style.width = '100%';
+      hint.textContent = 'LINE 訊息通知可正常使用。';
+      return;
+    }
+
+    const limit = Number(lineQuota.limit || 0);
+    const used = Number(lineQuota.used || 0);
+    const remaining = Number(lineQuota.remaining || 0);
+    const remainingPercent = limit > 0 ? Math.max(0, Math.min(100, Math.round((remaining / limit) * 100))) : 0;
+    fill.style.width = `${remainingPercent}%`;
+    if (remaining < 10) fill.classList.add('full');
+    else if (remaining < 30) fill.classList.add('warn');
+
+    text.textContent = `剩餘 ${remaining} 則 / 本月 ${limit} 則（已用 ${used} 則）`;
+    hint.textContent = remaining < 10
+      ? '剩餘額度低於 10 則，系統已自動關閉 LINE 訊息通知。'
+      : '額度低於 10 則時會自動關閉。';
+  }
+
   async function fetchSettings() {
     const data = await requestJson(`${BACKEND_BASE_URL}/api/admin/settings`, { cache: 'no-store' });
     settings = data.settings;
+    lineQuota = data.lineQuota || null;
 
     $('set-name').value = settings.storeName || '';
     $('set-phone').value = settings.phone || '';
@@ -3149,6 +3221,8 @@
     $('set-prep').value = settings.prepTimeMinutes ?? 15;
     $('set-min').value = settings.minOrderAmount ?? 0;
     $('set-reserve-on').checked = settings.allowReserveOrders !== false;
+    $('set-line-notify').checked = settings.lineNotifications?.enabled !== false;
+    renderLineQuota();
 
     $('set-lunch-on').checked = Boolean(settings.businessHours.lunch.enabled);
     $('set-lunch-start').value = settings.businessHours.lunch.start;
@@ -3196,6 +3270,9 @@
             pushRepeatEnabled: $('set-push-repeat').checked,
             pushRepeatSeconds: Number($('set-push-interval').value),
             pushRepeatMaxMinutes: Number($('set-push-max').value)
+          },
+          lineNotifications: {
+            enabled: $('set-line-notify').checked
           }
         })
       });
@@ -4401,6 +4478,7 @@
 
   /* 設定 */
   $('settings-save').addEventListener('click', saveSettings);
+  $('line-quota-refresh').addEventListener('click', () => runAction($('line-quota-refresh'), fetchSettings));
 
   /* Modal */
   $('modal-close').addEventListener('click', closeModal);
