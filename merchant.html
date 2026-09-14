@@ -2039,6 +2039,20 @@
   /* ---------------- helpers ---------------- */
   const authHeaders = () => (token ? { Authorization: `Bearer ${token}` } : {});
   const money = value => `$${Number(value || 0).toLocaleString('zh-TW')}`;
+  const dateInputValue = (date = new Date()) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  function resetOrderDateFilters(date = new Date()) {
+    const value = dateInputValue(date);
+    orderFrom = value;
+    orderTo = value;
+    $('order-from').value = value;
+    $('order-to').value = value;
+  }
 
   function formatTime(value) {
     if (!value) return '';
@@ -4198,9 +4212,8 @@
 
   $('order-clear').addEventListener('click', () => {
     $('order-search').value = '';
-    $('order-from').value = '';
-    $('order-to').value = '';
-    orderSearch = orderFrom = orderTo = '';
+    orderSearch = '';
+    resetOrderDateFilters();
     lastOrdersSignature = '';
     fetchOrders().catch(error => toast(error.message, 'error'));
   });
@@ -4558,9 +4571,9 @@
     const today = new Date();
     const monthAgo = new Date();
     monthAgo.setDate(monthAgo.getDate() - 29);
-    const iso = date => date.toISOString().slice(0, 10);
-    $('report-from').value = iso(monthAgo);
-    $('report-to').value = iso(today);
+    $('report-from').value = dateInputValue(monthAgo);
+    $('report-to').value = dateInputValue(today);
+    resetOrderDateFilters(today);
 
     // 從推播通知冷啟動時，網址會帶 ?view=orders&status=pending
     const params = new URLSearchParams(location.search);

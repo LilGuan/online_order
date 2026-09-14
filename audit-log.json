@@ -1,5 +1,69 @@
 [
   {
+    "id": "9c1d0dd3-e97f-47d9-9d7c-8143deab9221",
+    "at": "2026-09-14T06:19:51.343Z",
+    "user": "admin",
+    "action": "order.test_cleared",
+    "target": "測試訂單",
+    "detail": "清除 3 張測試訂單"
+  },
+  {
+    "id": "7def590e-256b-41a0-af90-d3582aca7364",
+    "at": "2026-09-14T06:14:44.758Z",
+    "user": "admin",
+    "action": "order.status_changed",
+    "target": "#2",
+    "detail": "狀態改為 已取消，已通知客人"
+  },
+  {
+    "id": "5ab97be3-677f-4dcf-b57c-b1c54ef4ff19",
+    "at": "2026-09-14T06:14:28.111Z",
+    "user": "admin",
+    "action": "print.order",
+    "target": "#2",
+    "detail": "failed：lp: 錯誤 - 沒有預設目標。"
+  },
+  {
+    "id": "16e3ef3a-247b-4728-b4bc-b240d2ffac84",
+    "at": "2026-09-14T06:14:28.105Z",
+    "user": "admin",
+    "action": "order.status_changed",
+    "target": "#2",
+    "detail": "狀態改為 製作中，已通知客人"
+  },
+  {
+    "id": "5612e074-cb7c-4eff-9894-dd6d39a31caf",
+    "at": "2026-09-14T06:13:21.736Z",
+    "user": "admin",
+    "action": "test_link.created",
+    "target": "測試前台連結",
+    "detail": "有效至 2026-09-14T06:43:21.733Z"
+  },
+  {
+    "id": "f1d30401-f8b4-4f5c-90ce-d2dcbb9a19bc",
+    "at": "2026-09-14T06:12:48.051Z",
+    "user": "admin",
+    "action": "push.subscribed",
+    "target": "iPhone（主畫面）",
+    "detail": "登記背景推播，目前共 4 台裝置"
+  },
+  {
+    "id": "fcce65bd-9e86-4b80-868b-db2826f2999d",
+    "at": "2026-09-14T06:12:20.700Z",
+    "user": "admin",
+    "action": "settings.updated",
+    "target": "門店設定",
+    "detail": "調整營業時間、調整加購價格"
+  },
+  {
+    "id": "ae9f1930-39dc-495b-b387-57b17a7ae63c",
+    "at": "2026-09-14T06:10:12.626Z",
+    "user": "admin",
+    "action": "settings.updated",
+    "target": "門店設定",
+    "detail": "開啟 LINE 訊息通知、調整營業時間"
+  },
+  {
     "at": "2026-09-14T05:32:13.754+00:00",
     "id": "ac69de69-33f6-4722-803a-20ebe10efa59",
     "user": "admin",
