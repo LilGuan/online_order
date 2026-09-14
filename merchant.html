@@ -195,6 +195,19 @@
      ========================================================== */
   body.locked .app { display: none; }
   body:not(.locked) .login-view { display: none; }
+  body.auth-loading .app,
+  body.auth-loading .login-view { display: none; }
+  body.auth-loading::before {
+    content: '載入中...';
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: var(--bg);
+    color: var(--ink-3);
+    font-weight: 800;
+    letter-spacing: .02em;
+  }
 
   .app { display: flex; min-height: 100vh; }
 
@@ -1327,7 +1340,7 @@
   }
 </style>
 </head>
-<body class="locked">
+<body class="locked auth-loading">
 
 <!-- ============================ 登入 ============================ -->
 <section class="login-view" id="login-view">
@@ -4023,13 +4036,9 @@
   // 登入後先把「我是誰」和提醒設定拿回來：導覽選單要依角色決定，
   // 滿版卡片與警報間隔也要用店家設定的值，不能等使用者點進設定頁才生效。
   async function bootstrapSession() {
-    try {
-      const me = await requestJson(`${BACKEND_BASE_URL}/api/admin/me`, { cache: 'no-store' });
-      currentUser = me.user;
-      $('who-name').textContent = currentUser.displayName || currentUser.username;
-    } catch (error) {
-      currentUser = null;
-    }
+    const me = await requestJson(`${BACKEND_BASE_URL}/api/admin/me`, { cache: 'no-store' });
+    currentUser = me.user;
+    $('who-name').textContent = currentUser.displayName || currentUser.username;
 
     try {
       const data = await requestJson(`${BACKEND_BASE_URL}/api/admin/settings`, { cache: 'no-store' });
@@ -4040,6 +4049,7 @@
   }
 
   function setLoggedIn(isLoggedIn) {
+    document.body.classList.remove('auth-loading');
     document.body.classList.toggle('locked', !isLoggedIn);
     if (isLoggedIn) {
       renderNav();
@@ -4583,10 +4593,16 @@
     }
 
     if (token) {
-      bootstrapSession().then(() => {
-        setLoggedIn(true);
-        pollTick();
-      });
+      bootstrapSession()
+        .then(() => {
+          setLoggedIn(true);
+          pollTick();
+        })
+        .catch(() => {
+          token = '';
+          localStorage.removeItem('adminToken');
+          setLoggedIn(false);
+        });
     } else {
       setLoggedIn(false);
     }
