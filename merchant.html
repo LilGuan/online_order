@@ -1448,7 +1448,7 @@
           <button class="btn btn-soft btn-sm" id="order-clear">清除篩選</button>
         </div>
 
-        <nav class="tabs" id="order-type-tabs" style="margin-bottom:10px;">
+        <nav class="tabs" id="order-type-tabs" style="display:none; margin-bottom:10px;">
           <button class="tab active" data-type="all">全部類型</button>
           <button class="tab" data-type="instant">即時單<span class="tab-count">0</span></button>
           <button class="tab" data-type="reserve">預約單<span class="tab-count">0</span></button>
@@ -1456,11 +1456,10 @@
         </nav>
 
         <nav class="tabs" id="order-tabs">
-          <button class="tab active" data-status="pending">接單區<span class="tab-count">0</span></button>
           <button class="tab" data-status="preparing">製作中<span class="tab-count">0</span></button>
           <button class="tab" data-status="completed">已完成<span class="tab-count">0</span></button>
           <button class="tab" data-status="cancelled">已取消<span class="tab-count">0</span></button>
-          <button class="tab" data-status="all">全部<span class="tab-count">0</span></button>
+          <button class="tab active" data-status="all">全部<span class="tab-count">0</span></button>
         </nav>
 
         <div class="orders section-gap" id="orders"></div>
@@ -2011,7 +2010,7 @@
   let menuItems = [];
   let menuCategories = [];
   let settings = null;
-  let activeStatus = 'pending';
+  let activeStatus = 'all';
   let orderSearch = '';
   let orderFrom = '';
   let orderTo = '';
@@ -4529,9 +4528,9 @@
     });
   });
 
-  /* 點推播通知 → 自動切到接單區 */
+  /* 點推播通知 → 自動切到訂單列表 */
   function goToPendingOrders() {
-    activeStatus = 'pending';
+    activeStatus = 'all';
     orderTypeFilter = 'all';
     lastOrdersSignature = '';
     switchView('orders');
@@ -4579,7 +4578,7 @@
     const params = new URLSearchParams(location.search);
     if (params.get('view') === 'orders') {
       currentView = 'orders';
-      if (params.get('status')) activeStatus = params.get('status');
+      if (params.get('status')) activeStatus = params.get('status') === 'pending' ? 'all' : params.get('status');
       history.replaceState({}, document.title, location.pathname);
     }
 
