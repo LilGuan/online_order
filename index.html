@@ -304,6 +304,19 @@
     .detail-qty span { min-width: 20px; text-align: center; font-weight: 800; }
     .detail-add { flex: 1; min-height: 44px; border: 0; border-radius: 11px; background: #ff6b6b; color: #fff; font-size: 1rem; font-weight: 800; cursor: pointer; }
     .detail-add:disabled { background: #adb5bd; cursor: not-allowed; }
+    .test-mode-banner {
+      display: none;
+      margin: 10px auto 0;
+      width: min(760px, calc(100% - 24px));
+      padding: 10px 14px;
+      border: 1px solid #ffd6d6;
+      border-radius: 12px;
+      background: #fff4f4;
+      color: #b91c1c;
+      font-size: .88rem;
+      font-weight: 800;
+      text-align: center;
+    }
     @media (min-width: 600px) {
       #item-detail-modal { align-items: center; padding: 20px; }
       .item-detail-sheet { border-radius: 24px; }
@@ -329,6 +342,7 @@
 </div>
 
 <div class="store-closed-banner" id="store-closed-banner">店家目前未開放點餐，請稍後再試。</div>
+<div class="test-mode-banner" id="test-mode-banner">測試環境：此入口送出的訂單會標記為測試單，不會成立正式訂單。</div>
 
 <div class="menu" id="menu">
   <!-- 餐點由 JS 動態生成 -->
@@ -484,7 +498,12 @@
   const storeClosedBanner = document.getElementById('store-closed-banner');
   const BACKEND_BASE_URL = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
     ? location.origin
-    : "https://person-solid-resolution-unified.trycloudflare.com";
+    : "https://prevent-applied-skating-spray.trycloudflare.com";
+  const TEST_TOKEN_KEY = 'onlineOrderTestToken';
+  const urlParams = new URLSearchParams(location.search);
+  let testToken = urlParams.get('token') || sessionStorage.getItem(TEST_TOKEN_KEY) || '';
+  let isTestMode = urlParams.get('test') === '1' && Boolean(testToken);
+
   function assetUrl(value) {
     const image = String(value || '').trim();
     if (!image || /^(https?:|data:|blob:)/i.test(image)) return image;
@@ -492,6 +511,28 @@
   }
   let currentCategory = 'all';
   let isStoreOpen = true;
+
+  async function verifyTestMode() {
+    if (!isTestMode) {
+      sessionStorage.removeItem(TEST_TOKEN_KEY);
+      return false;
+    }
+
+    try {
+      const response = await fetch(`${BACKEND_BASE_URL}/api/test-link/${encodeURIComponent(testToken)}`, { cache: 'no-store' });
+      if (!response.ok) throw new Error('測試連結已失效');
+      sessionStorage.setItem(TEST_TOKEN_KEY, testToken);
+      document.getElementById('test-mode-banner').style.display = 'block';
+      return true;
+    } catch (error) {
+      isTestMode = false;
+      testToken = '';
+      sessionStorage.removeItem(TEST_TOKEN_KEY);
+      document.getElementById('test-mode-banner').style.display = 'none';
+      showToast('測試連結已失效，請回後台重新產生');
+      return false;
+    }
+  }
 
   async function initLiff() {
     try {
@@ -523,8 +564,8 @@
     filteredItems.forEach(item => {
       menuQuantities[item.id] = 1;
 
-      const canOrder = isStoreOpen && !item.soldOut;
-      const buttonLabel = item.soldOut ? '已售完' : (isStoreOpen ? '加入購物車' : '暫停點餐');
+      const canOrder = (isStoreOpen || isTestMode) && !item.soldOut;
+      const buttonLabel = item.soldOut ? '已售完' : ((isStoreOpen || isTestMode) ? '加入購物車' : '暫停點餐');
 
       const div = document.createElement('div');
       div.className = 'item';
@@ -598,7 +639,7 @@
 
       const status = await response.json();
       isStoreOpen = Boolean(status.isOpen);
-      storeClosedBanner.style.display = isStoreOpen ? 'none' : 'block';
+      storeClosedBanner.style.display = (isStoreOpen || isTestMode) ? 'none' : 'block';
     } catch (error) {
       console.error('讀取店鋪狀態失敗:', error);
     } finally {
@@ -651,7 +692,7 @@
   };
 
   window.addToCart = function(id) {
-    if (!isStoreOpen) {
+    if (!isStoreOpen && !isTestMode) {
       showToast('店家目前未開放點餐');
       return;
     }
@@ -730,8 +771,8 @@
     });
     document.getElementById('detail-price').textContent = `$${price * detailQuantity}`;
     const addButton = document.getElementById('detail-add');
-    addButton.textContent = isStoreOpen && !detailItem.soldOut ? `加入購物車 $${price * detailQuantity}` : (detailItem.soldOut ? '已售完' : '暫停點餐');
-    addButton.disabled = !isStoreOpen || detailItem.soldOut;
+    addButton.textContent = (isStoreOpen || isTestMode) && !detailItem.soldOut ? `加入購物車 $${price * detailQuantity}` : (detailItem.soldOut ? '已售完' : '暫停點餐');
+    addButton.disabled = (!isStoreOpen && !isTestMode) || detailItem.soldOut;
   }
 
   function openItemDetail(id) {
@@ -778,7 +819,7 @@
     updateDetailPrice();
   });
   document.getElementById('detail-add').addEventListener('click', () => {
-    if (!detailItem || !isStoreOpen || detailItem.soldOut) return;
+    if (!detailItem || (!isStoreOpen && !isTestMode) || detailItem.soldOut) return;
     const options = Object.fromEntries(detailOptionDefinitions(detailItem).map(option => [option.key, document.getElementById(`detail-${option.key}`)?.checked || false]));
     options.spiceLevel = document.getElementById('detail-spice')?.checked ? 'packet' : 'none';
     addConfiguredItemToCart(detailItem, detailQuantity, options);
@@ -818,7 +859,7 @@
   }
 
   document.getElementById('cart-fab').addEventListener('click', () => {
-    if (!isStoreOpen) {
+    if (!isStoreOpen && !isTestMode) {
       showToast('店家目前未開放點餐');
       return;
     }
@@ -828,7 +869,9 @@
       showToast('購物車是空的喔！');
       return;
     }
-    window.location.href = 'cart.html';
+    window.location.href = isTestMode
+      ? `cart.html?test=1&token=${encodeURIComponent(testToken)}`
+      : 'cart.html';
   });
 
   async function fetchPublicSettings() {
@@ -845,10 +888,11 @@
   (async function() {
     updateCartBadge();
 
+    await verifyTestMode();
     const [, publicSettings] = await Promise.all([fetchMenu(), fetchPublicSettings()]);
 
     const windows = businessWindowsFromSettings(publicSettings);
-    if (!checkBusinessHours(windows)) showClosedModal(windows);
+    if (!isTestMode && !checkBusinessHours(windows)) showClosedModal(windows);
 
     await initStoreStatus();
     await initLiff();

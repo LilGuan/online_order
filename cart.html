@@ -371,6 +371,18 @@
     font-weight: 600;
     line-height: 1.55;
   }
+  .test-mode-banner {
+    display: none;
+    margin-bottom: 14px;
+    padding: 12px 14px;
+    border-left: 4px solid #ff6b6b;
+    border-radius: 6px;
+    color: #b91c1c;
+    background: #fff4f4;
+    font-size: .86rem;
+    font-weight: 800;
+    line-height: 1.55;
+  }
 
 </style>
 </head>
@@ -384,6 +396,7 @@
 
 <div class="container">
   <div class="closed-banner" id="closed-banner">店家目前未開放點餐，請稍後再試。</div>
+  <div class="test-mode-banner" id="test-mode-banner">測試環境：這張訂單會進入後台接單區，但不會成立正式訂單、不會計入營業額。</div>
   <div class="reorder-banner" id="reorder-banner"></div>
   
   <div id="cart-items">
@@ -532,7 +545,11 @@
   const HERO_IMAGE_URL   = "https://images.unsplash.com/photo-1604908554007-0880a8a94571?q=80&w=1600&auto=format&fit=crop";
   const BACKEND_BASE_URL = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
     ? location.origin
-    : "https://person-solid-resolution-unified.trycloudflare.com";
+    : "https://prevent-applied-skating-spray.trycloudflare.com";
+  const TEST_TOKEN_KEY = 'onlineOrderTestToken';
+  const urlParams = new URLSearchParams(location.search);
+  let testToken = urlParams.get('token') || sessionStorage.getItem(TEST_TOKEN_KEY) || '';
+  let isTestMode = urlParams.get('test') === '1' && Boolean(testToken);
 
   // ====== 菜單、加購價格、營業時間都改由後台 API 提供 ======
   let menuItems = [];
@@ -564,6 +581,28 @@
       menuLoaded = false;
       console.error('讀取菜單或門店設定失敗:', error);
       showSubmitToast('連不上店家系統，請檢查網路後重新整理。');
+    }
+  }
+
+  async function verifyTestMode() {
+    if (!isTestMode) {
+      sessionStorage.removeItem(TEST_TOKEN_KEY);
+      return false;
+    }
+
+    try {
+      const response = await fetch(`${BACKEND_BASE_URL}/api/test-link/${encodeURIComponent(testToken)}`, { cache: 'no-store' });
+      if (!response.ok) throw new Error('測試連結已失效');
+      sessionStorage.setItem(TEST_TOKEN_KEY, testToken);
+      document.getElementById('test-mode-banner').style.display = 'block';
+      return true;
+    } catch (error) {
+      isTestMode = false;
+      testToken = '';
+      sessionStorage.removeItem(TEST_TOKEN_KEY);
+      document.getElementById('test-mode-banner').style.display = 'none';
+      showSubmitToast('測試連結已失效，請回後台重新產生測試入口。');
+      return false;
     }
   }
 
@@ -643,6 +682,11 @@
 
   function reserveOrdersEnabled() {
     return !storeSettings || storeSettings.allowReserveOrders !== false;
+  }
+
+  function prepTimeMinutes() {
+    const value = Number(storeSettings?.prepTimeMinutes);
+    return Number.isFinite(value) && value >= 0 ? value : 15;
   }
 
   // LIFF SDK 也是從 CDN 載入的，載入失敗時 liff 會是 undefined。
@@ -810,9 +854,9 @@
       submitBlockReason = '菜單還在載入中，請稍候再送出。';
     } else if (totalValue <= 0) {
       submitBlockReason = '購物車是空的，請先回菜單選擇餐點。';
-    } else if (!canSubmit) {
+    } else if (!canSubmit && !isTestMode) {
       submitBlockReason = '店家目前未開放點餐，請稍後再試或直接電話聯絡店家。';
-    } else if (!openInBusinessHours) {
+    } else if (!openInBusinessHours && !isTestMode) {
       submitBlockReason = '目前非營業時間，暫停接單，請於營業時間內再下單。';
     } else if (belowMinimum) {
       submitBlockReason = `最低消費為 $${minOrderAmount}，目前為 $${totalValue}，還差 $${minOrderAmount - totalValue}。`;
@@ -833,7 +877,7 @@
     if (!isSubmitting) {
       submitBtn.textContent = belowMinimum
         ? `還差 $${minOrderAmount - totalValue} 才能送出`
-        : '送出訂單';
+        : (isTestMode ? '送出測試訂單' : '送出訂單');
     }
   }
 
@@ -845,7 +889,9 @@
       const status = await response.json();
       isStoreOpen = Boolean(status.isOpen);
       refreshBusinessHoursState();
-      if (!isStoreOpen) {
+      if (isTestMode) {
+        closedBanner.style.display = 'none';
+      } else if (!isStoreOpen) {
         closedBanner.textContent = '店家目前未開放點餐，請稍後再試。';
         closedBanner.style.display = 'block';
       } else if (!isBusinessHours) {
@@ -894,7 +940,9 @@
 
   // 返回按鈕
   document.getElementById('back-btn').addEventListener('click', () => {
-    window.location.href = 'index.html';
+    window.location.href = isTestMode
+      ? `index.html?test=1&token=${encodeURIComponent(testToken)}`
+      : 'index.html';
   });
   
   // 初始化 LIFF (包含自動填入電話)
@@ -958,7 +1006,7 @@
 
     modeSwitch.classList.remove('instant-only');
 
-    if (!isBusinessHours) {
+    if (!isBusinessHours && !isTestMode) {
       // 非營業時間不接單，固定顯示即時單並鎖定切換
       setMode('instant');
       modeSwitch.style.pointerEvents = 'none'; // 禁用切換
@@ -1043,9 +1091,8 @@
     // 取得當前時間的分鐘數
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
     
-    // ★★★ 設定緩衝時間 (15分鐘) ★★★
-    // 只有當預約時間 > (現在時間 + 15分鐘) 才是有效預約
-    const bufferMinutes = 30;
+    // 依後台「備餐時間」設定緩衝，避免客人選到來不及準備的時間
+    const bufferMinutes = prepTimeMinutes();
     const minValidTime = currentMinutes + bufferMinutes;
 
     // 如果是打烊後預約 (選擇了未來日期)，則所有時段都開放
@@ -1096,6 +1143,7 @@
 
   // 頁面載入執行：菜單與門店設定要先載入，價格計算與營業時段才會正確
   (async function init() {
+    await verifyTestMode();
     await fetchMenuAndSettings();
     initMode();
     renderCart();
@@ -1116,13 +1164,13 @@
       showSubmitToast(submitBlockReason);
       return;
     }
-    if (!refreshBusinessHoursState()) {
+    if (!isTestMode && !refreshBusinessHoursState()) {
       renderCart();
       showSubmitToast('目前非營業時間，暫停接單，請於營業時間內再下單。');
       return;
     }
 
-    if (!isStoreOpen) {
+    if (!isStoreOpen && !isTestMode) {
       showSubmitToast('店家目前未開放點餐，請稍後再試。');
       return;
     }
@@ -1184,9 +1232,8 @@
         }
     } else {
         // ★★★ 修正這裡：即時模式也要設定 finalPickupTime ★★★
-        // 自動計算 現在 + 15 分
         const now = new Date();
-        now.setMinutes(now.getMinutes() + 30);
+        now.setMinutes(now.getMinutes() + prepTimeMinutes());
         finalPickupTime = `約 ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} 取餐`;
     }
 
@@ -1206,8 +1253,8 @@
     // 取得付款方式
     const paymentMethod = document.getElementById('payment-method').value;
 
-    const isInClient = liffCan('sendMessages');
-    const orderData = { name, phone, cart, notes, utensils, paymentMethod, orderNumber, pickupTime: finalPickupTime, lineUserId, isInClient, orderType: currentMode };
+    const isInClient = liffCan('sendMessages') && !isTestMode;
+    const orderData = { name, phone, cart, notes, utensils, paymentMethod, orderNumber, pickupTime: finalPickupTime, lineUserId, isInClient, orderType: currentMode, isTest: isTestMode, testToken: isTestMode ? testToken : '' };
     localStorage.setItem('orderData', JSON.stringify(orderData));
     localStorage.setItem('userPhone', phone); 
 
@@ -1342,6 +1389,13 @@
 
     localStorage.removeItem('cart');
     localStorage.removeItem('reorderDraft');
+
+    if (isTestMode) {
+      alert(`測試訂單 #${savedOrder.orderNumber} 已送到後台接單區。`);
+      window.location.href = `index.html?test=1&token=${encodeURIComponent(testToken)}`;
+      return;
+    }
+
     const flexMessage = createOrderFlexMessage(savedOrder);
     sendOrderMessage(flexMessage, savedOrder);
   });
@@ -1386,6 +1440,8 @@
         lineUserId: orderData.lineUserId,
         isInClient: orderData.isInClient,
         orderType: orderData.orderType,
+        isTest: orderData.isTest,
+        testToken: orderData.testToken,
         items,
         totalAmount
       })
@@ -1405,7 +1461,7 @@
 
   function getPickupTime() {
     const now = new Date();
-    now.setMinutes(now.getMinutes() + 30);
+    now.setMinutes(now.getMinutes() + prepTimeMinutes());
     return `約 ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} 取餐`;
   }
 

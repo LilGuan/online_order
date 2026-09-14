@@ -41,6 +41,8 @@ const LINE_LOGIN_CHANNEL_ID = String(process.env.LINE_LOGIN_CHANNEL_ID || '20078
 const LINE_LIFF_ID = String(process.env.LINE_LIFF_ID || '2007831775-ojeB1qbw').trim();
 const adminSessions = new Map(); // token -> { username, role }
 const lineCustomerSessions = new Map(); // LINE ID token -> { userId, displayName, expiresAt }
+const frontendTestTokens = new Map(); // token -> { username, role, createdAt, expiresAt }
+const FRONTEND_TEST_TOKEN_TTL_MS = 30 * 60 * 1000;
 
 app.use(cors());
 // 菜單照片是以 base64 夾在 JSON 裡上傳，所以要放寬預設的 100kb 上限
@@ -74,7 +76,7 @@ const AUTO_PRINT_ON_ACCEPT = process.env.AUTO_PRINT_ON_ACCEPT !== 'false';
 const RECEIPT_WIDTH = 32; // 58mm 熱感紙使用一般字體時約 32 個半形字元
 
 // ★★★ 請務必更新您的 ngrok 網址 ★★★
-const MY_DOMAIN = 'https://person-solid-resolution-unified.trycloudflare.com';
+const MY_DOMAIN = 'https://prevent-applied-skating-spray.trycloudflare.com';
 
 const ordersCache = {};
 
@@ -130,6 +132,41 @@ function decorateOrderCustomer(order, customers = readCustomers()) {
 function decorateOrdersCustomer(orders) {
     const customers = readCustomers();
     return orders.map(order => decorateOrderCustomer(order, customers));
+}
+
+function createFrontendTestToken(session) {
+    const now = Date.now();
+    const token = crypto.randomBytes(24).toString('hex');
+    const payload = {
+        username: session.username,
+        role: session.role,
+        createdAt: new Date(now).toISOString(),
+        expiresAt: new Date(now + FRONTEND_TEST_TOKEN_TTL_MS).toISOString()
+    };
+    frontendTestTokens.set(token, payload);
+    return { token, ...payload };
+}
+
+function verifyFrontendTestToken(token) {
+    const key = String(token || '').trim();
+    if (!key) return null;
+
+    const payload = frontendTestTokens.get(key);
+    if (!payload) return null;
+
+    if (new Date(payload.expiresAt).getTime() <= Date.now()) {
+        frontendTestTokens.delete(key);
+        return null;
+    }
+
+    return payload;
+}
+
+function buildFrontendTestUrl(frontendUrl, token) {
+    const url = new URL(frontendUrl || 'index.html', MY_DOMAIN);
+    url.searchParams.set('test', '1');
+    url.searchParams.set('token', token);
+    return url.href;
 }
 
 function readPrintJobs() {
@@ -1388,16 +1425,32 @@ app.post('/api/customer/orders/:orderId/reorder-preview', verifyLineCustomer, (r
 app.post('/api/orders', async (req, res) => {
     const settings = readSettings();
     const storeStatus = { isOpen: settings.isOpen, updatedAt: settings.updatedAt };
+    const frontendTestToken = String(req.body.testToken || '').trim();
+    const frontendTestSession = frontendTestToken ? verifyFrontendTestToken(frontendTestToken) : null;
+    const isFrontendTestOrder = Boolean(frontendTestToken);
 
-    if (!storeStatus.isOpen) {
-        return res.status(403).json({ message: '店家目前未開放點餐' });
+    if (isFrontendTestOrder && !frontendTestSession) {
+        return res.status(403).json({ message: '測試連結已失效，請回後台重新產生測試入口。' });
     }
 
-    if (!isBusinessHoursOpen(settings)) {
-        return res.status(403).json({ message: '目前非營業時間，暫停接單' });
+    if (!isFrontendTestOrder) {
+        if (!storeStatus.isOpen) {
+            return res.status(403).json({ message: '店家目前未開放點餐' });
+        }
+
+        if (!isBusinessHoursOpen(settings)) {
+            return res.status(403).json({ message: '目前非營業時間，暫停接單' });
+        }
     }
 
     const order = normalizeOrder(req.body);
+
+    if (isFrontendTestOrder) {
+        order.isTest = true;
+        order.testSource = 'frontend-link';
+        order.testCreatedBy = frontendTestSession.username;
+        order.statusHistory = [{ status: 'pending', note: '測試訂單建立', at: new Date().toISOString() }];
+    }
 
     if (order.orderType === 'reserve' && !settings.allowReserveOrders) {
         return res.status(400).json({ message: '目前未開放預約單，請改用即時單' });
@@ -1457,12 +1510,12 @@ app.post('/api/orders', async (req, res) => {
 
     orders.unshift(order);
     writeOrders(orders);
-    applyStockForOrder(order);
+    if (!order.isTest) applyStockForOrder(order);
 
     // LINE App 內建瀏覽器由前端以使用者身份把卡片送進官方帳號聊天室。
     // 外部瀏覽器無法呼叫 liff.sendMessages()，改由官方帳號推播同款卡片給客人。
     // 一定要等正式流水號與 id 建立後再送，卡片連結才能精準開到這筆訂單。
-    if (!req.body.isInClient) {
+    if (!order.isTest && !req.body.isInClient) {
         const cardNotification = await pushOrderCard(order);
         order.customerNotifications.push(cardNotification);
         writeOrders(orders);
@@ -2025,9 +2078,30 @@ const TEST_SAMPLE_ITEMS = [
     { key: '10', name: '海帶芽蛋花湯', qty: 1, price: 25, subtotal: 25 }
 ];
 
+app.post('/api/admin/test-link', requireAdmin, (req, res) => {
+    const created = createFrontendTestToken(req.session);
+    const frontendUrl = String(req.body.frontendUrl || '').trim();
+    const url = buildFrontendTestUrl(frontendUrl, created.token);
+
+    logAudit('test_link.created', '測試前台連結', `有效至 ${created.expiresAt}`, req.session.username);
+    res.status(201).json({ ok: true, url, ...created });
+});
+
+app.get('/api/test-link/:token', (req, res) => {
+    const payload = verifyFrontendTestToken(req.params.token);
+    if (!payload) return res.status(404).json({ ok: false, message: '測試連結已失效' });
+
+    res.json({
+        ok: true,
+        expiresAt: payload.expiresAt,
+        createdAt: payload.createdAt
+    });
+});
+
 app.post('/api/admin/orders/test', requireAdmin, (req, res) => {
     const { seq, date } = nextTestSequence();
     const now = new Date().toISOString();
+    const settings = readSettings();
     const deviceIds = Array.isArray(req.body.deviceIds) ? req.body.deviceIds.filter(Boolean) : [];
 
     const order = {
@@ -2040,7 +2114,7 @@ app.post('/api/admin/orders/test', requireAdmin, (req, res) => {
         pushDeviceIds: deviceIds, // 空陣列表示推全部裝置
         name: '測試訂單',
         phone: '0900000000',
-        pickupTime: req.body.orderType === 'reserve' ? '明天 12:00' : '約 15 分鐘後取餐',
+        pickupTime: req.body.orderType === 'reserve' ? '明天 12:00' : `約 ${Number(settings.prepTimeMinutes || 15)} 分鐘後取餐`,
         paymentMethod: 'cash',
         notes: '這是後台建立的測試訂單，用來確認推播、聲音、滿版接單卡片正常運作。',
         lineUserId: '',

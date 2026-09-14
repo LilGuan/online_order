@@ -1452,6 +1452,7 @@
           <button class="tab active" data-type="all">全部類型</button>
           <button class="tab" data-type="instant">即時單<span class="tab-count">0</span></button>
           <button class="tab" data-type="reserve">預約單<span class="tab-count">0</span></button>
+          <button class="tab" data-type="test">測試單<span class="tab-count">0</span></button>
         </nav>
 
         <nav class="tabs" id="order-tabs">
@@ -1762,6 +1763,23 @@
             <button class="btn btn-danger btn-sm" id="test-order-clear">清除全部測試訂單</button>
           </div>
           <div class="hint">測試訂單會出現在接單區、觸發滿版卡片與推播，但不會計入營業額或報表。用「接單／拒絕」處理它就會停止提醒，跟真實訂單一樣。</div>
+        </div>
+
+        <div class="card section-gap">
+          <div class="card-head">
+            <div>
+              <div class="card-title">測試前台入口</div>
+              <div class="card-sub">產生限時連結，用手機測完整下單流程</div>
+            </div>
+          </div>
+
+          <div class="toolbar" style="margin-bottom:10px;">
+            <button class="btn btn-primary btn-sm" id="frontend-test-link-create">產生測試前台連結</button>
+            <button class="btn btn-soft btn-sm" id="frontend-test-link-copy" disabled>複製</button>
+            <a class="btn btn-ghost btn-sm" id="frontend-test-link-open" href="#" target="_blank" rel="noopener" style="pointer-events:none; opacity:.5;">開啟</a>
+          </div>
+          <input class="field" id="frontend-test-link" readonly placeholder="按下產生後，這裡會出現測試網址" />
+          <div class="hint" id="frontend-test-link-hint">連結有效 30 分鐘。用這個入口送出的訂單會標記為測試單，不會計入營業額、不會扣庫存、不會傳 LINE 訊息給客人。</div>
         </div>
 
         <div class="card section-gap">
@@ -2541,7 +2559,7 @@
     });
 
     const typeCounts = orders.reduce((result, order) => {
-      const type = order.orderType === 'reserve' ? 'reserve' : 'instant';
+      const type = order.isTest ? 'test' : (order.orderType === 'reserve' ? 'reserve' : 'instant');
       result[type] = (result[type] || 0) + 1;
       return result;
     }, {});
@@ -2587,7 +2605,9 @@
   function renderOrders() {
     let visible = activeStatus === 'all' ? orders : orders.filter(order => order.status === activeStatus);
     if (orderTypeFilter !== 'all') {
-      visible = visible.filter(order => (order.orderType || 'instant') === orderTypeFilter);
+      visible = visible.filter(order => orderTypeFilter === 'test'
+        ? order.isTest
+        : !order.isTest && (order.orderType || 'instant') === orderTypeFilter);
     }
     const signature = JSON.stringify(visible.map(order => [order.id, order.status, order.updatedAt, order.adminNote, order.customerOrderCount, order.customerIsNew]));
 
@@ -3330,6 +3350,23 @@
     toast(`測試訂單 #${data.order.orderNumber} 已建立`, 'ok');
     lastOrdersSignature = '';
     await fetchOrders(); // 立刻拉一次，滿版卡片才會馬上跳出來，不用等 3 秒輪詢
+  }
+
+  async function createFrontendTestLink() {
+    const frontendUrl = new URL('index.html', location.href).href;
+    const data = await requestJson(`${BACKEND_BASE_URL}/api/admin/test-link`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ frontendUrl })
+    });
+
+    $('frontend-test-link').value = data.url;
+    $('frontend-test-link-copy').disabled = false;
+    $('frontend-test-link-open').href = data.url;
+    $('frontend-test-link-open').style.pointerEvents = 'auto';
+    $('frontend-test-link-open').style.opacity = '1';
+    $('frontend-test-link-hint').textContent = `測試連結有效至 ${formatTime(data.expiresAt)}。測試單不會計入營業額、不會扣庫存、不會傳 LINE 訊息給客人。`;
+    toast('測試前台連結已產生', 'ok');
   }
 
   /* ---------------- 帳號管理 ---------------- */
@@ -4371,6 +4408,23 @@
         }
       }
     ]);
+  });
+
+  $('frontend-test-link-create').addEventListener('click', () => {
+    runAction($('frontend-test-link-create'), createFrontendTestLink);
+  });
+
+  $('frontend-test-link-copy').addEventListener('click', async () => {
+    const value = $('frontend-test-link').value;
+    if (!value) return;
+
+    try {
+      await navigator.clipboard.writeText(value);
+      toast('測試連結已複製', 'ok');
+    } catch (error) {
+      $('frontend-test-link').select();
+      toast('已選取連結，可以手動複製');
+    }
   });
 
   $('push-devices-tbody').addEventListener('click', event => {
