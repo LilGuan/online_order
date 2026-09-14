@@ -1385,6 +1385,10 @@ app.post('/api/customer/orders/:orderId/reorder-preview', verifyLineCustomer, (r
             unavailable.push({ name: oldName, reason: `${disabledOption.label}加購目前未供應` });
             return;
         }
+        if (spiceToken !== 'spicy_none' && !menuItem.options?.spicyPacket) {
+            unavailable.push({ name: oldName, reason: '辣包目前未供應' });
+            return;
+        }
 
         const requestedQty = Math.max(1, Number(orderItem.qty || 1));
         const remaining = menuItem.dailyStock
@@ -1645,7 +1649,8 @@ app.post('/api/admin/menu', requireAdmin, (req, res) => {
         options: {
             large: Boolean(req.body.options && req.body.options.large),
             doubleEgg: Boolean(req.body.options && req.body.options.doubleEgg),
-            doubleShrimp: Boolean(req.body.options && req.body.options.doubleShrimp)
+            doubleShrimp: Boolean(req.body.options && req.body.options.doubleShrimp),
+            spicyPacket: Boolean(req.body.options && req.body.options.spicyPacket)
         },
         status: req.body.status === 'hidden' ? 'hidden' : 'available',
         soldOut: false,
@@ -1691,7 +1696,8 @@ app.patch('/api/admin/menu/:id', requireAdmin, (req, res) => {
         item.options = {
             large: Boolean(req.body.options.large),
             doubleEgg: Boolean(req.body.options.doubleEgg),
-            doubleShrimp: Boolean(req.body.options.doubleShrimp)
+            doubleShrimp: Boolean(req.body.options.doubleShrimp),
+            spicyPacket: Boolean(req.body.options.spicyPacket)
         };
     }
 

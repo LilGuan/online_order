@@ -10,11 +10,22 @@
 <meta name="apple-mobile-web-app-title" content="邱媽媽接單" />
 <link rel="apple-touch-icon" href="images/logo.jpg" />
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script>
+  (function() {
+    try {
+      const size = localStorage.getItem('adminFontSize') || 'medium';
+      document.documentElement.dataset.adminFont = ['small', 'medium', 'large', 'xlarge'].includes(size) ? size : 'medium';
+    } catch (error) {
+      document.documentElement.dataset.adminFont = 'medium';
+    }
+  })();
+</script>
 <style>
   /* ==========================================================
      Design tokens
      ========================================================== */
   :root {
+    font-size: 16px;
     --brand: #ff6b6b;
     --brand-dark: #e85555;
     --brand-soft: #fff1f1;
@@ -41,6 +52,10 @@
     --ease-spring: cubic-bezier(.34, 1.4, .64, 1);
     --ease-out: cubic-bezier(.22, 1, .36, 1);
   }
+  :root[data-admin-font="small"] { font-size: 14px; }
+  :root[data-admin-font="medium"] { font-size: 16px; }
+  :root[data-admin-font="large"] { font-size: 18px; }
+  :root[data-admin-font="xlarge"] { font-size: 20px; }
 
   * { box-sizing: border-box; }
 
@@ -738,6 +753,28 @@
   }
   .upload-busy .spinner { width: 22px; height: 22px; border-color: rgba(255, 107, 107, .3); border-top-color: var(--brand); }
   .check-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--brand); cursor: pointer; }
+  .font-size-options {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .font-size-option {
+    min-height: 42px;
+    border: 1.5px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: #fff;
+    color: var(--ink-2);
+    font-weight: 900;
+    transition: border-color .18s, background .18s, color .18s, transform .14s var(--ease-spring);
+  }
+  .font-size-option:hover { transform: translateY(-1px); }
+  .font-size-option.active {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+    color: var(--brand-dark);
+    box-shadow: 0 0 0 4px rgba(255, 107, 107, .1);
+  }
 
   /* ==========================================================
      上線/下線浮動控制
@@ -828,7 +865,14 @@
   }
 
   @media (max-width: 520px) {
-    .store-fab { bottom: max(14px, env(safe-area-inset-bottom)); }
+    .store-fab {
+      width: min(300px, calc(100vw - 42px));
+      bottom: calc(max(18px, env(safe-area-inset-bottom)) + 34px);
+    }
+    .store-fab-track { height: 48px; }
+    .store-fab-handle { width: 40px; height: 40px; }
+    .store-fab-label { font-size: .78rem; padding-left: 26px; }
+    .store-fab-tap { padding: 12px 14px; font-size: .86rem; }
   }
 
   /* ==========================================================
@@ -1253,7 +1297,7 @@
       box-shadow: var(--shadow-lg);
     }
     .sidebar.open { transform: none; }
-    .content { padding: 15px; }
+    .content { padding: 15px 15px 96px; }
     .grid-2, .grid-3 { grid-template-columns: 1fr; }
     .customer { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .form-grid { grid-template-columns: 1fr; }
@@ -1271,6 +1315,7 @@
     .topbar-actions { flex-wrap: nowrap; gap: 6px; }
     .conn { padding: 6px 8px; }
     #conn-text { display: none; }
+    .content { padding-bottom: 144px; }
   }
 
   /* 尚未登入時、以及手機版選單展開時，都不該看到浮動的上線/下線元件 */
@@ -1620,6 +1665,22 @@
           </div>
 
           <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">後台字體大小</div>
+                <div class="card-sub">只會記在目前這台裝置</div>
+              </div>
+            </div>
+            <div class="font-size-options" id="admin-font-options">
+              <button class="font-size-option" type="button" data-font-size="small">小</button>
+              <button class="font-size-option" type="button" data-font-size="medium">中</button>
+              <button class="font-size-option" type="button" data-font-size="large">大</button>
+              <button class="font-size-option" type="button" data-font-size="xlarge">特大</button>
+            </div>
+            <div class="hint">目前正常大小是「中」。手機、平板、電腦會各自記住自己的選擇。</div>
+          </div>
+
+          <div class="card">
             <div class="card-head"><div class="card-title">接單設定</div></div>
             <label for="set-prep">備餐時間（分鐘）</label>
             <input class="field" type="number" id="set-prep" min="0" />
@@ -1960,7 +2021,8 @@
   const OPTION_KEYS = [
     { key: 'large', label: '加大' },
     { key: 'doubleEgg', label: '雙蛋' },
-    { key: 'doubleShrimp', label: '加蝦' }
+    { key: 'doubleShrimp', label: '加蝦' },
+    { key: 'spicyPacket', label: '辣包' }
   ];
 
   // 全站統一使用線條 icon（不用 emoji），24x24 viewBox、跟隨文字顏色
@@ -2015,6 +2077,8 @@
   const GROUP_LABELS = { manage: '管理', test: '測試' };
 
   const $ = id => document.getElementById(id);
+  const ADMIN_FONT_KEY = 'adminFontSize';
+  const ADMIN_FONT_SIZES = ['small', 'medium', 'large', 'xlarge'];
 
   /* ---------------- state ---------------- */
   let token = localStorage.getItem('adminToken') || '';
@@ -2051,6 +2115,24 @@
   /* ---------------- helpers ---------------- */
   const authHeaders = () => (token ? { Authorization: `Bearer ${token}` } : {});
   const money = value => `$${Number(value || 0).toLocaleString('zh-TW')}`;
+  const currentAdminFontSize = () => {
+    const value = localStorage.getItem(ADMIN_FONT_KEY) || document.documentElement.dataset.adminFont || 'medium';
+    return ADMIN_FONT_SIZES.includes(value) ? value : 'medium';
+  };
+
+  function applyAdminFontSize(size) {
+    const next = ADMIN_FONT_SIZES.includes(size) ? size : 'medium';
+    document.documentElement.dataset.adminFont = next;
+    localStorage.setItem(ADMIN_FONT_KEY, next);
+    document.querySelectorAll('[data-font-size]').forEach(button => {
+      button.classList.toggle('active', button.dataset.fontSize === next);
+    });
+  }
+
+  function renderAdminFontSize() {
+    applyAdminFontSize(currentAdminFontSize());
+  }
+
   const dateInputValue = (date = new Date()) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -3604,6 +3686,40 @@
     });
   }
 
+  async function prepareUiSound() {
+    try {
+      audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioContext.state !== 'running') await audioContext.resume();
+      return audioContext.state === 'running';
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function playStoreStatusTone(kind) {
+    if (!audioContext || audioContext.state !== 'running') return;
+
+    const start = audioContext.currentTime + 0.02;
+    const notes = kind === 'open' ? [660, 990] : [520, 330];
+    notes.forEach((frequency, index) => {
+      const noteStart = start + index * 0.13;
+      const noteEnd = noteStart + 0.14;
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(frequency, noteStart);
+      gain.gain.setValueAtTime(0.0001, noteStart);
+      gain.gain.exponentialRampToValueAtTime(0.32, noteStart + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, noteEnd);
+
+      oscillator.connect(gain);
+      gain.connect(audioContext.destination);
+      oscillator.start(noteStart);
+      oscillator.stop(noteEnd + 0.02);
+    });
+  }
+
   function speakNewOrder() {
     if (!('speechSynthesis' in window)) return;
 
@@ -4002,6 +4118,7 @@
       if (maxX > 0 && dragX >= maxX * 0.85) {
         setDrag(maxX);
         handle.classList.add('is-loading');
+        await prepareUiSound();
 
         try {
           await requestJson(`${BACKEND_BASE_URL}/api/store/status`, {
@@ -4010,6 +4127,7 @@
             body: JSON.stringify({ isOpen: false })
           });
           await fetchStoreStatus();
+          playStoreStatusTone('closed');
           toast('已下線，暫停接單', 'ok');
         } catch (error) {
           toast('切換失敗，請稍後再試', 'error');
@@ -4113,12 +4231,14 @@
   // 上線是低風險操作，點一下就生效；下線改用上面的滑動元件，這裡只保留「上線」的點擊
   $('store-fab-tap').addEventListener('click', () => {
     runAction($('store-fab-tap'), async () => {
+      await prepareUiSound();
       await requestJson(`${BACKEND_BASE_URL}/api/store/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isOpen: true })
       });
       await fetchStoreStatus();
+      playStoreStatusTone('open');
       toast('已上線，開始接單', 'ok');
     });
   });
@@ -4538,6 +4658,13 @@
     });
   });
 
+  $('admin-font-options').addEventListener('click', event => {
+    const button = event.target.closest('[data-font-size]');
+    if (!button) return;
+    applyAdminFontSize(button.dataset.fontSize);
+    toast(`後台字體已切換為${button.textContent.trim()}`, 'ok');
+  });
+
   /* 點推播通知 → 自動切到訂單列表 */
   function goToPendingOrders() {
     activeStatus = 'all';
@@ -4575,6 +4702,7 @@
       element.innerHTML = ICONS[element.dataset.icon] || '';
     });
 
+    renderAdminFontSize();
     renderSoundButton();
 
     const today = new Date();

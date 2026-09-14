@@ -475,7 +475,8 @@
         soldOut: Boolean(item.soldOut),
         hasLarge: Boolean(item.options && item.options.large),
         hasDoubleEgg: Boolean(item.options && item.options.doubleEgg),
-        hasDoubleShrimp: Boolean(item.options && item.options.doubleShrimp)
+        hasDoubleShrimp: Boolean(item.options && item.options.doubleShrimp),
+        hasSpicyPacket: Boolean(item.options && item.options.spicyPacket)
       }));
 
       renderCategories();
@@ -582,12 +583,14 @@
           
           
           <div class="options-container">
-            <div class="options">
-              <label>
-                <input type="checkbox" id="spice-${item.id}" />
-                <span>辣包</span>
-              </label>
-            </div>
+            ${item.hasSpicyPacket ? `
+              <div class="options">
+                <label>
+                  <input type="checkbox" id="spice-${item.id}" />
+                  <span>辣包</span>
+                </label>
+              </div>
+            ` : ''}
             ${item.hasLarge ? `
               <div class="options">
                 <label>
@@ -761,7 +764,8 @@
     return [
       { key: 'isLarge', itemKey: 'hasLarge', label: '加大', price: optionPrices.large },
       { key: 'isDoubleEgg', itemKey: 'hasDoubleEgg', label: '雙蛋', price: optionPrices.doubleEgg },
-      { key: 'isDoubleShrimp', itemKey: 'hasDoubleShrimp', label: '加蝦', price: optionPrices.doubleShrimp }
+      { key: 'isDoubleShrimp', itemKey: 'hasDoubleShrimp', label: '加蝦', price: optionPrices.doubleShrimp },
+      { key: 'spice', itemKey: 'hasSpicyPacket', label: '辣包', price: 0 }
     ].filter(option => item[option.itemKey]);
   }
 
@@ -787,13 +791,14 @@
     document.getElementById('detail-name').textContent = item.name;
     document.getElementById('detail-description').textContent = item.description || '美味現做，歡迎選擇加購搭配。';
     document.getElementById('detail-qty').textContent = '1';
-    document.getElementById('detail-options').innerHTML = detailOptionDefinitions(item).length
-      ? `<div class="detail-section-title">加購選項</div><div class="detail-option-list">${detailOptionDefinitions(item).map(option => `
+    const detailOptions = detailOptionDefinitions(item);
+    document.getElementById('detail-options').innerHTML = detailOptions.length
+      ? `<div class="detail-section-title">加購選項</div><div class="detail-option-list">${detailOptions.map(option => `
           <div class="detail-option">
             <label for="detail-${option.key}"><input type="checkbox" id="detail-${option.key}" />${escapeHtml(option.label)}</label>
-            <span class="detail-option-price">+$${Number(option.price || 0)}</span>
-          </div>`).join('')}</div><div class="detail-section-title">辣包</div><div class="detail-option"><label for="detail-spice"><input type="checkbox" id="detail-spice" />需要辣包</label></div>`
-      : '<div class="detail-section-title">辣包</div><div class="detail-option"><label for="detail-spice"><input type="checkbox" id="detail-spice" />需要辣包</label></div>';
+            ${option.price ? `<span class="detail-option-price">+$${Number(option.price || 0)}</span>` : ''}
+          </div>`).join('')}</div>`
+      : '';
     document.querySelectorAll('#detail-options input').forEach(input => input.addEventListener('change', updateDetailPrice));
     updateDetailPrice();
     const modal = document.getElementById('item-detail-modal');
@@ -823,7 +828,7 @@
   document.getElementById('detail-add').addEventListener('click', () => {
     if (!detailItem || (!isStoreOpen && !isTestMode) || detailItem.soldOut) return;
     const options = Object.fromEntries(detailOptionDefinitions(detailItem).map(option => [option.key, document.getElementById(`detail-${option.key}`)?.checked || false]));
-    options.spiceLevel = document.getElementById('detail-spice')?.checked ? 'packet' : 'none';
+    options.spiceLevel = options.spice ? 'packet' : 'none';
     addConfiguredItemToCart(detailItem, detailQuantity, options);
     closeItemDetail();
   });

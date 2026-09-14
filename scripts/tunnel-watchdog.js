@@ -20,6 +20,8 @@ const APP_PORT = Number(process.env.PORT || 3000);
 const POLL_INTERVAL_MS = 10000;
 const TUNNEL_NAME = String(process.env.CLOUDFLARE_TUNNEL_NAME || 'online-order').trim();
 const TUNNEL_URL = String(process.env.TUNNEL_URL || process.env.PUBLIC_BASE_URL || 'https://order.yourdomain.com').trim();
+const NODE_BIN = process.execPath;
+const CLOUDFLARED_BIN = String(process.env.CLOUDFLARED_BIN || '/opt/homebrew/bin/cloudflared').trim();
 
 function log(msg) {
     console.log(`[${new Date().toISOString()}] ${msg}`);
@@ -49,7 +51,7 @@ function isNodeServerRunning() {
 function startNamedTunnel() {
     log(`Starting cloudflared named tunnel "${TUNNEL_NAME}" for fixed URL ${TUNNEL_URL}...`);
     const out = fs.openSync(CLOUDFLARED_LOG, 'a');
-    const child = spawn('cloudflared', ['tunnel', 'run', TUNNEL_NAME], {
+    const child = spawn(CLOUDFLARED_BIN, ['tunnel', 'run', TUNNEL_NAME], {
         cwd: ROOT,
         detached: true,
         stdio: ['ignore', out, out]
@@ -60,7 +62,7 @@ function startNamedTunnel() {
 function startNodeServer() {
     log('Starting node server.js...');
     const out = fs.openSync(NODE_LOG, 'a');
-    const child = spawn('node', ['server.js'], {
+    const child = spawn(NODE_BIN, ['server.js'], {
         cwd: ROOT,
         detached: true,
         stdio: ['ignore', out, out]
