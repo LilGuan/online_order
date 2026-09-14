@@ -75,8 +75,9 @@ const PRINTER_RAW = process.env.PRINTER_RAW === 'true';
 const AUTO_PRINT_ON_ACCEPT = process.env.AUTO_PRINT_ON_ACCEPT !== 'false';
 const RECEIPT_WIDTH = 32; // 58mm 熱感紙使用一般字體時約 32 個半形字元
 
-// ★★★ 請務必更新您的 ngrok 網址 ★★★
-const MY_DOMAIN = 'https://prevent-applied-skating-spray.trycloudflare.com';
+// 固定公開網址：請用 Cloudflare Named Tunnel 的 hostname。
+// 本機測試可不設定；正式或固定網址請設 TUNNEL_URL=https://order.yourdomain.com
+const MY_DOMAIN = String(process.env.TUNNEL_URL || process.env.PUBLIC_BASE_URL || 'https://order.yourdomain.com').trim();
 
 const ordersCache = {};
 
@@ -2579,9 +2580,7 @@ app.get('/api/linepay/confirm', async (req, res) => {
             // 清除暫存
             delete ordersCache[orderId];
             
-            // ★★★ 修改這裡：帶上參數 ★★★
-            // 請換成您的 GitHub Pages 網址
-            const frontendUrl = `https://chiufood.netlify.app/order-detail.html`;
+            const frontendUrl = `${MY_DOMAIN.replace(/\/$/, '')}/order-detail.html`;
             
             // 加上 Query Parameters
             res.redirect(`${frontendUrl}?status=success&orderId=${orderId}`);

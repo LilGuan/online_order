@@ -543,9 +543,7 @@
   const STORE_ADDRESS    = "桃園市大園區皇家六街12號";
   const MAPS_URL         = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(STORE_ADDRESS);
   const HERO_IMAGE_URL   = "https://images.unsplash.com/photo-1604908554007-0880a8a94571?q=80&w=1600&auto=format&fit=crop";
-  const BACKEND_BASE_URL = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
-    ? location.origin
-    : "https://prevent-applied-skating-spray.trycloudflare.com";
+  const BACKEND_BASE_URL = window.ONLINE_ORDER_BACKEND_URL || location.origin;
   const TEST_TOKEN_KEY = 'onlineOrderTestToken';
   const urlParams = new URLSearchParams(location.search);
   let testToken = urlParams.get('token') || sessionStorage.getItem(TEST_TOKEN_KEY) || '';
@@ -1751,7 +1749,9 @@
 
     try {
       if (!liff.isLoggedIn()) {
-        liff.login();
+        const redirectUrl = new URL(location.href);
+        ['code', 'state', 'liffClientId', 'liffRedirectUri'].forEach(key => redirectUrl.searchParams.delete(key));
+        liff.login({ redirectUri: redirectUrl.href });
         return;
       }
     } catch (error) {

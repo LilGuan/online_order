@@ -496,9 +496,7 @@
   const menuQuantities = {};
   const menuDiv = document.getElementById('menu');
   const storeClosedBanner = document.getElementById('store-closed-banner');
-  const BACKEND_BASE_URL = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
-    ? location.origin
-    : "https://prevent-applied-skating-spray.trycloudflare.com";
+  const BACKEND_BASE_URL = window.ONLINE_ORDER_BACKEND_URL || location.origin;
   const TEST_TOKEN_KEY = 'onlineOrderTestToken';
   const urlParams = new URLSearchParams(location.search);
   let testToken = urlParams.get('token') || sessionStorage.getItem(TEST_TOKEN_KEY) || '';
@@ -537,7 +535,11 @@
   async function initLiff() {
     try {
       await liff.init({ liffId: '2007831775-ojeB1qbw' });
-      if (!liff.isLoggedIn()) liff.login();
+      if (!liff.isLoggedIn()) {
+        const redirectUrl = new URL(location.href);
+        ['code', 'state', 'liffClientId', 'liffRedirectUri'].forEach(key => redirectUrl.searchParams.delete(key));
+        liff.login({ redirectUri: redirectUrl.href });
+      }
     } catch (err) { console.error(err); }
   }
 
