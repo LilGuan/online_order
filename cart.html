@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<meta name="robots" content="noindex,nofollow" />
 <title>購物車 - 邱媽媽美食</title>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <!-- 引入 Google Fonts -->
@@ -964,6 +965,7 @@
         const profile = await liff.getProfile();
         lineUserId = profile.userId || '';
         lineDisplayName = profile.displayName || '';
+        if (lineUserId) localStorage.setItem('lineUserId', lineUserId);
 
         // 1. 自動填入姓名
         const nameInput = document.getElementById('name');
@@ -1739,7 +1741,11 @@
   }
 
   function sendOrderMessage(flexMessage, order) {
-    const detailPage = `order-detail.html?order=${encodeURIComponent(order.id || '')}`;
+    const detailPageUrl = new URL('order-detail.html', location.href);
+    detailPageUrl.searchParams.set('order', order.id || '');
+    const customerLineId = order.lineUserId || lineUserId || localStorage.getItem('lineUserId') || '';
+    if (customerLineId) detailPageUrl.searchParams.set('lineUserId', customerLineId);
+    const detailPage = `${detailPageUrl.pathname}${detailPageUrl.search}`;
     if (!liffCan('sendMessages')) {
       // 網頁版（非 LINE App 內建瀏覽器）無法用 liff.sendMessages() 以使用者身份發送，
       // 改由後端在儲存訂單後透過官方帳號主動推播訂單卡片給客人（見 saveOrderToBackend 的 isInClient 參數）。

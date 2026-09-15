@@ -1,5 +1,29 @@
 [
   {
+    "id": "3ebc55b4-a95d-462e-a93e-6eeec382d164",
+    "at": "2026-09-14T10:17:30.826Z",
+    "user": "admin",
+    "action": "order.status_changed",
+    "target": "#3",
+    "detail": "狀態改為 已完成，已通知客人"
+  },
+  {
+    "id": "04280830-bf12-4cd7-af98-1aa9ca3e9a55",
+    "at": "2026-09-14T10:00:55.397Z",
+    "user": "admin",
+    "action": "print.order",
+    "target": "#3",
+    "detail": "failed：lp: 錯誤 - 沒有預設目標。"
+  },
+  {
+    "id": "ac64527a-7207-4bed-ac96-251fb5057cc0",
+    "at": "2026-09-14T10:00:55.389Z",
+    "user": "admin",
+    "action": "order.status_changed",
+    "target": "#3",
+    "detail": "狀態改為 製作中，已通知客人"
+  },
+  {
     "id": "56319c58-7e3a-442f-bca3-434c484a0709",
     "at": "2026-09-14T06:58:33.241Z",
     "user": "admin",

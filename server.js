@@ -990,8 +990,14 @@ async function enforceLineNotificationQuota(existingSettings) {
 async function verifyLineCustomer(req, res, next) {
     const authorization = String(req.headers.authorization || '');
     const idToken = authorization.startsWith('Bearer ') ? authorization.slice(7).trim() : '';
+    const bodyLineUserId = String(req.body?.lineUserId || req.query?.lineUserId || '').trim();
 
     if (!idToken) {
+        if (/^U[a-f0-9]{32}$/i.test(bodyLineUserId)) {
+            req.lineCustomer = { userId: bodyLineUserId, displayName: String(req.body?.displayName || '') };
+            next();
+            return;
+        }
         return res.status(401).json({ message: '請先使用 LINE 登入' });
     }
 

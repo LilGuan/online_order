@@ -3,10 +3,69 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>邱媽媽美食-線上點餐</title>
+  <title>邱媽媽美食｜桃園大園線上訂餐、自取餐點</title>
+  <meta name="description" content="邱媽媽美食線上訂餐系統，提供桃園大園家常小吃、炒飯、炒麵、湯品與單點餐點。營業時間內可線上點餐，自取餐點更方便。" />
+  <meta name="keywords" content="邱媽媽美食, 桃園大園美食, 大園線上訂餐, 桃園自取餐點, 炒飯, 炒麵, 家常小吃" />
+  <meta name="robots" content="index,follow" />
+  <link rel="canonical" href="https://order.chiufood.com/" />
+  <meta property="og:locale" content="zh_TW" />
+  <meta property="og:type" content="restaurant.restaurant" />
+  <meta property="og:site_name" content="邱媽媽美食" />
+  <meta property="og:title" content="邱媽媽美食｜桃園大園線上訂餐" />
+  <meta property="og:description" content="營業時間內開放線上點餐，選好餐點送出訂單，邱媽媽美食收到後會盡快為您準備。" />
+  <meta property="og:url" content="https://order.chiufood.com/" />
+  <meta property="og:image" content="https://order.chiufood.com/images/announcement-online-order.png" />
+  <meta property="og:image:alt" content="邱媽媽美食線上訂餐系統正式啟用" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="邱媽媽美食｜桃園大園線上訂餐" />
+  <meta name="twitter:description" content="桃園大園家常小吃，營業時間內可線上訂餐自取。" />
+  <meta name="twitter:image" content="https://order.chiufood.com/images/announcement-online-order.png" />
+  <link rel="icon" href="images/logo.jpg" />
+  <link rel="apple-touch-icon" href="images/logo.jpg" />
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <!-- 引入 Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Restaurant",
+    "@id": "https://order.chiufood.com/#restaurant",
+    "name": "邱媽媽美食",
+    "url": "https://order.chiufood.com/",
+    "image": [
+      "https://order.chiufood.com/images/logo.jpg",
+      "https://order.chiufood.com/images/announcement-online-order.png",
+      "https://order.chiufood.com/images/shrimp_rice.png"
+    ],
+    "logo": "https://order.chiufood.com/images/logo.jpg",
+    "telephone": "+886-3-381-2828",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "皇家六街12號",
+      "addressLocality": "大園區",
+      "addressRegion": "桃園市",
+      "addressCountry": "TW"
+    },
+    "servesCuisine": ["台式家常料理", "炒飯", "炒麵", "湯品"],
+    "priceRange": "$",
+    "acceptsReservations": false,
+    "hasMenu": "https://order.chiufood.com/",
+    "openingHoursSpecification": [
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+        "opens": "10:30",
+        "closes": "14:00"
+      },
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+        "opens": "16:00",
+        "closes": "20:00"
+      }
+    ]
+  }
+  </script>
   <style>
     /* CSS Reset & 基礎設定 */
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -317,6 +376,41 @@
       font-weight: 800;
       text-align: center;
     }
+    .store-info {
+      max-width: 800px;
+      margin: 18px auto 0;
+      padding: 0 12px 20px;
+    }
+    .store-info-card {
+      background: #fff;
+      border: 1px solid #eceff1;
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.04);
+    }
+    .store-info h1 {
+      margin: 0 0 8px;
+      color: #333;
+      font-size: 1.15rem;
+      line-height: 1.4;
+    }
+    .store-info p {
+      margin: 0 0 10px;
+      color: #555;
+      font-size: .92rem;
+      line-height: 1.7;
+    }
+    .store-info-list {
+      display: grid;
+      gap: 6px;
+      margin: 12px 0 0;
+      padding: 0;
+      list-style: none;
+      color: #555;
+      font-size: .9rem;
+      line-height: 1.6;
+    }
+    .store-info-list strong { color: #333; }
     @media (min-width: 600px) {
       #item-detail-modal { align-items: center; padding: 20px; }
       .item-detail-sheet { border-radius: 24px; }
@@ -347,6 +441,18 @@
 <div class="menu" id="menu">
   <!-- 餐點由 JS 動態生成 -->
 </div>
+
+<section class="store-info" aria-labelledby="store-info-title">
+  <div class="store-info-card">
+    <h1 id="store-info-title">邱媽媽美食｜桃園大園線上訂餐</h1>
+    <p>邱媽媽美食提供家常小吃、炒飯、炒麵、湯品與單點餐點。營業時間內可直接線上點餐，店家收到訂單後會盡快準備，歡迎自取。</p>
+    <ul class="store-info-list">
+      <li><strong>地址：</strong>桃園市大園區皇家六街12號</li>
+      <li><strong>電話：</strong><a href="tel:033812828">03-381-2828</a></li>
+      <li><strong>常見餐點：</strong>蝦仁炒飯、蝦仁炒麵、蛋炒飯、海帶芽蛋花湯、鹹豬肉等家常料理</li>
+    </ul>
+  </div>
+</section>
 
 <div id="cart-fab" title="前往結帳">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.6"/><circle cx="18" cy="20" r="1.6"/><path d="M2 3h2.2l2.6 12.2a2 2 0 0 0 2 1.6h9.1a2 2 0 0 0 2-1.55L21 8H6"/></svg>
@@ -502,6 +608,15 @@
   const urlParams = new URLSearchParams(location.search);
   let testToken = urlParams.get('token') || sessionStorage.getItem(TEST_TOKEN_KEY) || '';
   let isTestMode = urlParams.get('test') === '1' && Boolean(testToken);
+  const LINE_USER_KEY = 'lineUserId';
+
+  function updateHistoryLink(lineUserId = localStorage.getItem(LINE_USER_KEY) || '') {
+    const link = document.querySelector('.history-link');
+    if (!link) return;
+    const url = new URL('order-detail.html', location.href);
+    if (lineUserId) url.searchParams.set('lineUserId', lineUserId);
+    link.href = `${url.pathname}${url.search}`;
+  }
 
   function assetUrl(value) {
     const image = String(value || '').trim();
@@ -536,10 +651,11 @@
   async function initLiff() {
     try {
       await liff.init({ liffId: '2007831775-ojeB1qbw' });
-      if (!liff.isLoggedIn()) {
-        const redirectUrl = new URL(location.href);
-        ['code', 'state', 'liffClientId', 'liffRedirectUri'].forEach(key => redirectUrl.searchParams.delete(key));
-        liff.login({ redirectUri: redirectUrl.href });
+      if (liff.isLoggedIn()) {
+        const profile = await liff.getProfile();
+        const lineUserId = profile.userId || '';
+        if (lineUserId) localStorage.setItem(LINE_USER_KEY, lineUserId);
+        updateHistoryLink(lineUserId);
       }
     } catch (err) { console.error(err); }
   }
@@ -893,6 +1009,7 @@
   }
 
   (async function() {
+    updateHistoryLink();
     updateCartBadge();
 
     await verifyTestMode();

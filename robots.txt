@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /merchant.html
+Disallow: /cart.html
+Disallow: /order-detail.html
+Disallow: /api/
+Disallow: /uploads/
+
+Sitemap: https://order.chiufood.com/sitemap.xml

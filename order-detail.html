@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <meta name="theme-color" content="#d94f4f" />
+  <meta name="robots" content="noindex,nofollow" />
   <title>我的訂單｜邱媽媽美食</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -430,6 +431,8 @@
     };
 
     let idToken = "";
+    const LINE_USER_KEY = "lineUserId";
+    let lineUserId = new URLSearchParams(location.search).get("lineUserId") || localStorage.getItem(LINE_USER_KEY) || "";
     let orders = [];
     let selectedOrderId = new URLSearchParams(location.search).get("order") || "";
     let renderSignature = "";
@@ -599,7 +602,10 @@
 
     async function loadOrders(silent) {
       try {
-        const data = await requestJson("/api/customer/orders/history", { method: "POST", body: "{}" });
+        const data = await requestJson("/api/customer/orders/history", {
+          method: "POST",
+          body: JSON.stringify({ lineUserId: lineUserId || "" })
+        });
         orders = data.orders || [];
         render();
         if (!silent) showToast("訂單狀態已更新");
@@ -648,7 +654,7 @@
       try {
         const data = await requestJson("/api/customer/orders/" + encodeURIComponent(orderId) + "/reorder-preview", {
           method: "POST",
-          body: "{}"
+          body: JSON.stringify({ lineUserId: lineUserId || "" })
         });
         const notices = (data.unavailable || []).concat(data.adjustments || []);
         if (!data.availableCount) {
@@ -707,14 +713,18 @@
         }
 
         await liff.init({ liffId: LIFF_ID });
-        if (!liff.isLoggedIn()) {
+        if (liff.isLoggedIn()) {
+          const profile = await liff.getProfile();
+          lineUserId = profile.userId || lineUserId;
+          if (lineUserId) localStorage.setItem(LINE_USER_KEY, lineUserId);
+        } else if (!lineUserId) {
           const redirectUrl = new URL(location.href);
           ['code', 'state', 'liffClientId', 'liffRedirectUri'].forEach(key => redirectUrl.searchParams.delete(key));
           liff.login({ redirectUri: redirectUrl.href });
           return;
         }
-        idToken = liff.getIDToken() || "";
-        if (!idToken) throw new Error("尚未取得 LINE 登入授權，請重新開啟頁面。");
+        idToken = liff.isLoggedIn() ? (liff.getIDToken() || "") : "";
+        if (!idToken && !lineUserId) throw new Error("尚未取得 LINE 登入授權，請重新開啟頁面。");
         await loadOrders(true);
         setInterval(function() {
           if (!document.hidden) loadOrders(true);
