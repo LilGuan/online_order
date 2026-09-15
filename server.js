@@ -1281,6 +1281,10 @@ function normalizeOrder(body) {
     };
 }
 
+function isValidCustomerMobile(phone) {
+    return /^09\d{8}$/.test(String(phone || '').trim());
+}
+
 app.post('/api/admin/login', (req, res) => {
     const username = String(req.body.username || '').trim();
     const password = String(req.body.password || '');
@@ -1469,6 +1473,10 @@ app.post('/api/orders', async (req, res) => {
 
     if (!order.name || !order.phone || order.items.length === 0 || order.totalAmount <= 0) {
         return res.status(400).json({ message: '訂單資料不完整' });
+    }
+
+    if (!isValidCustomerMobile(order.phone)) {
+        return res.status(400).json({ message: '請輸入正確手機號碼' });
     }
 
     const minOrderAmount = Number(settings.minOrderAmount || 0);

@@ -23,26 +23,6 @@
   ],
   "items": [
     {
-      "id": 2,
-      "name": "肉絲炒飯",
-      "image": "images/beef_rice.png",
-      "price": 110,
-      "status": "available",
-      "options": {
-        "large": true,
-        "doubleEgg": true,
-        "doubleShrimp": false,
-        "spicyPacket": true
-      },
-      "soldOut": false,
-      "category": "rice",
-      "soldToday": 0,
-      "sortOrder": 2,
-      "stockDate": "2026-09-15",
-      "dailyStock": null,
-      "description": "肉絲搭配鄰近宏昇畜牧養殖的有機蛋炒飯，香氣十足。"
-    },
-    {
       "id": 5,
       "name": "蝦仁炒飯",
       "image": "images/shrimp_rice.png",
@@ -51,8 +31,8 @@
       "options": {
         "large": true,
         "doubleEgg": true,
-        "doubleShrimp": true,
-        "spicyPacket": true
+        "spicyPacket": true,
+        "doubleShrimp": true
       },
       "soldOut": false,
       "category": "rice",
@@ -71,12 +51,12 @@
       "options": {
         "large": true,
         "doubleEgg": true,
-        "doubleShrimp": false,
-        "spicyPacket": true
+        "spicyPacket": true,
+        "doubleShrimp": false
       },
       "soldOut": false,
       "category": "rice",
-      "soldToday": 0,
+      "soldToday": 1,
       "sortOrder": 1,
       "stockDate": "2026-09-15",
       "dailyStock": 0,
@@ -91,8 +71,8 @@
       "options": {
         "large": true,
         "doubleEgg": false,
-        "doubleShrimp": false,
-        "spicyPacket": true
+        "spicyPacket": true,
+        "doubleShrimp": false
       },
       "soldOut": false,
       "category": "noodle",
@@ -111,36 +91,36 @@
       "options": {
         "large": true,
         "doubleEgg": true,
-        "doubleShrimp": false,
-        "spicyPacket": true
+        "spicyPacket": true,
+        "doubleShrimp": false
       },
       "soldOut": false,
       "category": "rice",
-      "soldToday": 0,
+      "soldToday": 1,
       "sortOrder": 4,
       "stockDate": "2026-09-15",
       "dailyStock": null,
       "description": "香腸搭配鄰近宏昇畜牧養殖的有機蛋炒飯，鹹香夠味。"
     },
     {
-      "id": 7,
-      "name": "蝦仁米苔目",
-      "image": "images/shrimp_rice_noodle.png",
-      "price": 130,
+      "id": 2,
+      "name": "肉絲炒飯",
+      "image": "images/beef_rice.png",
+      "price": 110,
       "status": "available",
       "options": {
         "large": true,
-        "doubleEgg": false,
-        "doubleShrimp": true,
-        "spicyPacket": true
+        "doubleEgg": true,
+        "spicyPacket": true,
+        "doubleShrimp": false
       },
       "soldOut": false,
-      "category": "noodle",
+      "category": "rice",
       "soldToday": 0,
-      "sortOrder": 7,
+      "sortOrder": 2,
       "stockDate": "2026-09-15",
       "dailyStock": null,
-      "description": "使用親戚養殖、急速冷凍保存的蝦仁，邱媽媽親手逐隻篩選剝殼，搭配米苔目拌炒。"
+      "description": "肉絲搭配鄰近宏昇畜牧養殖的有機蛋炒飯，香氣十足。"
     },
     {
       "id": 10,
@@ -170,8 +150,8 @@
       "options": {
         "large": true,
         "doubleEgg": false,
-        "doubleShrimp": true,
-        "spicyPacket": true
+        "spicyPacket": true,
+        "doubleShrimp": true
       },
       "soldOut": false,
       "category": "noodle",
@@ -190,8 +170,8 @@
       "options": {
         "large": true,
         "doubleEgg": true,
-        "doubleShrimp": false,
-        "spicyPacket": true
+        "spicyPacket": true,
+        "doubleShrimp": false
       },
       "soldOut": false,
       "category": "rice",
@@ -210,8 +190,8 @@
       "options": {
         "large": false,
         "doubleEgg": false,
-        "doubleShrimp": false,
-        "spicyPacket": true
+        "spicyPacket": true,
+        "doubleShrimp": false
       },
       "soldOut": false,
       "category": "alacarte",
@@ -220,6 +200,26 @@
       "stockDate": "2026-09-15",
       "dailyStock": 20,
       "description": "鹹香鹹豬肉，適合分享或搭配飯享用。"
+    },
+    {
+      "id": 7,
+      "name": "蝦仁米苔目",
+      "image": "images/shrimp_rice_noodle.png",
+      "price": 130,
+      "status": "available",
+      "options": {
+        "large": true,
+        "doubleEgg": false,
+        "spicyPacket": true,
+        "doubleShrimp": true
+      },
+      "soldOut": false,
+      "category": "noodle",
+      "soldToday": 0,
+      "sortOrder": 7,
+      "stockDate": "2026-09-15",
+      "dailyStock": null,
+      "description": "使用親戚養殖、急速冷凍保存的蝦仁，邱媽媽親手逐隻篩選剝殼，搭配米苔目拌炒。"
     }
   ]
 }

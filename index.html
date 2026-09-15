@@ -50,6 +50,7 @@
     "priceRange": "$",
     "acceptsReservations": false,
     "hasMenu": "https://order.chiufood.com/",
+    "hasMap": "https://www.google.com/maps/search/?api=1&query=%E6%A1%83%E5%9C%92%E5%B8%82%E5%A4%A7%E5%9C%92%E5%8D%80%E7%9A%87%E5%AE%B6%E5%85%AD%E8%A1%9712%E8%99%9F",
     "openingHoursSpecification": [
       {
         "@type": "OpeningHoursSpecification",
@@ -411,6 +412,61 @@
       line-height: 1.6;
     }
     .store-info-list strong { color: #333; }
+    .store-info-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+    .store-info-icon {
+      width: 32px;
+      height: 32px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #fff;
+      background: #ff6b6b;
+      text-decoration: none;
+      box-shadow: 0 3px 8px rgba(255, 107, 107, .24);
+      animation: iconBreathe 2.4s ease-in-out infinite;
+    }
+    .store-info-icon.map {
+      background: #2f80ed;
+      box-shadow: 0 3px 8px rgba(47, 128, 237, .22);
+      animation-delay: .32s;
+    }
+    .store-info-icon svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+    }
+    @keyframes iconBreathe {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 3px 8px rgba(255, 107, 107, .24), 0 0 0 0 rgba(255, 107, 107, .24);
+      }
+      50% {
+        transform: scale(1.12);
+        box-shadow: 0 6px 16px rgba(255, 107, 107, .28), 0 0 0 8px rgba(255, 107, 107, 0);
+      }
+    }
+    .store-info-icon.map {
+      animation-name: mapIconBreathe;
+    }
+    @keyframes mapIconBreathe {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 3px 8px rgba(47, 128, 237, .22), 0 0 0 0 rgba(47, 128, 237, .24);
+      }
+      50% {
+        transform: scale(1.12);
+        box-shadow: 0 6px 16px rgba(47, 128, 237, .28), 0 0 0 8px rgba(47, 128, 237, 0);
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .store-info-icon { animation: none; }
+    }
     @media (min-width: 600px) {
       #item-detail-modal { align-items: center; padding: 20px; }
       .item-detail-sheet { border-radius: 24px; }
@@ -447,9 +503,23 @@
     <h1 id="store-info-title">邱媽媽美食｜桃園大園線上訂餐</h1>
     <p>邱媽媽美食提供家常小吃、炒飯、炒麵、湯品與單點餐點。營業時間內可直接線上點餐，店家收到訂單後會盡快準備，歡迎自取。</p>
     <ul class="store-info-list">
-      <li><strong>地址：</strong>桃園市大園區皇家六街12號</li>
-      <li><strong>電話：</strong><a href="tel:033812828">03-381-2828</a></li>
-      <li><strong>常見餐點：</strong>蝦仁炒飯、蝦仁炒麵、蛋炒飯、海帶芽蛋花湯、鹹豬肉等家常料理</li>
+      <li>
+        <strong>地址：</strong>桃園市大園區皇家六街12號
+        <span class="store-info-actions">
+          <a class="store-info-icon map" href="https://maps.app.goo.gl/p8EEyttiNsF79XhR8" target="_blank" rel="noopener" aria-label="開啟 Google 地圖" title="Google 地圖">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-5.2 7-11a7 7 0 0 0-14 0c0 5.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>
+          </a>
+        </span>
+      </li>
+      <li>
+        <strong>電話：</strong>03-381-2828
+        <span class="store-info-actions">
+          <a class="store-info-icon" href="tel:033812828" aria-label="撥打邱媽媽美食電話" title="撥打電話">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.4 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7A2 2 0 0 1 22 16.9z"/></svg>
+          </a>
+        </span>
+      </li>
+      <!-- <li><strong>常見餐點：</strong>蝦仁炒飯、蝦仁炒麵、蛋炒飯、海帶芽蛋花湯、鹹豬肉等家常料理</li> -->
     </ul>
   </div>
 </section>
@@ -610,11 +680,23 @@
   let isTestMode = urlParams.get('test') === '1' && Boolean(testToken);
   const LINE_USER_KEY = 'lineUserId';
 
+  function encodeLineUserId(value) {
+    try {
+      return btoa(String(value || ''))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/g, '');
+    } catch (error) {
+      return '';
+    }
+  }
+
   function updateHistoryLink(lineUserId = localStorage.getItem(LINE_USER_KEY) || '') {
     const link = document.querySelector('.history-link');
     if (!link) return;
     const url = new URL('order-detail.html', location.href);
-    if (lineUserId) url.searchParams.set('lineUserId', lineUserId);
+    const encodedLineUser = encodeLineUserId(lineUserId);
+    if (encodedLineUser) url.searchParams.set('u', encodedLineUser);
     link.href = `${url.pathname}${url.search}`;
   }
 

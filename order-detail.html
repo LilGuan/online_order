@@ -432,9 +432,25 @@
 
     let idToken = "";
     const LINE_USER_KEY = "lineUserId";
-    let lineUserId = new URLSearchParams(location.search).get("lineUserId") || localStorage.getItem(LINE_USER_KEY) || "";
+    const queryParams = new URLSearchParams(location.search);
+    function decodeLineUserParam(value) {
+      if (!value) return "";
+      try {
+        const normalized = String(value).replace(/-/g, "+").replace(/_/g, "/");
+        const padded = normalized + "=".repeat((4 - normalized.length % 4) % 4);
+        return atob(padded);
+      } catch (error) {
+        return "";
+      }
+    }
+    let lineUserId = decodeLineUserParam(queryParams.get("u")) || queryParams.get("lineUserId") || localStorage.getItem(LINE_USER_KEY) || "";
+    if (queryParams.get("lineUserId") && lineUserId) {
+      queryParams.delete("lineUserId");
+      queryParams.set("u", btoa(lineUserId).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, ""));
+      history.replaceState({}, document.title, location.pathname + "?" + queryParams.toString());
+    }
     let orders = [];
-    let selectedOrderId = new URLSearchParams(location.search).get("order") || "";
+    let selectedOrderId = queryParams.get("order") || "";
     let renderSignature = "";
     let noticeAction = null;
     let toastTimer = null;
