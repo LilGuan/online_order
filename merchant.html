@@ -1437,6 +1437,9 @@
           <span class="conn-dot" id="conn-dot"></span>
           <span id="conn-text">連線中</span>
         </div>
+        <button class="btn btn-danger btn-sm icon-only" type="button" id="bt-shortcut" title="藍牙未連接，點擊連接印表機" aria-label="藍牙未連接，點擊連接印表機">
+          <span data-icon="bluetooth"></span><span class="label-text" id="bt-shortcut-label">藍牙未連接</span>
+        </button>
         <button class="btn btn-danger btn-sm sound-off icon-only" id="sound-btn"><span data-icon="bellOff"></span> <span class="label-text">開啟接單鈴聲</span></button>
         <button class="btn btn-danger btn-sm sound-off icon-only" id="push-btn"><span data-icon="phone"></span> <span class="label-text">開啟手機推播</span></button>
         <button class="btn btn-soft btn-sm icon-only" id="refresh-btn"><span data-icon="refresh"></span> <span class="label-text">重新整理</span></button>
@@ -1654,6 +1657,40 @@
 
       <!-- ---------------- 設定 ---------------- -->
       <section class="view" id="view-settings">
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-head"><div class="card-title">58mm 藍牙出單機</div></div>
+          <div id="bt-status" role="status" style="margin-bottom:12px">尚未連線</div>
+          <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="bt-auto" checked>本頁連線中斷時自動重連</label>
+          <label for="bt-profile">列印裝置</label>
+          <select class="field" id="bt-profile"><option value="web">電腦 Chrome</option><option value="android">Android Chrome</option></select>
+          <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="bt-enabled">使用這台裝置的 Chrome 藍牙接單列印</label>
+          <details style="margin:12px 0"><summary>進階連線設定</summary>
+            <label for="bt-service">BLE Service UUID</label>
+            <input class="field" id="bt-service" placeholder="自動搜尋常見通道；其他型號可填入 UUID">
+            <label for="bt-write-mode">傳送模式</label>
+            <select class="field" id="bt-write-mode"><option value="auto">自動</option><option value="response">等待回覆</option><option value="noResponse">免回覆</option></select>
+            <label for="bt-delay">傳送間隔（毫秒）</label>
+            <input class="field" type="number" min="0" max="50" step="1" id="bt-delay">
+          </details>
+          <label for="bt-channel">列印通道</label>
+          <select class="field" id="bt-channel" disabled><option>請先連接印表機</option></select>
+          <label for="bt-format">單據格式</label>
+          <select class="field" id="bt-format">
+            <option value="text">直接文字列印</option>
+            <option value="image">圖片列印</option>
+          </select>
+          <label for="bt-speed">傳送速度</label>
+          <select class="field" id="bt-speed">
+            <option value="continuous">連續列印</option>
+            <option value="balanced">標準</option>
+            <option value="stable">穩定</option>
+          </select>
+          <div class="actions" style="margin-top:12px;flex-wrap:wrap">
+            <button class="btn btn-primary" type="button" id="bt-connect">連接印表機</button>
+            <button class="btn btn-soft" type="button" id="bt-test">列印測試單</button>
+            <button class="btn btn-soft" type="button" id="bt-disconnect">中斷連線</button>
+          </div>
+        </div>
         <div class="grid grid-2">
           <div class="card">
             <div class="card-head"><div class="card-title">店家資訊</div></div>
@@ -1995,10 +2032,230 @@
 
 <div class="toasts" id="toasts"></div>
 
+<script src="/bluetooth-printer.js?v=13"></script>
 <script>
   // 後台與 API 由同一個 Node 服務提供。使用目前網址可讓手機透過當次的
   // Cloudflare Tunnel 連回店內 Mac，不會因為 Quick Tunnel 換網址而打到舊站。
   const BACKEND_BASE_URL = location.origin;
+  const btPrinter = new BluetoothReceiptPrinter(message => {
+    document.getElementById('bt-status').textContent = message;
+    if (!btPrinter.device?.gatt?.connected) document.getElementById('bt-channel').disabled = true;
+    updateBluetoothShortcut();
+  });
+  function updateBluetoothShortcut() {
+    const button = document.getElementById('bt-shortcut');
+    const connected = btPrinter.connected;
+    const label = connected ? '藍牙已連接' : btPrinter.connectionPromise ? '藍牙連接中' : '藍牙未連接';
+    const description = connected ? `藍牙已連接：${btPrinter.device.name}` : `${label}，點擊連接印表機`;
+    document.getElementById('bt-shortcut-label').textContent = label;
+    button.className = `btn ${connected ? 'btn-ok' : 'btn-danger'} btn-sm icon-only`;
+    button.title = description;
+    button.setAttribute('aria-label', description);
+  }
+  function chooseBluetoothChannel() {
+    if (btPrinter.connected) { toast(`已連接：${btPrinter.device.name}`, 'ok'); return; }
+    if (!btPrinter.device?.gatt?.connected || !btChannels.length) return;
+    openModal('選擇列印通道', '<label for="bt-quick-channel">列印通道</label><select class="field" id="bt-quick-channel"></select>', [
+      { label: '取消', className: 'btn-soft', onClick: closeModal },
+      { label: '確認', className: 'btn-primary', onClick: () => {
+        const channel = btChannels[Number(document.getElementById('bt-quick-channel').value)];
+        if (!btPrinter.device?.gatt?.connected || !channel) { toast('藍牙已斷線，請重新連接', 'error'); return; }
+        btPrinter.characteristic = channel;
+        btSavedChannel = channel.uuid;
+        document.getElementById('bt-channel').value = String(btChannels.indexOf(channel));
+        saveBluetoothProfile();
+        document.getElementById('bt-status').textContent = `已連線：${btPrinter.device.name}`;
+        updateBluetoothShortcut();
+        closeModal();
+      } }
+    ]);
+    btChannels.forEach((channel, index) => document.getElementById('bt-quick-channel').add(new Option(channel.uuid, String(index))));
+  }
+  const bluetoothPromptedOrders = new Set();
+  function promptOrderBluetooth(order) {
+    if (!btEnabled.checked || btPrinter.connected) return;
+    openModal('接單前請連接出單機', `
+      <p>訂單 #${escapeHtml(order?.orderNumber || '')} 的藍牙出單機尚未連接。</p>
+      <p id="bt-order-message" role="status">連接完成後，請再按一次接單。</p>
+    `, [
+      { label: '稍後連接', className: 'btn-soft', onClick: closeModal },
+      { label: '連接印表機', className: 'btn-primary', onClick: () => {
+        closeModal();
+        if (btPrinter.device?.gatt?.connected) chooseBluetoothChannel();
+        else connectBluetoothFromButton(true);
+      } }
+    ]);
+  }
+  let btChannels = [];
+  const btProfile = document.getElementById('bt-profile');
+  btProfile.value = /Android/i.test(navigator.userAgent) ? 'android' : 'web';
+  const btMode = document.getElementById('bt-write-mode');
+  const btDelay = document.getElementById('bt-delay');
+  const btFormat = document.getElementById('bt-format');
+  async function printBluetoothReceipt(receipt) {
+    if (btFormat.value === 'text') await btPrinter.printEncoded(receipt.bytesBase64);
+    else await btPrinter.print(receipt.rows || receipt.text);
+  }
+  const btSpeed = document.getElementById('bt-speed');
+  const btService = document.getElementById('bt-service');
+  const btEnabled = document.getElementById('bt-enabled');
+  const btAuto = document.getElementById('bt-auto');
+  let btDeviceId = '';
+  let btAutoPaused = false;
+  let btAutoAttempting = false;
+  let btManualRequired = false;
+  let btConnectedThisPage = false;
+  let btSavedChannel = '';
+  let btActiveProfile = btProfile.value;
+  function loadBluetoothProfile() {
+    let config;
+    try { config = JSON.parse(localStorage.getItem(`bluetoothProfile:${btProfile.value}`)); } catch {}
+    config = config || {};
+    if (!btPrinter.busy) {
+      btPrinter.configure(btProfile.value, ['auto', 'response', 'noResponse'].includes(config.writeMode) ? config.writeMode : 'auto',
+        Number.isInteger(config.delay) && config.delay >= 0 && config.delay <= 50 ? config.delay : btProfile.value === 'android' ? 2 : 0);
+      btPrinter.setSpeed(config.speed || localStorage.getItem('bluetoothPrintSpeed') || 'continuous');
+    }
+    btMode.value = btPrinter.writeMode;
+    btDelay.value = btPrinter.packetDelay;
+    btSpeed.value = btPrinter.speed;
+    btFormat.value = (config.format || localStorage.getItem('bluetoothReceiptFormat')) === 'image' ? 'image' : 'text';
+    btService.value = config.service ?? localStorage.getItem('bluetoothServiceUUID') ?? '';
+    btEnabled.checked = config.enabled ?? localStorage.getItem('bluetoothPrinting') === 'true';
+    btAuto.checked = config.autoConnect !== false;
+    btDeviceId = config.deviceId || '';
+    btSavedChannel = config.channel || '';
+    btActiveProfile = btProfile.value;
+  }
+  function saveBluetoothProfile() {
+    btPrinter.configure(btProfile.value, btMode.value, btDelay.value);
+    btPrinter.setSpeed(btSpeed.value);
+    localStorage.setItem(`bluetoothProfile:${btProfile.value}`, JSON.stringify({
+      writeMode: btMode.value, delay: btPrinter.packetDelay, speed: btPrinter.speed,
+      format: btFormat.value, service: btService.value.trim(), enabled: btEnabled.checked,
+      autoConnect: btAuto.checked, deviceId: btPrinter.device?.id || btDeviceId,
+      channel: btPrinter.characteristic?.uuid || btSavedChannel
+    }));
+  }
+  loadBluetoothProfile();
+  for (const control of [btMode, btDelay, btSpeed, btFormat, btService, btEnabled]) {
+    control.addEventListener('change', () => {
+      try { saveBluetoothProfile(); } catch (error) { loadBluetoothProfile(); toast(error.message, 'error'); }
+    });
+  }
+  btProfile.addEventListener('change', () => {
+    try {
+      btPrinter.disconnect();
+      btConnectedThisPage = false;
+      document.getElementById('bt-channel').replaceChildren(new Option('請先連接印表機', ''));
+      document.getElementById('bt-channel').disabled = true;
+      loadBluetoothProfile();
+      btAutoPaused = false;
+      btManualRequired = false;
+      document.getElementById('bt-status').textContent = '尚未連線';
+    } catch (error) { btProfile.value = btActiveProfile; toast(error.message, 'error'); }
+  });
+  async function connectBluetoothFromButton(shortcut = false) {
+    try {
+      if (btPrinter.connectionPromise) {
+        btPrinter.disconnect();
+        btAutoPaused = true;
+        toast('已停止自動搜尋，請再按一次「連接印表機」選取裝置');
+        return;
+      }
+      btAutoPaused = false;
+      btManualRequired = false;
+      document.getElementById('bt-channel').disabled = true;
+      btChannels = await btPrinter.connect(btService.value);
+      applyBluetoothChannels(btChannels);
+      if (shortcut && !btPrinter.connected) chooseBluetoothChannel();
+    } catch (error) { toast(error.message, 'error'); }
+    finally { updateBluetoothShortcut(); }
+  }
+  document.getElementById('bt-connect').addEventListener('click', () => connectBluetoothFromButton());
+  document.getElementById('bt-shortcut').addEventListener('click', () => {
+    if (btPrinter.device?.gatt?.connected) chooseBluetoothChannel();
+    else connectBluetoothFromButton(true);
+  });
+  setInterval(updateBluetoothShortcut, 1000);
+  function applyBluetoothChannels(channels) {
+      btConnectedThisPage = true;
+      btManualRequired = false;
+      btChannels = channels;
+      const select = document.getElementById('bt-channel');
+      select.replaceChildren(new Option('選擇列印通道', ''));
+      btChannels.forEach((channel, index) => select.add(new Option(channel.uuid, String(index))));
+      select.disabled = false;
+      if (btChannels.length === 1) { select.value = '0'; btPrinter.characteristic = btChannels[0]; }
+      else {
+        const savedIndex = btChannels.findIndex(channel => channel.uuid === btSavedChannel);
+        if (savedIndex >= 0) { select.value = String(savedIndex); btPrinter.characteristic = btChannels[savedIndex]; }
+      }
+      saveBluetoothProfile();
+      btDeviceId = btPrinter.device?.id || btDeviceId;
+      document.getElementById('bt-status').textContent = btPrinter.connected
+        ? `已連線：${btPrinter.device.name}` : '已連接印表機，請選擇列印通道';
+  }
+  async function autoConnectBluetooth() {
+    if (!btConnectedThisPage || !btAuto.checked || btAutoPaused || btManualRequired || btAutoAttempting || btPrinter.busy || btPrinter.connectionPromise
+      || btPrinter.device?.gatt?.connected || document.hidden || !navigator.bluetooth || !window.isSecureContext) return;
+    btAutoAttempting = true;
+    try {
+      const channels = await btPrinter.connect(btService.value, { auto: true, deviceId: btDeviceId });
+      applyBluetoothChannels(channels);
+    } catch (error) {
+      btManualRequired = ['manual_required', 'connection_timeout'].includes(error.code);
+      document.getElementById('bt-status').textContent = error.message;
+      if (error.code === 'connection_timeout') toast(error.message, 'error');
+    } finally { btAutoAttempting = false; }
+  }
+  btAuto.addEventListener('change', () => {
+    try {
+      saveBluetoothProfile();
+      btAutoPaused = false;
+      btManualRequired = false;
+      if (!btAuto.checked && btPrinter.connectionPromise) btPrinter.disconnect();
+      if (btAuto.checked) autoConnectBluetooth();
+    } catch (error) { loadBluetoothProfile(); toast(error.message, 'error'); }
+  });
+  setInterval(autoConnectBluetooth, 15000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) autoConnectBluetooth(); });
+  document.getElementById('bt-channel').addEventListener('change', event => {
+    btPrinter.characteristic = event.target.value === '' ? null : btChannels[Number(event.target.value)];
+    btSavedChannel = btPrinter.characteristic?.uuid || '';
+    saveBluetoothProfile();
+  });
+  document.getElementById('bt-disconnect').addEventListener('click', () => {
+    try {
+      btPrinter.disconnect();
+      btAutoPaused = true;
+      document.getElementById('bt-channel').disabled = true;
+      document.getElementById('bt-status').textContent = '已手動中斷，自動連線已暫停';
+    } catch (error) { toast(error.message, 'error'); }
+  });
+  document.getElementById('bt-test').addEventListener('click', async () => {
+    try {
+      const receipt = await requestJson(`${BACKEND_BASE_URL}/api/admin/print/test-receipt`, { cache: 'no-store' });
+      await printBluetoothReceipt(receipt);
+      toast('測試單已傳送，請確認出紙及中文字', 'ok');
+    } catch (error) { toast(error.message, 'error'); }
+  });
+
+  async function sendBluetoothJob(orderKey, print, kind = 'accept') {
+    if (!print?.jobId || print.status !== 'waiting_device' || print.duplicate) return;
+    let status = 'sent_to_device';
+    let message = '單據已傳送至藍牙印表機，請確認出紙';
+    try {
+      const receipt = await requestJson(`${BACKEND_BASE_URL}/api/admin/orders/${encodeURIComponent(orderKey)}/receipt?kind=${kind}`, { cache: 'no-store' });
+      await printBluetoothReceipt(receipt);
+    } catch (error) { status = 'failed'; message = error.message; }
+    try {
+      await requestJson(`${BACKEND_BASE_URL}/api/admin/print/jobs/${encodeURIComponent(print.jobId)}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status, message })
+      });
+    } catch (error) { toast(`列印紀錄未更新：${error.message}；請先確認出紙再補印`, 'error'); }
+    toast(message, status === 'failed' ? 'error' : 'ok');
+  }
   function assetUrl(value) {
     const image = String(value || '').trim();
     if (!image || /^(https?:|data:|blob:)/i.test(image)) return image;
@@ -2028,6 +2285,7 @@
 
   // 全站統一使用線條 icon（不用 emoji），24x24 viewBox、跟隨文字顏色
   const ICONS = {
+    bluetooth: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 7 10 10-5 5V2l5 5L7 17"/></svg>',
     brand: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 21h10"/><path d="M5 11a7 7 0 0 1 14 0z"/><path d="M12 4V2"/><path d="M6 15h12a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3z"/></svg>',
     revenue: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 6.5c0-2-2.2-3-5-3s-5 .9-5 2.8c0 4.7 10 2.3 10 7 0 2-2.2 3.2-5 3.2s-5-1.1-5-3"/></svg>',
     calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4"/><path d="M16 3v4"/></svg>',
@@ -2092,6 +2350,8 @@
   let orderSearch = '';
   let orderFrom = '';
   let orderTo = '';
+  let orderCalendarDay = '';
+  let orderRequestSequence = 0;
   let storeIsOpen = true;
   let audioContext = null;
   let masterGain = null;
@@ -2135,10 +2395,11 @@
   }
 
   const dateInputValue = (date = new Date()) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).formatToParts(date);
+    const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
+    return `${values.year}-${values.month}-${values.day}`;
   };
 
   function resetOrderDateFilters(date = new Date()) {
@@ -2147,6 +2408,18 @@
     orderTo = value;
     $('order-from').value = value;
     $('order-to').value = value;
+    orderCalendarDay = value;
+  }
+
+  function syncOrderCalendarDay() {
+    if (orderCalendarDay === dateInputValue()) return;
+    resetOrderDateFilters();
+    orderSearch = '';
+    $('order-search').value = '';
+    activeStatus = 'all';
+    orderTypeFilter = 'all';
+    lastOrdersSignature = '';
+    lastDashSignature = '';
   }
 
   function formatTime(value) {
@@ -2550,12 +2823,18 @@
 
   /* ---------------- 訂單 ---------------- */
   async function fetchOrders() {
+    syncOrderCalendarDay();
+    const requestSequence = ++orderRequestSequence;
+    const requestDay = orderCalendarDay;
     const params = new URLSearchParams({ status: 'all' });
     if (orderSearch) params.set('search', orderSearch);
     if (orderFrom) params.set('from', orderFrom);
     if (orderTo) params.set('to', orderTo);
 
     const data = await requestJson(`${BACKEND_BASE_URL}/api/orders?${params}`, { cache: 'no-store' });
+    if (requestSequence !== orderRequestSequence || requestDay !== dateInputValue()
+      || params.get('from') !== (orderFrom || null) || params.get('to') !== (orderTo || null)
+      || params.get('search') !== (orderSearch || null)) return;
     orders = data.orders || [];
 
     const pending = orders.filter(order => order.status === 'pending');
@@ -2783,14 +3062,20 @@
   async function updateOrderStatus(orderKey, status) {
     const order = orders.find(item => item.id === orderKey || item.orderNumber === orderKey);
     const label = order ? order.orderNumber : orderKey;
+    if (status === 'preparing' && btEnabled.checked && !btPrinter.connected) {
+      promptOrderBluetooth(order);
+      throw new Error('請先連接藍牙出單機，再按一次接單');
+    }
 
     const result = await requestJson(`${BACKEND_BASE_URL}/api/orders/${encodeURIComponent(orderKey)}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status })
+      body: JSON.stringify({ status, printTransport: btEnabled.checked ? 'bluetooth' : 'system' })
     });
     toast(`訂單 #${label} 已更新為「${STATUS_LABELS[status]}」`, 'ok');
-    if (result.print && result.print.status !== 'printed') {
+    if (result.print?.status === 'waiting_device') {
+      await sendBluetoothJob(orderKey, result.print);
+    } else if (result.print && result.print.status !== 'printed') {
       toast(`訂單已接單，但列印未完成：${result.print.message || '請檢查印表機'}`, 'error');
     } else if (result.print && result.print.status === 'printed') {
       toast(`訂單 #${label} 已送到印表機`, 'ok');
@@ -2855,11 +3140,10 @@
           openModal('58mm 出單預覽', `
             <div class="receipt-stage">
               <div class="receipt-paper">
-                <pre class="receipt-text">${escapeHtml(result.text.replace(/\f/g, ''))}</pre>
+                ${result.rows ? result.rows.map(row => `<div style="font-family:monospace;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.2;text-align:${row.align};font-weight:${row.bold ? 700 : 400};font-size:${12 * row.scale}px;min-height:${12 * row.height}px;padding:3px 0">${escapeHtml(row.text)}</div>`).join('') : `<pre class="receipt-text">${escapeHtml(result.text.replace(/\f/g, ''))}</pre>`}
                 <div class="receipt-tear"></div>
               </div>
             </div>
-            <p class="hint" style="margin:12px 0 0;">58mm 熱感紙格式（每行 32 個半形字元）。實際字型與中文字體效果依出單機而異。</p>
           `, [{ label: '返回訂單', className: 'btn-soft', onClick: () => openOrderDetail(order.id || order.orderNumber) }]);
         }
       },
@@ -2868,9 +3152,13 @@
         className: 'btn-soft',
         onClick: async () => {
           const result = await requestJson(`${BACKEND_BASE_URL}/api/admin/orders/${encodeURIComponent(order.id || order.orderNumber)}/print`, {
-            method: 'POST'
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ printTransport: btEnabled.checked ? 'bluetooth' : 'system' })
           });
-          if (result.print && result.print.status === 'printed') {
+          if (result.print?.status === 'waiting_device') {
+            await sendBluetoothJob(order.id || order.orderNumber, result.print, 'reprint');
+          } else if (result.print && result.print.status === 'printed') {
             toast('訂單已補印', 'ok');
           } else {
             toast(`補印未完成：${result.print?.message || '請檢查印表機'}`, 'error');
@@ -3818,6 +4106,10 @@
 
     // 一律處理最舊的那張，避免插隊
     const order = [...waiting].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0];
+    if (btEnabled.checked && !btPrinter.connected && !bluetoothPromptedOrders.has(order.id)) {
+      bluetoothPromptedOrders.add(order.id);
+      promptOrderBluetooth(order);
+    }
     takeoverOrderId = order.id;
 
     $('takeover-count').textContent = waiting.length > 1 ? `還有 ${waiting.length - 1} 張待處理` : '共 1 張';
@@ -4737,6 +5029,11 @@
     }
 
     setInterval(pollTick, POLL_INTERVAL_MS);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) pollTick();
+    });
+    window.addEventListener('pageshow', () => pollTick());
+    window.addEventListener('focus', () => pollTick());
   })();
 </script>
 </body>

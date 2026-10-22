@@ -7,6 +7,8 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
+const { buildLargeReceipt } = require('./receipt-escpos');
+const { AdminSessionStore } = require('./admin-session-store');
 const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
 const { hydrateStateFiles, queueStateSync } = require('./supabase-state');
@@ -39,7 +41,7 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 const LINE_CHANNEL_ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN || 'UOk7R1DiDvRXXUxHwy/nDjspTVgC3ZzAYYRTWMO96rHgOycTbmPXUV/qtLwNa0r5+lCXvBGCcc3WHVHesgHxUd8gxwaoPMwaQuPuOT/PpzyCVMCgQdAboLV8waAZHmIXPRaeq6iMYHuECM+WY2jghQdB04t89/1O/w1cDnyilFU=';
 const LINE_LOGIN_CHANNEL_ID = String(process.env.LINE_LOGIN_CHANNEL_ID || '2007831775').trim();
 const LINE_LIFF_ID = String(process.env.LINE_LIFF_ID || '2007831775-ojeB1qbw').trim();
-const adminSessions = new Map(); // token -> { username, role }
+const adminSessions = new AdminSessionStore(path.join(require('os').homedir(), '.online-order', 'admin-sessions.json'));
 const lineCustomerSessions = new Map(); // LINE ID token -> { userId, displayName, expiresAt }
 const frontendTestTokens = new Map(); // token -> { username, role, createdAt, expiresAt }
 const FRONTEND_TEST_TOKEN_TTL_MS = 30 * 60 * 1000;
@@ -59,6 +61,14 @@ app.use((req, res, next) => {
     next();
 });
 app.use(express.static(__dirname));
+
+const VUE_APP_DIST = path.join(__dirname, 'dist', 'app');
+app.use('/app', express.static(VUE_APP_DIST));
+app.get(/^\/app(?:\/.*)?$/, (req, res, next) => {
+    const indexFile = path.join(VUE_APP_DIST, 'index.html');
+    if (!fs.existsSync(indexFile)) return next();
+    res.sendFile(indexFile);
+});
 
 // ==========================================
 // 🟢 LINE Pay 設定區
@@ -419,7 +429,7 @@ async function processPrintJob(job, order) {
     return { ...result, jobId: job.id };
 }
 
-async function queueOrderPrint(order, kind = 'accept') {
+async function queueOrderPrint(order, kind = 'accept', transport = 'system') {
     const jobs = readPrintJobs();
     if (kind === 'accept') {
         const existing = jobs.find(job => job.orderId === String(order.id) && job.kind === 'accept');
@@ -431,7 +441,8 @@ async function queueOrderPrint(order, kind = 'accept') {
         orderId: String(order.id),
         orderNumber: String(order.orderNumber || ''),
         kind,
-        status: AUTO_PRINT_ON_ACCEPT ? 'queued' : 'disabled',
+        transport,
+        status: transport === 'bluetooth' ? 'waiting_device' : AUTO_PRINT_ON_ACCEPT ? 'queued' : 'disabled',
         attempts: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -439,6 +450,7 @@ async function queueOrderPrint(order, kind = 'accept') {
     jobs.push(job);
     writePrintJobs(jobs);
 
+    if (transport === 'bluetooth') return { status: 'waiting_device', message: '等待 Chrome 藍牙列印', jobId: job.id };
     if (!AUTO_PRINT_ON_ACCEPT) return { status: 'disabled', message: '自動列印已關閉', jobId: job.id };
     return processPrintJob(job, order);
 }
@@ -837,6 +849,13 @@ function requireAdmin(req, res, next) {
     if (!session) {
         return res.status(401).json({ message: '請先登入 admin' });
     }
+
+    const user = readUsers().find(entry => entry.username === session.username);
+    if (!user) {
+        adminSessions.delete(token);
+        return res.status(401).json({ message: '帳號已不存在，請重新登入' });
+    }
+    session.role = user.role;
 
     req.session = session;
     next();
@@ -1448,16 +1467,8 @@ app.post('/api/orders', async (req, res) => {
         return res.status(403).json({ message: '測試連結已失效，請回後台重新產生測試入口。' });
     }
 
-    if (!isFrontendTestOrder) {
-        if (!storeStatus.isOpen) {
-            return res.status(403).json({ message: '店家目前未開放點餐' });
-        }
-
-        if (!isBusinessHoursOpen(settings)) {
-            return res.status(403).json({ message: '目前非營業時間，暫停接單' });
-        }
-    }
-
+    // 先正規化才知道這是即時單還是預約單。normalizeOrder 是純函式，
+    // 不會配流水號也不會寫檔，提前呼叫是安全的。
     const order = normalizeOrder(req.body);
 
     if (isFrontendTestOrder) {
@@ -1469,6 +1480,22 @@ app.post('/api/orders', async (req, res) => {
 
     if (order.orderType === 'reserve' && !settings.allowReserveOrders) {
         return res.status(400).json({ message: '目前未開放預約單，請改用即時單' });
+    }
+
+    if (!isFrontendTestOrder) {
+        if (!storeStatus.isOpen) {
+            return res.status(403).json({ message: '店家目前未開放點餐' });
+        }
+
+        // 只有「即時單」需要現在正在營業。預約單的用意就是打烊時間也能先訂，
+        // 之前用當下時間一律擋掉，等於開了預約單功能卻永遠收不到預約。
+        if (order.orderType !== 'reserve' && !isBusinessHoursOpen(settings)) {
+            return res.status(403).json({
+                message: settings.allowReserveOrders
+                    ? '目前非營業時間，請改用預約單預訂'
+                    : '目前非營業時間，暫停接單'
+            });
+        }
     }
 
     if (!order.name || !order.phone || order.items.length === 0 || order.totalAmount <= 0) {
@@ -2358,6 +2385,7 @@ app.patch('/api/admin/users/:username', requireAdmin, (req, res) => {
     }
 
     writeUsers(users);
+    if (req.body.password) adminSessions.revokeUser(target);
     if (changes.length) logAudit('user.updated', target, changes.join('、'), req.session.username);
     res.json({ ok: true, user: safeUser(user) });
 });
@@ -2380,9 +2408,7 @@ app.delete('/api/admin/users/:username', requireAdmin, requireOwner, (req, res) 
     writeUsers(users.filter(entry => entry.username !== target));
 
     // 該帳號目前登入中的 session 一併作廢
-    [...adminSessions.entries()]
-        .filter(([, session]) => session.username === target)
-        .forEach(([token]) => adminSessions.delete(token));
+    adminSessions.revokeUser(target);
 
     logAudit('user.deleted', target, '刪除帳號', req.session.username);
     res.json({ ok: true });
@@ -2432,7 +2458,7 @@ app.patch('/api/orders/:orderNumber/status', requireAdmin, async (req, res) => {
     // 只有真正由「待接單」變成「製作中」才自動出單，避免重複點擊或重整頁面重印。
     if (previousStatus === 'pending' && status === 'preparing') {
         try {
-            print = await queueOrderPrint(order, 'accept');
+            print = await queueOrderPrint(order, 'accept', req.body.printTransport === 'bluetooth' ? 'bluetooth' : 'system');
         } catch (error) {
             print = { status: 'failed', message: error.message };
             console.error('[Print] 自動出單失敗:', error.message);
@@ -2451,7 +2477,7 @@ app.post('/api/admin/orders/:orderNumber/print', requireAdmin, async (req, res) 
     if (!order) return res.status(404).json({ message: '找不到訂單' });
 
     try {
-        const print = await queueOrderPrint(order, 'reprint');
+        const print = await queueOrderPrint(order, 'reprint', req.body.printTransport === 'bluetooth' ? 'bluetooth' : 'system');
         logAudit('print.reprint', `#${order.orderNumber}`, `${print.status}：${print.message || ''}`, req.session && req.session.username);
         res.json({ ok: print.status === 'printed', order, print });
     } catch (error) {
@@ -2463,7 +2489,18 @@ app.post('/api/admin/orders/:orderNumber/print', requireAdmin, async (req, res) 
 app.get('/api/admin/orders/:orderNumber/receipt', requireAdmin, (req, res) => {
     const order = findOrder(readOrders(), req.params.orderNumber);
     if (!order) return res.status(404).json({ message: '找不到訂單' });
-    res.json({ width: '58mm', text: receiptText(order, req.query.kind === 'reprint' ? 'reprint' : 'accept') });
+    res.json(buildLargeReceipt(order, readSettings(), req.query.kind === 'reprint' ? 'reprint' : 'accept'));
+});
+
+app.get('/api/admin/print/test-receipt', requireAdmin, (req, res) => {
+    const receipt = buildLargeReceipt({
+        orderNumber: 'TEST', isTest: true, status: 'preparing',
+        name: '列印測試', phone: '0912345678', pickupTime: '測試取餐時間',
+        paymentMethod: 'cash', utensils: 'yes', createdAt: new Date().toISOString(),
+        items: [{ name: '蛋炒飯（辣包）', qty: 1, subtotal: 90 }], totalAmount: 90,
+        notes: '少油、飯少一點。這是測試單，請勿製作。'
+    }, readSettings());
+    res.json(receipt);
 });
 
 app.get('/api/admin/print/status', requireAdmin, (req, res) => {
@@ -2474,6 +2511,21 @@ app.get('/api/admin/print/status', requireAdmin, (req, res) => {
         raw: PRINTER_RAW,
         jobs: jobs.slice(-30).reverse()
     });
+});
+
+app.patch('/api/admin/print/jobs/:jobId', requireAdmin, (req, res) => {
+    const job = readPrintJobs().find(entry => entry.id === req.params.jobId);
+    if (!job || job.transport !== 'bluetooth') return res.status(404).json({ message: '找不到藍牙列印工作' });
+    if (!['sent_to_device', 'failed'].includes(req.body.status)) return res.status(400).json({ message: '列印狀態不正確' });
+    if (job.status !== 'waiting_device') return res.status(409).json({ message: '此列印工作已結束，請使用補印' });
+    const updated = updatePrintJob(job.id, {
+        status: req.body.status,
+        attempts: Number(job.attempts || 0) + 1,
+        message: String(req.body.message || '').slice(0, 300),
+        sentAt: req.body.status === 'sent_to_device' ? new Date().toISOString() : undefined
+    });
+    logAudit('print.bluetooth', `#${job.orderNumber}`, `${updated.status}：${updated.message}`, req.session && req.session.username);
+    res.json({ ok: true, print: updated });
 });
 
 app.patch('/api/admin/orders/:orderNumber/note', requireAdmin, (req, res) => {

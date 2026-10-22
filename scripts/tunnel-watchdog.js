@@ -36,6 +36,16 @@ function pgrep(pattern) {
     }
 }
 
+function pidCwd(pid) {
+    try {
+        const out = execSync(`lsof -p ${Number(pid)} -a -d cwd -Fn`, { encoding: 'utf8' });
+        const line = out.split('\n').find(entry => entry.startsWith('n'));
+        return line ? line.slice(1) : '';
+    } catch {
+        return '';
+    }
+}
+
 function isNamedTunnelRunning() {
     return pgrep(`cloudflared.*tunnel.*run.*${TUNNEL_NAME}`).length > 0;
 }
@@ -45,7 +55,9 @@ function hasOldQuickTunnelRunning() {
 }
 
 function isNodeServerRunning() {
-    return pgrep('node server.js').filter(pid => pid !== process.pid).length > 0;
+    return pgrep('node server.js')
+        .filter(pid => pid !== process.pid)
+        .some(pid => pidCwd(pid) === ROOT);
 }
 
 function startNamedTunnel() {

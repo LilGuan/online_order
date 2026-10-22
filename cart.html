@@ -932,8 +932,12 @@
       submitBlockReason = '購物車是空的，請先回菜單選擇餐點。';
     } else if (!canSubmit && !isTestMode) {
       submitBlockReason = '店家目前未開放點餐，請稍後再試或直接電話聯絡店家。';
-    } else if (!openInBusinessHours && !isTestMode) {
-      submitBlockReason = '目前非營業時間，暫停接單，請於營業時間內再下單。';
+    } else if (!openInBusinessHours && !isTestMode && !(currentMode === 'reserve' && reserveOrdersEnabled())) {
+      // 只有即時單需要「現在正在營業」。預約單本來就是打烊時先訂下一個時段，
+      // 這裡若一併擋掉，客人開了預約單也永遠送不出去。
+      submitBlockReason = reserveOrdersEnabled()
+        ? '目前非營業時間，請改用預約單預訂下一個時段。'
+        : '目前非營業時間，暫停接單，請於營業時間內再下單。';
     } else if (belowMinimum) {
       submitBlockReason = `最低消費為 $${minOrderAmount}，目前為 $${totalValue}，還差 $${minOrderAmount - totalValue}。`;
     } else {
@@ -971,7 +975,9 @@
         closedBanner.textContent = '店家目前未開放點餐，請稍後再試。';
         closedBanner.style.display = 'block';
       } else if (!isBusinessHours) {
-        closedBanner.textContent = '目前非營業時間，暫停接單。';
+        closedBanner.textContent = reserveOrdersEnabled()
+          ? '目前非營業時間，可以先預約下一個營業時段的餐點。'
+          : '目前非營業時間，暫停接單。';
         closedBanner.style.display = 'block';
       } else {
         closedBanner.style.display = 'none';
@@ -1142,10 +1148,12 @@
     modeSwitch.classList.remove('instant-only');
 
     if (!isBusinessHours && !isTestMode) {
-      // 非營業時間不接單，固定顯示即時單並鎖定切換
-      setMode('instant');
-      modeSwitch.style.pointerEvents = 'none'; // 禁用切換
-      modeSwitch.style.opacity = '0.7'; // 稍微變淡提示不可用
+      // 非營業時間現場做不出來，但只要有開放預約，就該讓客人先把下一個時段訂走。
+      // 這裡以前是固定切成「即時單」並鎖住切換，等於把唯一送得出去的選項關掉，
+      // 客人不管怎麼按，伺服器都會以「目前非營業時間」退件。
+      setMode('reserve');
+      modeSwitch.style.pointerEvents = 'none'; // 這個時段只能預約，鎖住避免切回即時單
+      modeSwitch.style.opacity = '0.7';
     } else {
       // 營業時間內，預設即時，可切換
       setMode('instant');
@@ -1218,9 +1226,19 @@
         slots.push(time);
       }
     }
-    // 營業時間 (可依需求調整範圍)
-    addSlots(645, 825);  // 10:45 - 13:45
-    addSlots(975, 1185); // 16:15 - 19:45
+
+    // 時段一律從後台「門店設定」的營業時間推算，不要寫死。
+    // 以前這裡是固定的 10:45-13:45 / 16:15-19:45，店家改了營業時間也不會跟著動，
+    // 客人就會看到跟實際營業時間對不上的選項。
+    const prep = prepTimeMinutes();
+    getBusinessWindows().forEach(window => {
+      // 開店後還要備餐，所以第一個可取餐時段從「開店 + 備餐時間」起算，
+      // 並對齊到 15 分鐘的整點，時間看起來才乾淨。
+      const firstSlot = Math.ceil((window.start + prep) / 15) * 15;
+      // 最後一個時段留 15 分鐘緩衝，不要剛好卡在關門那一刻。
+      const lastSlot = window.end - 15;
+      if (firstSlot <= lastSlot) addSlots(firstSlot, lastSlot);
+    });
 
     const now = new Date();
     // 取得當前時間的分鐘數
@@ -1300,9 +1318,12 @@
       showSubmitToast(submitBlockReason);
       return;
     }
-    if (!isTestMode && !refreshBusinessHoursState()) {
+    if (!isTestMode && !refreshBusinessHoursState()
+        && !(currentMode === 'reserve' && reserveOrdersEnabled())) {
       renderCart();
-      showSubmitToast('目前非營業時間，暫停接單，請於營業時間內再下單。');
+      showSubmitToast(reserveOrdersEnabled()
+        ? '目前非營業時間，請改用預約單預訂下一個時段。'
+        : '目前非營業時間，暫停接單，請於營業時間內再下單。');
       return;
     }
 
