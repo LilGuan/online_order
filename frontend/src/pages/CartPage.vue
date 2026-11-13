@@ -112,6 +112,7 @@ async function submitOrder() {
   if (!form.name.trim()) return alert('請輸入姓名');
   if (!/^09\d{8}$/.test(form.phone)) return alert('請輸入 09 開頭的 10 碼手機號碼');
   if (!(await ensureLine())) return;
+  if (!(await window.LineStartGate.ensure())) return;
 
   submitting.value = true;
   try {
@@ -133,6 +134,7 @@ async function submitOrder() {
     };
     const data = await requestJson('/api/orders', {
       method: 'POST',
+      headers: { Authorization: `Bearer ${window.liff.getIDToken()}` },
       body: JSON.stringify(payload)
     });
     localStorage.setItem('userPhone', form.phone);
@@ -156,5 +158,6 @@ onMounted(async () => {
   const state = await initLiff();
   lineUserId.value = state.lineUserId || localStorage.getItem('lineUserId') || '';
   if (state.profile?.displayName && !form.name) form.name = state.profile.displayName;
+  await window.LineStartGate.ensure();
 });
 </script>

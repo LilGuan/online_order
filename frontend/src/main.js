@@ -1,4 +1,5 @@
 import { createApp } from 'vue';
+import '../../line-start-gate.js';
 import { createRouter, createWebHistory } from 'vue-router';
 import App from './App.vue';
 import MenuPage from './pages/MenuPage.vue';

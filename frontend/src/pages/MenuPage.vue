@@ -117,14 +117,16 @@ const selectedTotal = computed(() => {
   return (Number(selected.value.price || 0) + extra) * qty.value;
 });
 
-function openItem(item) {
+async function openItem(item) {
+  if (!(await window.LineStartGate.ensure())) return;
   if (item.soldOut) return;
   selected.value = item;
   qty.value = 1;
   selectedOptions.value = {};
 }
 
-function addSelected() {
+async function addSelected() {
+  if (!(await window.LineStartGate.ensure())) return;
   const optionLabels = itemOptions.value.filter(option => selectedOptions.value[option.key]).map(option => option.label);
   const displayName = optionLabels.length ? `${selected.value.name}（${optionLabels.join('、')}）` : selected.value.name;
   const optionKey = optionLabels.join('-') || 'normal';
@@ -144,6 +146,7 @@ function addSelected() {
 onMounted(async () => {
   try {
     await initLiff();
+    await window.LineStartGate.ensure();
     const [menu, publicSettings] = await Promise.all([
       requestJson('/api/menu', { cache: 'no-store' }),
       requestJson('/api/settings/public', { cache: 'no-store' })

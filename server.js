@@ -9,6 +9,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const { buildLargeReceipt } = require('./receipt-escpos');
 const { AdminSessionStore } = require('./admin-session-store');
+const { createWebhookHandler } = require('./line-onboarding');
 const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
 const { hydrateStateFiles, queueStateSync } = require('./supabase-state');
@@ -47,6 +48,18 @@ const frontendTestTokens = new Map(); // token -> { username, role, createdAt, e
 const FRONTEND_TEST_TOKEN_TTL_MS = 30 * 60 * 1000;
 
 app.use(cors());
+const LINE_START_REQUIRED = Boolean(process.env.LINE_MESSAGING_CHANNEL_SECRET) && process.env.LINE_START_REQUIRED === 'true';
+app.post('/api/line/webhook', express.raw({ type: 'application/json', limit: '1mb' }), createWebhookHandler({
+    secret: process.env.LINE_MESSAGING_CHANNEL_SECRET || '',
+    readCustomers, writeCustomers, upsertCustomerProfile,
+    liffUrl: `https://liff.line.me/${LINE_LIFF_ID}`,
+    baseUrl: process.env.PUBLIC_BASE_URL || process.env.TUNNEL_URL || 'https://order.chiufood.com',
+    reply: async (replyToken, messages) => {
+        await axios.post('https://api.line.me/v2/bot/message/reply', { replyToken, messages }, {
+            headers: { Authorization: `Bearer ${LINE_CHANNEL_ACCESS_TOKEN}` }, timeout: 10000
+        });
+    }
+}));
 // 菜單照片是以 base64 夾在 JSON 裡上傳，所以要放寬預設的 100kb 上限
 app.use(bodyParser.json({ limit: '8mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '8mb' }));
@@ -1359,6 +1372,48 @@ app.post('/api/customers/register', (req, res) => {
     res.json({ ok: true, memberId: customer && customer.id });
 });
 
+let lineAccountInfo = null;
+app.get('/api/line/start/config', async (req, res) => {
+    let basicId = process.env.LINE_OFFICIAL_ACCOUNT_ID || '';
+    if (LINE_START_REQUIRED && !basicId) {
+        try {
+            if (!lineAccountInfo) {
+                const response = await axios.get('https://api.line.me/v2/bot/info', {
+                    headers: { Authorization: `Bearer ${LINE_CHANNEL_ACCESS_TOKEN}` }, timeout: 5000
+                });
+                lineAccountInfo = response.data;
+            }
+            basicId = lineAccountInfo.basicId || '';
+        } catch { return res.status(503).json({ message: '暫時無法取得官方帳號資料，請稍後再試' }); }
+    }
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ required: LINE_START_REQUIRED, chatUrl: basicId
+        ? `https://line.me/R/oaMessage/${encodeURIComponent(basicId)}/?${encodeURIComponent('開始使用')}` : '' });
+});
+
+function requireVerifiedLine(req, res, next) {
+    if (!/^Bearer\s+\S+$/i.test(String(req.headers.authorization || ''))) {
+        return res.status(401).json({ message: '請先使用 LINE 登入', code: 'LINE_LOGIN_REQUIRED' });
+    }
+    return verifyLineCustomer(req, res, next);
+}
+
+app.post('/api/line/start/status', requireVerifiedLine, (req, res) => {
+    const customer = readCustomers().find(entry => entry.lineUserId === req.lineCustomer.userId);
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ started: Boolean(customer?.lineStartedAt) });
+});
+
+function requireLineStartForOrder(req, res, next) {
+    if (!LINE_START_REQUIRED || req.body.testToken) return next();
+    return requireVerifiedLine(req, res, () => {
+        const customer = readCustomers().find(entry => entry.lineUserId === req.lineCustomer.userId);
+        if (!customer?.lineStartedAt) return res.status(403).json({ code: 'LINE_START_REQUIRED', message: '請先到官方帳號按「開始使用」，完成後再回來點餐' });
+        req.body.lineUserId = req.lineCustomer.userId;
+        next();
+    });
+}
+
 app.post('/api/customer/orders/history', verifyLineCustomer, (req, res) => {
     const orders = readRealOrders()
         .filter(order => order.lineUserId === req.lineCustomer.userId)
@@ -1456,7 +1511,7 @@ app.post('/api/customer/orders/:orderId/reorder-preview', verifyLineCustomer, (r
     });
 });
 
-app.post('/api/orders', async (req, res) => {
+app.post('/api/orders', requireLineStartForOrder, async (req, res) => {
     const settings = readSettings();
     const storeStatus = { isOpen: settings.isOpen, updatedAt: settings.updatedAt };
     const frontendTestToken = String(req.body.testToken || '').trim();

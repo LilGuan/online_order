@@ -23,6 +23,7 @@
   <link rel="icon" href="images/logo.jpg" />
   <link rel="apple-touch-icon" href="images/logo.jpg" />
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="/line-start-gate.js?v=1"></script>
   <!-- 引入 Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
   <script type="application/ld+json">
@@ -894,7 +895,8 @@
     }
   };
 
-  window.addToCart = function(id) {
+  window.addToCart = async function(id) {
+    if (!isTestMode && !(await LineStartGate.ensure())) return;
     if (!isStoreOpen && !isTestMode) {
       showToast('店家目前未開放點餐');
       return;
@@ -979,7 +981,8 @@
     addButton.disabled = (!isStoreOpen && !isTestMode) || detailItem.soldOut;
   }
 
-  function openItemDetail(id) {
+  async function openItemDetail(id) {
+    if (!isTestMode && !(await LineStartGate.ensure())) return;
     const item = menuItems.find(entry => entry.id === id);
     if (!item) return;
     detailItem = item;
@@ -1023,7 +1026,8 @@
     document.getElementById('detail-qty').textContent = detailQuantity;
     updateDetailPrice();
   });
-  document.getElementById('detail-add').addEventListener('click', () => {
+  document.getElementById('detail-add').addEventListener('click', async () => {
+    if (!isTestMode && !(await LineStartGate.ensure())) return;
     if (!detailItem || (!isStoreOpen && !isTestMode) || detailItem.soldOut) return;
     const options = Object.fromEntries(detailOptionDefinitions(detailItem).map(option => [option.key, document.getElementById(`detail-${option.key}`)?.checked || false]));
     options.spiceLevel = options.spice ? 'packet' : 'none';
@@ -1063,7 +1067,8 @@
     toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, 2000);
   }
 
-  document.getElementById('cart-fab').addEventListener('click', () => {
+  document.getElementById('cart-fab').addEventListener('click', async () => {
+    if (!isTestMode && !(await LineStartGate.ensure())) return;
     if (!isStoreOpen && !isTestMode) {
       showToast('店家目前未開放點餐');
       return;
@@ -1102,6 +1107,7 @@
 
     await initStoreStatus();
     await initLiff();
+    if (!isTestMode) await LineStartGate.ensure();
   })();
 </script>
 </body>
